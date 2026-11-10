@@ -1,0 +1,86 @@
+# Continuous integration: every pull request and every push to main must pass
+# lint, tests, build, a dependency audit and a secret scan before it can ship.
+# Nothing here deploys; Vercel deploys main on its own after CI is green.
+
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Read-only token: CI never writes to the repository.
+permissions:
+  contents: read
+  pull-requests: read
+
+# A newer push to the same branch cancels the older, now pointless, run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            backend/requirements-dev.txt
+      - name: Install dependencies
+        run: pip install -r ../requirements.txt -r requirements-dev.txt
+      - name: Lint (ruff)
+        run: ruff check .
+      - name: Formatting (ruff)
+        run: ruff format --check .
+      - name: Tests (pytest, SQLite per test)
+        run: python -m pytest
+      - name: Dependency audit (runtime dependencies, fails on any known vulnerability)
+        run: pip-audit -r ../requirements.txt
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit tests (vitest)
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Colour contrast check
+        run: npm run contrast
+      - name: Dependency audit (fails on high or critical)
+        run: npm audit --audit-level=high
+
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The whole history, so a secret committed and later deleted is still found.
+          fetch-depth: 0
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

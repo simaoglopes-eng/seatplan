@@ -1,0 +1,108 @@
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import ManageBookingPage from "../ManageBookingPage";
+import { BOOKING, SLOTS, VENUE } from "./fixtures";
+import { apiError, callsTo, mockApi } from "./mockApi";
+
+function renderManage(token = "tok123"): void {
+  render(
+    <MemoryRouter initialEntries={[`/b/${token}`]}>
+      <Routes>
+        <Route path="/b/:token" element={<ManageBookingPage />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe("Manage booking page", () => {
+  it("cancels only after the confirmation dialog", async () => {
+    const calls = mockApi({
+      "GET /api/b/tok123": () => BOOKING,
+      [`GET /api/r/${VENUE}/slots`]: () => SLOTS,
+      "DELETE /api/b/tok123": () => ({ ...BOOKING, status: "cancelled" }),
+    });
+    renderManage();
+    expect(await screen.findByText("Ana Pereira")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel booking" }));
+    const dialog = await screen.findByRole("dialog", { name: "Cancel this booking?" });
+    // Keeping the booking closes the dialog without a request.
+    fireEvent.click(within(dialog).getByRole("button", { name: "Keep my booking" }));
+    expect(callsTo(calls, "DELETE", "/api/b/tok123")).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel booking" }));
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Yes, cancel it" }));
+    expect(await screen.findByText(/This booking is cancelled/)).toBeTruthy();
+    expect(callsTo(calls, "DELETE", "/api/b/tok123")).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
+  });
+
+  it("changes the time through PATCH", async () => {
+    const calls = mockApi({
+      "GET /api/b/tok123": () => BOOKING,
+      [`GET /api/r/${VENUE}/slots`]: () => SLOTS,
+      "PATCH /api/b/tok123": () => ({ ...BOOKING, time: "12:30", end_time: "14:30" }),
+    });
+    renderManage();
+    await screen.findByText("Ana Pereira");
+    // 20:00 is full, so it is not offered; 12:30 is.
+    await screen.findByRole("option", { name: /12:30/ });
+    expect(screen.queryByRole("option", { name: /20:00/ })).toBeNull();
+    fireEvent.change(screen.getByLabelText("Time"), { target: { value: "12:30" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(await screen.findByText(/12:30 to 14:30/)).toBeTruthy();
+    expect(callsTo(calls, "PATCH", "/api/b/tok123")[0]?.body).toEqual({ time: "12:30", party_size: 4 });
+  });
+
+  it("offers party sizes up to the restaurant's real limit from the booking link", async () => {
+    mockApi({ "GET /api/b/tok123": () => BOOKING, [`GET /api/r/${VENUE}/slots`]: () => SLOTS });
+    renderManage();
+    const select = (await screen.findByLabelText("Party size")) as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(["1", "2", "3", "4", "5", "6"]);
+  });
+
+  it("keeps the real limit after a change, although the change answer does not repeat it", async () => {
+    mockApi({
+      "GET /api/b/tok123": () => BOOKING,
+      [`GET /api/r/${VENUE}/slots`]: () => SLOTS,
+      "PATCH /api/b/tok123": () => ({ ...BOOKING, max_party: undefined, time: "12:30", end_time: "14:30" }),
+    });
+    renderManage();
+    await screen.findByRole("option", { name: /12:30/ });
+    fireEvent.change(screen.getByLabelText("Time"), { target: { value: "12:30" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await screen.findByText(/12:30 to 14:30/);
+    expect((screen.getByLabelText("Party size") as HTMLSelectElement).options).toHaveLength(6);
+  });
+
+  it("says a cancelled booking has no table, instead of 'No table yet'", async () => {
+    mockApi({ "GET /api/b/tok123": () => ({ ...BOOKING, status: "cancelled", tables: [], table_ids: [] }) });
+    renderManage();
+    expect(await screen.findByText("None, the booking is cancelled")).toBeTruthy();
+    expect(screen.queryByText("No table yet")).toBeNull();
+  });
+
+  it("shows the table as gone straight after cancelling", async () => {
+    mockApi({
+      "GET /api/b/tok123": () => BOOKING,
+      [`GET /api/r/${VENUE}/slots`]: () => SLOTS,
+      "DELETE /api/b/tok123": () => ({ ...BOOKING, max_party: undefined, status: "cancelled", tables: [], table_ids: [] }),
+    });
+    renderManage();
+    fireEvent.click(await screen.findByRole("button", { name: "Cancel booking" }));
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Yes, cancel it" }));
+    expect(await screen.findByText("None, the booking is cancelled")).toBeTruthy();
+    expect(screen.queryByText("Table 7")).toBeNull();
+  });
+
+  it("explains an invalid link instead of showing an error code", async () => {
+    mockApi({ "GET /api/b/wrong": () => apiError(404, "not_found", "Not found") });
+    renderManage("wrong");
+    expect(await screen.findByText("This link does not work")).toBeTruthy();
+  });
+});

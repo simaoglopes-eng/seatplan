@@ -1,0 +1,765 @@
+/* Events screens: attendee (mobile first) and organiser (laptop first).
+   Every colour, space, font size, radius and duration comes from tokens.css;
+   the only local numbers are a few layout widths in rem (card and column
+   minimums). Shared components (buttons, fields, map, legend) are used as
+   they are. */
+
+/* ---------- Attendee: page frame ---------- */
+
+.ev-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: var(--layout-max);
+}
+
+.ev-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.ev-eyebrow {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ev-title {
+  margin: 0;
+}
+
+.ev-when {
+  margin: 0;
+  color: var(--c-text-muted);
+}
+
+.ev-card,
+.ev-card-flat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--c-surface);
+  border: var(--border-width) solid var(--c-border);
+  border-radius: var(--radius-lg);
+}
+
+.ev-card {
+  box-shadow: var(--shadow-sm);
+}
+
+.ev-card p,
+.ev-card-flat p {
+  margin: 0;
+}
+
+.ev-card-flat {
+  padding: var(--space-4);
+}
+
+/* Success: a green edge plus the words "You are all set", never colour alone. */
+.ev-success {
+  border-left: calc(var(--border-width) * 4) solid var(--c-primary);
+}
+
+.ev-step-title {
+  margin: 0;
+  font-size: var(--fs-2xl);
+}
+
+.ev-subtitle {
+  margin: 0;
+  font-size: var(--fs-lg);
+}
+
+.ev-mini-title {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-md);
+}
+
+.ev-seat-big {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  color: var(--c-primary);
+}
+
+.ev-muted {
+  color: var(--c-text-muted);
+  font-size: var(--fs-sm);
+  margin: 0;
+}
+
+.ev-block {
+  display: block;
+}
+
+.ev-warning {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--c-accent-soft);
+  border-radius: var(--radius-sm);
+}
+
+.ev-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* On a phone the main buttons fill the width: bigger targets, no hunting. */
+.ev-card .ev-actions .btn {
+  flex: 1 1 12rem;
+}
+
+.ev-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.ev-skeleton-card {
+  padding: var(--space-5);
+  background: var(--c-surface);
+  border-radius: var(--radius-lg);
+}
+
+/* ---------- Attendee: people step ---------- */
+
+.ev-people {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  max-height: 22rem;
+  overflow-y: auto;
+  border-top: var(--border-width) solid var(--c-border);
+  border-bottom: var(--border-width) solid var(--c-border);
+}
+
+.ev-empty-line {
+  padding: var(--space-3);
+  background: var(--c-surface-sunk);
+  border-radius: var(--radius-md);
+}
+
+/* ---------- Attendee: seat step ---------- */
+
+.ev-seat-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ev-seat-step > p {
+  margin: 0;
+}
+
+.ev-recs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(15rem, 1fr);
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0 0 var(--space-2);
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+
+.ev-recs > li {
+  scroll-snap-align: start;
+}
+
+.ev-rec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  height: 100%;
+  min-height: var(--touch-target);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font: inherit;
+  color: var(--c-text);
+  background: var(--c-surface);
+  border: var(--border-width) dashed var(--c-accent-bright);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.ev-rec:hover {
+  background: var(--c-accent-soft);
+}
+
+/* Pressed: solid edge AND the "Showing on map" text below, not colour alone. */
+.ev-rec[aria-pressed="true"] {
+  border-style: solid;
+  border-width: calc(var(--border-width) * 2);
+  background: var(--c-accent-soft);
+}
+
+.ev-rec-rank {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  color: var(--c-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ev-rec-seat {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+}
+
+.ev-rec-reasons {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: var(--fs-sm);
+}
+
+.ev-rec-cta {
+  margin-top: auto;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-primary);
+  text-decoration: underline;
+}
+
+.ev-rec[aria-pressed="true"] .ev-rec-cta::after {
+  content: " (showing)";
+}
+
+.ev-map {
+  scroll-margin-top: var(--space-6);
+}
+
+.ev-focused {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--c-surface);
+  border: var(--border-width) solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.ev-focused p {
+  margin: 0;
+}
+
+.ev-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ev-chip {
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-4);
+  font: inherit;
+  font-size: var(--fs-sm);
+  color: var(--c-friend);
+  background: var(--c-friend-soft);
+  border: var(--border-width) solid var(--c-friend);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.ev-anon {
+  padding: var(--space-2) var(--space-3);
+  background: var(--c-surface);
+  border-radius: var(--radius-md);
+}
+
+/* Sticky at the bottom of a phone screen: Confirm is always under the thumb. */
+.ev-holdbar {
+  position: sticky;
+  bottom: var(--space-3);
+  z-index: var(--z-header);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--c-surface);
+  border: calc(var(--border-width) * 2) solid var(--c-accent-bright);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.ev-holdbar-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.ev-holdbar-label {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  color: var(--c-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ev-timer {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.ev-timer-low {
+  color: var(--c-danger);
+  font-weight: var(--fw-bold);
+}
+
+/* ---------- Notices (conflict, expired, deadline, problem) ---------- */
+
+.ev-notice {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-4);
+  background: var(--c-accent-soft);
+  border: var(--border-width) solid var(--c-accent);
+  border-radius: var(--radius-md);
+}
+
+.ev-notice-icon {
+  flex: 0 0 auto;
+  width: var(--space-5);
+  height: var(--space-5);
+  fill: none;
+  stroke: var(--c-accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ev-notice-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1 1 auto;
+}
+
+.ev-notice-body p {
+  margin: 0;
+}
+
+.ev-notice-title {
+  margin: 0;
+  font-size: var(--fs-lg);
+}
+
+.ev-notice-close {
+  flex: 0 0 auto;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--c-text);
+  cursor: pointer;
+}
+
+.ev-notice-close svg {
+  width: var(--space-4);
+  height: var(--space-4);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* ---------- Organiser: layout ---------- */
+
+.ev-org-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.ev-progress {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  background: var(--c-primary-soft);
+  color: var(--c-primary);
+  border-radius: var(--radius-pill);
+}
+
+/* Laptop first: map and panel side by side; stacked below 60rem. */
+.ev-org-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) calc(var(--layout-panel) * 1.3);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.ev-org-map {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  position: sticky;
+  top: var(--space-4);
+}
+
+.ev-preview-banner {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--c-accent-soft);
+  border: var(--border-width) dashed var(--c-accent-bright);
+  border-radius: var(--radius-md);
+}
+
+.ev-side {
+  min-width: 0;
+}
+
+.ev-panel-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ev-panel-stack p {
+  margin: 0;
+}
+
+.ev-summary {
+  font-size: var(--fs-lg);
+}
+
+.ev-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+}
+
+/* ---------- Organiser: tabs ---------- */
+
+.ev-tablist {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: var(--border-width) solid var(--c-border-strong);
+  overflow-x: auto;
+}
+
+.ev-tab {
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-4);
+  font: inherit;
+  font-weight: var(--fw-medium);
+  color: var(--c-text-muted);
+  background: transparent;
+  border: 0;
+  border-bottom: calc(var(--border-width) * 3) solid transparent;
+  cursor: pointer;
+}
+
+/* The open tab: thick underline AND ink text, plus aria-selected for screen readers. */
+.ev-tab[aria-selected="true"] {
+  color: var(--c-text);
+  border-bottom-color: var(--c-primary);
+}
+
+.ev-tabpanel {
+  padding-top: var(--space-4);
+}
+
+/* ---------- Organiser: guests ---------- */
+
+.ev-guests {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ev-guest {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--c-surface);
+  border: var(--border-width) solid var(--c-border);
+  border-radius: var(--radius-md);
+  cursor: grab;
+}
+
+.ev-guest.is-selected {
+  border: calc(var(--border-width) * 2) solid var(--c-primary);
+  background: var(--c-primary-soft);
+}
+
+.ev-guest-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ev-guest-name {
+  font-weight: var(--fw-medium);
+  margin-right: auto;
+}
+
+.ev-guest-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.ev-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--border-width) solid var(--c-border);
+}
+
+.ev-file {
+  font: inherit;
+  min-height: var(--touch-target);
+}
+
+.ev-report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ---------- Tables (scores, import errors, privacy preview) ---------- */
+
+.ev-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.ev-table caption {
+  text-align: left;
+  font-weight: var(--fw-bold);
+  padding-bottom: var(--space-2);
+}
+
+.ev-table th,
+.ev-table td {
+  padding: var(--space-2);
+  text-align: left;
+  border-bottom: var(--border-width) solid var(--c-border);
+}
+
+.ev-table thead th {
+  color: var(--c-text-muted);
+  font-weight: var(--fw-medium);
+}
+
+.ev-table tbody th {
+  font-weight: var(--fw-regular);
+}
+
+.ev-table .ev-num {
+  text-align: right;
+}
+
+.ev-score-total th,
+.ev-score-total td {
+  font-weight: var(--fw-bold);
+  border-bottom: 0;
+  border-top: calc(var(--border-width) * 2) solid var(--c-border-strong);
+}
+
+.ev-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--c-surface);
+  border: var(--border-width) dashed var(--c-accent-bright);
+  border-radius: var(--radius-md);
+}
+
+.ev-preview p {
+  margin: 0;
+}
+
+.ev-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: var(--space-2) 0 0;
+}
+
+.ev-facts dt {
+  font-weight: var(--fw-medium);
+}
+
+.ev-facts dd {
+  margin: 0;
+}
+
+.ev-facts .ev-warning {
+  grid-column: 1 / -1;
+}
+
+/* ---------- Organiser: settings ---------- */
+
+.ev-radios {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ev-radio {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--c-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.ev-radio input {
+  margin-top: var(--space-1);
+  width: var(--space-4);
+  height: var(--space-4);
+  accent-color: var(--c-primary);
+}
+
+.ev-radio:has(input:checked) {
+  border: calc(var(--border-width) * 2) solid var(--c-primary);
+  background: var(--c-primary-soft);
+}
+
+/* ---------- Organiser: print ---------- */
+
+.ev-print {
+  padding: var(--space-4);
+  background: var(--c-surface);
+  border: var(--border-width) solid var(--c-border);
+  border-radius: var(--radius-md);
+}
+
+.ev-print-title {
+  font-size: var(--fs-lg);
+  margin: 0 0 var(--space-3);
+}
+
+.ev-chart {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: var(--space-3);
+}
+
+.ev-chart-table h4 {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-display);
+}
+
+.ev-chart-table ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-sm);
+}
+
+.ev-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ev-place-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 7rem;
+  padding: var(--space-3);
+  text-align: center;
+  border: var(--border-width) dashed var(--c-border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.ev-place-name {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+}
+
+.ev-place-seat {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+/* ---------- Wider screens ---------- */
+
+@media (min-width: 40rem) {
+  .ev-card .ev-actions .btn {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 60rem) {
+  .ev-org-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ev-org-map {
+    position: static;
+  }
+}
+
+/* ---------- Print: only the chosen part, ink on paper ---------- */
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .ev-print-active,
+  .ev-print-active * {
+    visibility: visible;
+  }
+
+  .ev-print-active {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    border: 0;
+    background: none;
+    color: var(--c-text);
+  }
+
+  .ev-place-card {
+    break-inside: avoid;
+    border-color: var(--c-text);
+  }
+
+  .ev-chart-table {
+    break-inside: avoid;
+  }
+}

@@ -1,0 +1,11 @@
+# Local development and tests. Install with:
+#   uv pip install -r requirements.txt -r backend/requirements-dev.txt
+uvicorn==0.54.0
+pytest==9.2.0
+hypothesis==6.170.15
+ruff==0.17.4
+# Optional exact solver (contract section 2). Without it the exact check falls
+# back to the pure-Python branch and bound; tests run both when it is present.
+ortools==9.15.6755
+# Dependency audit, run by CI.
+pip-audit==2.9.0

@@ -1,0 +1,144 @@
+/* Home page layout. Tokens only. */
+
+.home-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: var(--space-6);
+  align-items: center;
+  margin-bottom: var(--space-8);
+}
+
+.home-hero-map .seatmap-viewport {
+  height: min(60vh, 26rem);
+}
+
+.home-eyebrow {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+}
+
+.home-lede {
+  font-size: var(--fs-lg);
+  margin-bottom: var(--space-5);
+}
+
+.home-muted {
+  color: var(--c-text-muted);
+}
+
+.home-demo,
+.home-how {
+  margin-bottom: var(--space-7);
+}
+
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: var(--space-4);
+}
+
+.home-card {
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--c-surface);
+  border: var(--border-width) solid var(--c-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.home-links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-link {
+  display: grid;
+  /* minmax(0, ...) lets the text column shrink below its longest word, so one
+     long word can never push the card wider than a phone screen. */
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-3);
+  min-height: var(--touch-target);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: var(--border-width) solid var(--c-border-strong);
+  color: var(--c-text);
+  text-decoration: none;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.home-link:hover {
+  background: var(--c-primary-soft);
+  border-color: var(--c-primary);
+  color: var(--c-text);
+}
+
+.home-link-label {
+  font-weight: var(--fw-bold);
+  overflow-wrap: anywhere;
+}
+
+.home-link-desc {
+  grid-column: 1;
+  overflow-wrap: anywhere;
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.home-link-arrow {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  color: var(--c-primary);
+  font-size: var(--fs-lg);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.home-link:hover .home-link-arrow {
+  transform: translateX(3px);
+}
+
+.home-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.home-steps li {
+  counter-increment: step;
+  padding-top: var(--space-4);
+  border-top: 2px solid var(--c-text);
+}
+
+/* Big old-style numerals, like a printed programme. */
+.home-steps li::before {
+  content: counter(step);
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  color: var(--c-accent);
+  line-height: 1;
+  margin-bottom: var(--space-2);
+}
+
+.home-steps h3 {
+  font-size: var(--fs-lg);
+}
+
+@media (max-width: 52rem) {
+  .home-hero {
+    grid-template-columns: 1fr;
+  }
+}

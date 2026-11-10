@@ -1,0 +1,838 @@
+/* Restaurant screens: diner booking (rb-), manage link (rb-) and staff floor (st-).
+   Mobile first: the base rules are for a phone; wider screens add columns.
+   Tokens only: every colour, space, size and duration comes from tokens.css. */
+
+/* ---------- Page frame (diner) ---------- */
+
+.rb-page {
+  max-width: 46rem;
+  margin: 0 auto;
+}
+
+.rb-title {
+  font-size: var(--fs-2xl);
+  margin-bottom: var(--space-4);
+}
+
+.rb-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.rb-step-title {
+  font-size: var(--fs-xl);
+  margin: 0;
+}
+
+.rb-step-title:focus {
+  outline: none;
+}
+
+.rb-step-title:focus-visible {
+  outline: var(--focus-width) solid var(--c-focus);
+  outline-offset: var(--focus-offset);
+}
+
+.rb-muted {
+  color: var(--c-text-muted);
+  margin: 0;
+}
+
+.rb-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.rb-needs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.rb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+/* On a phone the main button stays within thumb reach while the page scrolls. */
+.rb-actions-sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-map-controls);
+  padding: var(--space-3) 0;
+  background: var(--c-bg);
+  border-top: var(--border-width) solid var(--c-border);
+}
+
+.rb-actions-sticky .btn {
+  flex: 1 1 auto;
+}
+
+.rb-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--c-surface);
+  border: var(--border-width) solid var(--c-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.rb-card p {
+  margin: 0;
+}
+
+.rb-eyebrow {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+}
+
+.rb-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.rb-big-number {
+  font-size: var(--fs-lg);
+}
+
+/* ---------- Notices: an icon-free box always starts with a bold word ---------- */
+
+.rb-notice {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: var(--border-width) solid var(--c-border-strong);
+  border-left-width: 6px;
+  background: var(--c-surface);
+}
+
+.rb-notice p {
+  margin: 0 0 var(--space-2);
+}
+
+.rb-notice-warning,
+.rb-notice-closed {
+  border-color: var(--c-accent);
+  background: var(--c-accent-soft);
+}
+
+.rb-notice-error {
+  border-color: var(--c-danger);
+  background: var(--c-danger-soft);
+}
+
+/* ---------- Time slots ---------- */
+
+.rb-service-title {
+  font-size: var(--fs-lg);
+  margin: 0 0 var(--space-2);
+}
+
+.rb-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rb-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--c-primary);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.rb-slot:hover {
+  background: var(--c-primary-soft);
+}
+
+.rb-slot-time {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+}
+
+.rb-slot-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--fs-sm);
+}
+
+.rb-slot-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.rb-slot-ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+
+.rb-slot-fill {
+  fill: currentColor;
+}
+
+.rb-slot-cross {
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.rb-slot-limited {
+  border-color: var(--c-accent);
+}
+
+.rb-slot-limited .rb-slot-status {
+  color: var(--c-accent);
+}
+
+/* Full slots stay clickable (they open the waitlist) but look quieter, with a dashed edge. */
+.rb-slot-full {
+  border-style: dashed;
+  border-color: var(--c-border-strong);
+  background: var(--c-surface-sunk);
+}
+
+.rb-slot-full .rb-slot-status {
+  color: var(--c-text-muted);
+}
+
+/* ---------- Table step ---------- */
+
+.rb-map-layout {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.rb-map-layout .seatmap-viewport {
+  height: min(60vh, 28rem);
+}
+
+.rb-map-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.rb-suggestion {
+  border-color: var(--c-accent-bright);
+}
+
+.rb-suggestion-title {
+  font-size: var(--fs-xl);
+  margin: 0;
+}
+
+.rb-reasons {
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.rb-alternatives {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.rb-table-list ul {
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.rb-table-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: var(--border-width) solid var(--c-border);
+}
+
+/* ---------- Hold countdown ---------- */
+
+.rb-hold {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--c-primary-soft);
+  border: var(--border-width) solid var(--c-primary);
+}
+
+.rb-hold-urgent {
+  background: var(--c-accent-soft);
+  border-color: var(--c-accent);
+}
+
+.rb-hold-text {
+  margin: 0;
+}
+
+.rb-hold-text strong {
+  font-size: var(--fs-lg);
+}
+
+.rb-hold-flag {
+  font-weight: var(--fw-bold);
+}
+
+.rb-hold-icon {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+/* ---------- Confirmation and summary ---------- */
+
+.rb-done-mark svg {
+  width: 56px;
+  height: 56px;
+  fill: var(--c-primary-soft);
+  stroke: var(--c-primary);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rb-summary {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--c-surface);
+  border: var(--border-width) solid var(--c-border);
+}
+
+.rb-summary > div {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: var(--border-width) solid var(--c-border);
+}
+
+.rb-summary > div:last-child {
+  border-bottom: 0;
+}
+
+.rb-summary dt {
+  color: var(--c-text-muted);
+}
+
+.rb-summary dd {
+  margin: 0;
+  font-weight: var(--fw-medium);
+}
+
+.rb-copy-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.rb-copy-input {
+  flex: 1 1 14rem;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- Wider screens: map and side panel next to each other ---------- */
+
+@media (min-width: 48rem) {
+  .rb-map-layout {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .rb-actions-sticky {
+    position: static;
+    border-top: 0;
+  }
+
+  .rb-actions-sticky .btn {
+    flex: 0 0 auto;
+  }
+}
+
+/* ---------- Staff: laptop first, but it still works on a tablet ---------- */
+
+.st-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.st-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+
+.st-title {
+  font-size: var(--fs-2xl);
+  margin: 0;
+}
+
+.st-date {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.st-small {
+  font-size: var(--fs-sm);
+}
+
+.st-tabs {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 2px solid var(--c-border);
+}
+
+.st-tab {
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-5);
+  border: 0;
+  border-bottom: 4px solid transparent;
+  margin-bottom: -2px;
+  background: none;
+  color: var(--c-text-muted);
+  font: inherit;
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+}
+
+/* The selected tab is marked by a thick underline and bold ink, not by colour alone. */
+.st-tab[aria-selected="true"] {
+  color: var(--c-text);
+  border-bottom-color: var(--c-primary);
+}
+
+.st-panel {
+  padding-top: var(--space-2);
+}
+
+.st-floor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.st-floor-head {
+  display: grid;
+  gap: var(--space-4);
+  align-items: end;
+}
+
+.st-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.st-count {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  border: var(--border-width) solid var(--c-border);
+  font-weight: var(--fw-medium);
+}
+
+.st-count-number {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+}
+
+.st-scrubber-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.st-scrubber-row input[type="range"] {
+  flex: 1 1 auto;
+  min-height: var(--touch-target);
+  accent-color: var(--c-primary);
+}
+
+.st-scrubber-time {
+  font-size: var(--fs-lg);
+}
+
+.st-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.st-main,
+.st-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+/* Glanceable from a step away: big labels, status in words and a pattern. */
+.st-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.st-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: 5.5rem;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--c-border-strong);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.st-tile[aria-pressed="true"] {
+  outline: 3px solid var(--c-text);
+  outline-offset: 1px;
+}
+
+.st-tile-reserved { border-style: dashed; border-color: var(--c-accent); }
+.st-tile-seated { background: var(--c-surface-strong); }
+.st-tile-finishing { border-style: dotted; border-color: var(--c-friend); }
+
+.st-tile-label {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  line-height: 1;
+}
+
+.st-tile-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: var(--fw-bold);
+}
+
+.st-tile-detail {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.st-mini-glyph {
+  width: 20px;
+  height: 20px;
+}
+
+.st-arrivals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.st-arrival {
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  border: var(--border-width) solid var(--c-border);
+  background: var(--c-bg);
+  cursor: grab;
+}
+
+.st-arrival-button {
+  display: flex;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--c-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.st-arrival-button[aria-pressed="true"] {
+  outline: 3px solid var(--c-text);
+}
+
+.st-arrival-time {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+}
+
+.st-arrival-table {
+  display: block;
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.st-selection,
+.st-booking {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.st-booking p {
+  margin: 0;
+}
+
+.st-booking-name {
+  font-size: var(--fs-lg);
+}
+
+.st-note {
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--c-accent-soft);
+}
+
+.st-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.st-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-end;
+}
+
+.st-inline-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.st-num {
+  width: 5.5rem;
+}
+
+.st-answer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.st-answer p {
+  margin: 0;
+}
+
+.st-answer-best {
+  font-size: var(--fs-lg);
+}
+
+/* The walk-in suggestion receives focus by code; show where focus is. */
+.st-answer-focus:focus-visible,
+.st-answer-focus:focus {
+  outline: var(--focus-width) solid var(--c-focus);
+  outline-offset: var(--focus-offset);
+}
+
+/* Optimise tab: two cards side by side on a laptop, stacked on a phone. */
+.st-optimise {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.st-score {
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.st-displaced {
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.st-move-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 50vh;
+  overflow-y: auto;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  border: 0;
+}
+
+/* ---------- Dashboard ---------- */
+
+.st-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.st-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.st-stat {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--c-surface);
+  border: var(--border-width) solid var(--c-border);
+}
+
+.st-stat-value {
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
+  font-weight: var(--fw-bold);
+  line-height: 1;
+}
+
+.st-stat-label {
+  font-weight: var(--fw-medium);
+}
+
+.st-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.st-bar {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.st-bar-name {
+  font-weight: var(--fw-bold);
+}
+
+.st-bar-meter {
+  width: 100%;
+  height: 1rem;
+}
+
+.st-suggestion {
+  border-left: 6px solid var(--c-accent);
+}
+
+/* ---------- Schedule ---------- */
+
+.st-schedule {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.st-table-wrap {
+  overflow-x: auto;
+}
+
+.st-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.st-table th {
+  text-align: left;
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  padding: var(--space-1) var(--space-2);
+}
+
+.st-table td {
+  padding: var(--space-1) var(--space-2);
+  vertical-align: middle;
+}
+
+.st-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Laptop: map on the left, details and arrivals on the right. */
+@media (min-width: 64rem) {
+  .st-grid {
+    grid-template-columns: minmax(0, 2fr) minmax(20rem, 1fr);
+    align-items: start;
+  }
+
+  .st-floor-head {
+    grid-template-columns: auto minmax(16rem, 1fr) auto;
+  }
+}

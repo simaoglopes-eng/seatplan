@@ -1,0 +1,492 @@
+# Decisions log
+
+Every deviation from `docs/CONTRACT.md`, with the date and the reason.
+
+## 2026-11-10: backend foundation
+
+1. **Import root is `app`, run from `backend/`.** The optimiser code and its
+   tests (written in parallel) already import `app.optimiser...` with
+   `backend/` on the path. Mixing `backend.app` and `app` would load each module
+   twice, so one `ApiError` class would not match the other. Everything now
+   uses `app.*`. The seed command is therefore
+   `cd backend && python -m app.seed.run` (not `python -m backend.app.seed.run`).
+   `backend/pyproject.toml` sets `pythonpath = ["."]` for pytest, and
+   `api/index.py` puts `backend/` on `sys.path` before importing.
+2. **Two extra environment variables:** `DEMO_ORGANISER_PASSWORD` and
+   `DEMO_STAFF_PASSWORD` (section 9 has no place for demo passwords). When
+   empty and `DEMO_MODE=1`, documented defaults in `seed/run.py` are used;
+   with demo mode off they are required.
+3. **Error code `internal`** for unexpected 500 errors, so the frontend always
+   receives the uniform error shape. It is not in the section 5 list.
+4. **Two extra files in `core/`:** `errors.py` (typed errors shared by every
+   module) and `layout.py` + `neighbours.py` (layout save and neighbour
+   geometry, kept out of the router so each file has one job).
+5. **Layout payload uses client keys.** `PUT /venues/{id}/layout` items carry a
+   `key` and an optional `id`; tables point at zones with `zone_key`, seats at
+   tables with `table_key`. New items have no id yet, so keys are the only way
+   to link them. Existing items missing from the payload are deleted (409
+   `conflict` if still used by an assignment or booking).
+6. **`public_id` and `manage_token_hash` are indexed, not UNIQUE**, because
+   section 4 lists UNIQUE only where written. 72 random bits make collisions
+   practically impossible.
+7. **`guests.email` is nullable**, so deleting a guest can erase the address.
+8. **Holds:** `take_hold` commits by itself (it is its own unit of work);
+   `confirm_hold` consumes the hold without committing; the new helper
+   `commit_or_seat_taken` maps a UNIQUE clash on the final insert to
+   `SeatTaken`.
+9. **`first_initial` privacy mode** shows first name plus last initial
+   ("Ana S."). The contract names the mode but not the exact format.
+10. **Staff see every venue; organisers only their own.** Single-tenant demo.
+
+## 2026-11-10: Vercel wiring, what was checked
+
+Checked with the Vercel documentation search tool (Context7 index of
+vercel.com/docs) on 2026-11-10:
+
+- `vercel.com/docs/functions/runtimes/python` and
+  `vercel.com/docs/frameworks/backend/fastapi`: a Python file that defines a
+  top-level `app` (ASGI, FastAPI) is served as a function; dependencies come
+  from `requirements.txt` (or `pyproject.toml`). `api/index.py` does that.
+- `vercel.com/docs/functions/configuring-functions/duration` and
+  `vercel.com/docs/project-configuration/vercel-json`: `functions` keyed by
+  the entry file accepts `maxDuration` and `excludeFiles`. We set 30 s, which
+  covers the 25 s live stream.
+- `vercel.com/docs/frameworks/frontend/vite` and the `rewrites` section of
+  `vercel-json`: a rewrite to `/index.html` gives client-side routing for a
+  Vite single-page app; `buildCommand` and `outputDirectory` override the
+  project settings.
+- The docs show that a function reads the original path unless a
+  `request.path` transform changes it, so routes keep their `/api/...` prefix.
+  **Not verified on a real deployment** (no deploy was done).
+
+## 2026-11-10: events optimiser
+
+1. **Extra optional parameters, all with defaults, so the section 6 calls
+   still work unchanged.** `score(problem, assignment, previous=None)` and
+   `anneal(..., previous=None)`: replan needs the change penalty in both.
+   `solve` and `replan` take `time_limit_s` (safety cut-off only; first 60 s,
+   lowered to 15 s after the review, see the last section). `solve_exact(problem, time_limit_s=10.0, engine="auto")`: `engine`
+   lets tests and the gap report force `"cp-sat"` or `"branch-and-bound"`.
+2. **Where functions live.** `check_hard` is in `events_model.py` (next to
+   `seat_allows`, the per-seat rules); `solve` is at the bottom of
+   `events_anneal.py`. Section 6 names the functions but not their modules.
+3. **Result shapes.** `SolveResult(assignment, score, iterations, seed,
+   unseated, moved)`, where `moved` is filled by replan only.
+   `ExactResult(assignment, score, seated, engine, proven_optimal, seconds)`.
+   `Recommendation(seat_id, gain, reasons, known_nearby)`: `known_nearby` holds
+   ids (never names) of people from the guest's own `knows` list near the
+   seat, so the API can name them. All are in `events_model.py`.
+4. **Exact objective is lexicographic:** seat as many guests as possible, then
+   maximise the score. Without the first rule, "optimal" could leave a guest
+   standing to gain a few points.
+5. **Recommendation gain uses the mutual "knows" rule** (as the objective
+   does), but reasons only use the guest's own list. A raw gain number could
+   therefore reveal who listed the guest. Superseded after the review: the
+   API now ranks with the guest's own list only and returns `rank` and
+   `match`, never the gain (see the last section).
+
+## 2026-11-10: frontend foundation and seat map
+
+1. **Seat map payload (proposal, not yet in section 5).** Every map endpoint
+   (`GET /a/{token}`, `GET /r/{vid}/map`, `GET /staff/{vid}/floor`,
+   `GET /events/{eid}`) is asked to return the map as
+   `{width, height, zones, tables, seats}` with
+   `MapTable {id, label, shape, x, y, w, h, rotation, zone_id?, state?, accessible?}`
+   and `MapSeat {id, table_id, label, x, y, state, accessible, occupant?}`.
+   `state` uses the section 5 seat states; `occupant` is the name already
+   filtered by `core/privacy.py`. In restaurant maps `MapTable.state` is the
+   table's state for the chosen slot. Types: `frontend/src/api/types.ts`.
+2. **Table geometry follows the backend** (`models.py`): `(x, y)` is the
+   top-left corner of the unrotated box and `rotation` turns it around its
+   centre. The frontend's `tableCentre()` is the one place that converts.
+3. **Demo links:** the frontend reads `GET /demo/links` as `{links: {name: path}}`
+   (the shape in `routers/demo.py`). Paths should be frontend routes (`/e/`,
+   `/organiser/`, `/r/`, `/b/`, `/staff/`, `/editor/`); an API attendee path
+   `/a/<token>` is mapped to `/e/<token>` as a safety net.
+4. **404 from `/demo/links` is shown as "the demo is switched off"**, not as an
+   error, because that is what the backend means by it.
+5. **Live stream:** the hook listens to the named `version` event (as the
+   backend sends it) and also to unnamed messages, and accepts `data` as a bare
+   number or `{"version": n}`.
+6. **Session token in `sessionStorage`** under the key `seatplan.session`.
+7. **The floor-plan editor does not use `<SeatMap>`.** It needs dragging and
+   per-chair editing, which the booking map must never allow. It reuses the
+   same drawing pieces (`TableShape`, `SeatGlyph`, `usePanZoom`), so both look
+   identical.
+
+## 2026-11-10: email system
+
+1. **Extra outbox status `sending`.** Section 4 lists `queued`, `sent`,
+   `failed`, `skipped`. `process_due()` first moves a row from `queued` to
+   `sending` with one conditional UPDATE; only the processor whose UPDATE
+   changes the row may send it, so two overlapping cron calls never send the
+   same email twice. While `sending`, `next_attempt_at` holds a 10 minute
+   lease: if the processor crashes, another one takes the row again after
+   that. The column is VARCHAR(10), so the new value fits without a schema change.
+2. **The allowlist applies to every provider, the console one included.**
+   One rule with no exceptions is easier to trust in a demo. Locally, put
+   the demo addresses in `EMAIL_ALLOWLIST` to see them reach the console log.
+3. **`/emails/log` shows every outbox row to any organiser.** The outbox has
+   no venue or organiser column, and this is a single-tenant demo (see the
+   foundation entry 10). Recipients are masked (`an***@example.com`).
+4. **POST `/internal/email/process` is rate limited** (30 calls per minute per
+   IP) before the secret check, to slow down guessing. An empty `CRON_SECRET`
+   rejects every call instead of accepting an empty header.
+
+## 2026-11-10: events screens (attendee and organiser frontend)
+
+`frontend/src/api/events.ts` copies the shapes of `routers/events.py`,
+`routers/attendee.py` and `events_service/` as they were on 2026-11-10 (the
+"events vertical API" entry below). Frontend-side choices:
+
+1. **The organiser screen reads two endpoints together:** `GET /events/{eid}`
+   (map, `not_chosen`, counts) and `GET /events/{eid}/guests` (the list), in
+   one `getOrganiserEvent()` call, because every part of the screen needs both.
+2. **Personal links** exist only in the answer that created them (add guest,
+   import, new link). The list shows "Copy link" for those, and "New link"
+   (after a confirmation, because it revokes the old one) for everyone else.
+3. **Live scope** comes from `event.live_scope`, never built in the browser.
+4. **A hold from before a page reload** (`me.held_seat_id`) has no end time in
+   the answer, so the page shows that seat with a "Hold this seat" button
+   instead of a countdown that would be guessed.
+5. **Privacy preview in the browser.** The Settings tab repeats the
+   `display_name()` rule from `core/privacy.py` (`previewName` in
+   `pages/events/format.ts`) only to preview a mode before saving; what
+   attendees see always comes from the server.
+6. **"Next to a friend" on the attendee map** is worked out in the browser
+   (same table, the two closest seats), because the attendee map has no
+   neighbour list. It only decides which seats get the halo and the "Free next
+   to someone you know" buttons; it never decides anything on the server.
+7. **Erased guests** (kept as "Deleted guest" rows by the backend) are hidden
+   from the organiser list. Until the API sends a flag, they are recognised by
+   that fixed name plus a missing email.
+8. **Requested from the backend, not sent yet** (the screens work without
+   them): `assignments` (`{"<guest id>": seat_id}`) in each scenario, so the
+   map can draw the preview; without it the preview shows score and counts
+   only. `erased: true` in the guest list.
+
+## 2026-11-10: events vertical API
+
+1. **CSV import is the raw request body** (`Content-Type: text/csv`), not a
+   multipart form upload. FastAPI needs `python-multipart` for forms, and it is
+   not in the allowed dependency list (section 2). Cap: 200 KB and 1000 rows.
+   The import is all or nothing: if any row is wrong, nothing is imported and
+   the answer (HTTP 200) lists `{line, message}` for every bad row.
+2. **Extra endpoint `GET /a/{token}/people?q=`** for the people search. It
+   searches only the privacy-filtered name, never the real one.
+3. **Scenario ids in URLs are the per-event `seq`** of `plan_snapshots`, not
+   the database id. The snapshot kind (`scenario` or `history`) lives inside
+   the `assignments` JSON: `{"kind", "seats": {"<guest id>": [seat id, source]}}`.
+   The `score` JSON also keeps `unseated`, `moved`, `iterations` and `seed`.
+4. **New helper package `backend/app/events_service/`** (with its own
+   `READ_ME_FIRST.md`) so that both routers stay short.
+5. **"Human choices" means sources `self` and `organiser`.** Auto-fill and
+   re-plan pass both as `fixed`. Applying a scenario never overwrites either.
+   Undo and redo protect only `self`: they may restore organiser moves, but a
+   guest's own choice is never undone or re-created by the organiser's history.
+6. **Seat states, small rules.** A reserved seat whose tag the attendee does
+   not have is `blocked` for that attendee. The attendee's own hold is shown as
+   `held`, with `me.held_seat_id` saying it is theirs. `occupant` is `"You"` on
+   the attendee's own seat. One live hold per attendee: a new hold drops the old.
+7. **Seat not allowed for this guest** (blocked, other reserved tag, not
+   accessible when needed) answers 409 `conflict`; a guest who answered "no"
+   must answer "yes" before holding (409 `conflict`).
+8. **Deadline:** hold, confirm, release and RSVP are refused after
+   `change_deadline` (409 `deadline_passed`); privacy and "knows" stay open.
+   The organiser is not bound by the deadline.
+9. **Email idempotency keys** are `seat-<kind>:<guest id>:<seat id>:<audit id>`
+   (cancellation: same shape). Each seat action writes exactly one audit row, so
+   its id names the action. Organiser moves also send a seat email; applying a
+   scenario and undo/redo do not, to avoid mailing everyone at once.
+10. **Email texts:** `events_service/mailer.py` uses
+    `mail.templates.seat_email(kind, guest_name, event_name, seat_text) ->
+    (subject, body_text, body_html)` when it exists, else a marked local fallback.
+11. **GDPR delete keeps an empty row** ("Deleted guest", no email, no dietary
+    note, revoked token, RSVP `no`) so ids in old plan snapshots still resolve.
+    Seat, holds and acquaintances are removed; the audit row names only the id.
+12. **Organiser map extras:** each seat also carries `guest_id`, `source`,
+    `blocked` and `reserved_tag`. The attendee map carries only the section 5
+    fields plus `occupant` (privacy-filtered).
+13. **Exact-check** works on one or two tables (at most 16 seats), defaulting
+    to the table where most guests sit, with a 10 s limit for the exact solver.
+14. **Demo links** use frontend routes: `/organiser/{event public id}` and
+    `/e/{token}`. Tokens are made with `secrets` (never seeded), everything else
+    comes from `random.Random(2026)`.
+
+## 2026-11-10: restaurant screens (frontend)
+
+Section 5 names the restaurant endpoints but not every field. The frontend
+codes against the shapes below (all in `frontend/src/api/restaurant.ts`); the
+restaurants, bookings and staff routers are asked to return them. Field names
+are snake_case. Times are `"HH:MM"` and dates `"YYYY-MM-DD"` in the venue's
+time zone; `expires_at` is an ISO date-time in UTC.
+
+1. **Needs travel with the diner's requests.** `GET /r/{vid}/map` also takes
+   `accessible` (true/false) and `high_chairs` (number), and
+   `POST /r/{vid}/hold` also takes `needs_accessible` and `high_chairs`.
+   Without them the optimiser cannot honour accessibility or high chairs on
+   "Choose for me", which section 6 lists as a hard rule. Item 10 adds the
+   same two fields to the what-if request.
+2. **`GET /r/{vid}`** -> `{public_id, name, timezone, max_party, services:
+   [{name, weekday, start_time, end_time}], blackout_dates: [{date, reason}]}`.
+   Weekday uses Python's numbering (Monday 0). The page tells a diner about a
+   closed day before they pick a time.
+3. **`GET /r/{vid}/slots`** -> `{date, closed_reason, slots: [{time, service,
+   status}]}`. `closed_reason` is non-null on a closed day or a blackout date.
+4. **`GET /r/{vid}/map`** -> the shared seat map payload plus `recommended:
+   {table_ids, reasons} | null`. Each table adds `min_party`, `max_party`,
+   `high_chair_ok` and `fits_party`; `state` is `free`, `held` or `taken`. The
+   page shows the diner's own hold as `mine` and an unsuitable table as
+   `blocked` ("does not suit").
+5. **`POST /r/{vid}/hold`** -> `{hold_id, table: {id, label}, expires_at}`;
+   409 `seat_taken` (or `conflict`) when someone was faster.
+6. **`POST /r/{vid}/bookings`** `{hold_id, name, email, phone, notes,
+   needs_accessible, high_chairs}` -> `{booking, manage_url}` where
+   `manage_url` is a path such as `/b/<token>`; 409 `hold_expired` sends the
+   diner back to the map with their details kept.
+7. **Booking view** (confirmation, `GET|PATCH /b/{token}`): `{public_id,
+   venue_public_id, venue_name, date, time, end_time, party_size, name, email,
+   table_labels, status, needs_accessible, high_chairs, notes}`. `PATCH` takes
+   `{time?, party_size?}`. `DELETE` may answer with any JSON or an empty body.
+8. **`POST /r/{vid}/waitlist`** `{date, wanted_time, party_size, name, email}`
+   -> `{position, estimated_wait_minutes}`.
+9. **Staff floor** `GET /staff/{vid}/floor` -> the seat map payload plus
+   `{date, time, services: [{name, start_time, end_time}], bookings: [...]}`;
+   each table adds `status`, `min_party`, `max_party`, `high_chair_ok`,
+   `combine_group`, `booking_id`. A staff booking is `{id (public_id), name,
+   party_size, time, end_time, status, source, table_ids, table_labels,
+   needs_accessible, high_chairs, notes}`; `{bid}` in staff URLs is that id.
+10. **Walk-ins and what-if.** `POST /staff/{vid}/whatif` takes `{party_size,
+    time, needs_accessible, high_chairs}` (needs added, as in 1) and returns
+    `{table_ids | null, table_labels, reasons, displaced: [{booking_id, name,
+    party_size, from_labels, to_labels}]}`. `POST /staff/{vid}/walkins` takes
+    `{party_size, needs_accessible, high_chairs, table_ids, time}` and returns
+    the new staff booking. Combining tables is a move with two or more
+    `table_ids`.
+11. **Dashboard** -> `{date, covers_booked, covers_seated, services: [{name,
+    covers, utilisation}], no_show_rate, no_show_sample, overbooking:
+    {extra_covers, explanation} | null}`; rates are 0 to 1.
+12. **Schedule** (`GET|PUT`) -> `{services: [{id, name, weekday, start_time,
+    end_time, slot_minutes, max_covers_per_slot}], turn_times: [{max_party,
+    minutes}], blackout_dates: [{date, reason}]}`.
+13. **Staff map words.** The shared map speaks seat-state words ("on hold",
+    "friend"), so on the staff floor the screen reader hears those words for
+    reserved and finishing tables. The table board next to the map carries the
+    correct staff words for every table. A `describe` override on `SeatMap` is
+    requested from the seat-map owner.
+
+## 2026-11-10: restaurants vertical API
+
+1. **New package `backend/app/restaurant_service/`** (with its own
+   `READ_ME_FIRST.md`) holds the database-side logic; the three routers stay
+   thin. Section 3 does not list it; it mirrors `events_service/`.
+2. **Table holds are one `holds` row per table per 15-minute slot**, with the
+   slot index as `slot_key`. One row per booking would let overlapping (but
+   not identical) windows hold the same table. `hold_id` is a random token;
+   `holder_key` stores `"<chosen|auto>:<sha256 of hold_id>"`, so the booking
+   step knows whether the diner picked the table.
+3. **`POST /r/{vid}/hold` also accepts `table_ids`** (list, at most 3) next to
+   `table_id`, so a diner can take a recommended combination of tables.
+   Optional query/body fields `accessible` / `needs_accessible`,
+   `high_chairs` and `zone` describe the party.
+4. **`POST /r/{vid}/bookings` body** is `{hold_id, party, name, email, phone?,
+   notes?, needs_accessible?, high_chairs?}`. The date, time and tables come
+   from the hold. The answer includes `manage_token`, `manage_path` and
+   `manage_link` (the only time the raw token is returned).
+5. **409 answers carry alternatives** inside the usual error object:
+   `{"error": {"code": "seat_taken", "message", "alternatives": {"times":
+   ["18:45", ...], "tables": [{"table_ids", "labels"}]}}}`.
+6. **Covers cap = guests arriving at one seating time** (kitchen pacing), not
+   guests present. Breaking it is 409 `conflict`. The cap is checked by the
+   application, so two simultaneous bookings could exceed it by one party;
+   tables themselves can never be double booked.
+7. **Slots answer** `{date, closed, reason, slots: [{time, service, status,
+   reason}]}`; past times are listed as `full` with reason `past`.
+8. **Map table states** add `too_small` (not a seat state); in `seats[]` it is
+   sent as `blocked`. Tables carry `zone_kind`, `min_party`, `max_party`,
+   `accessible`, `high_chair_ok`, `combine_group`; the map also returns
+   `slot_status` and `recommended: [{table_ids, labels, waste, reasons}]`.
+9. **A stay never crosses midnight**: slots stop at 24:00 local time.
+10. **Booking statuses completed, no_show and cancelled delete the booking's
+    `table_slots` rows** (the table is free again) and cannot be reopened.
+11. **Walk-ins** are bookings with `source="walk_in"`, `status="seated"`, empty
+    email and a random manage token hash nobody receives. Body:
+    `{party_size, name?, date?, time?, needs_accessible?, high_chairs?,
+    table_ids?}`; date and time default to now (current quarter hour).
+12. **Waitlist** answers `{date, time, position, estimated_wait_minutes}`
+    (null when no table could ever seat the party). A cancellation offers the
+    freed tables (status `offered`, email with a booking link); it does not
+    book for them.
+13. **Email bodies** come from `app.mail.templates.restaurant_email(kind,
+    context) -> (subject, text, html)` when that function exists, otherwise
+    from a marked local fallback in `restaurant_service/emails.py`. Kinds:
+    `booking_confirmed`, `booking_changed`, `booking_cancelled`,
+    `booking_reminder`, `waitlist_offer`. A changed or cancelled booking marks
+    its queued reminder `skipped`.
+14. **Schedule PUT replaces everything** and does not bump a live scope (it
+    is not tied to one date). It is audited.
+
+## 2026-11-10: integration (merge of the nine modules)
+
+Checked by running the backend (uvicorn, DEMO_MODE=1, fresh SQLite), seeding it
+with `POST /api/demo/reset`, calling every endpoint the frontend uses, and
+comparing the real JSON with the TypeScript types.
+
+1. **Emails use the real templates.** The temporary helpers in
+   `events_service/mailer.py` and `restaurant_service/emails.py` are gone; both
+   call `mail/templates.py`. Confirmation, change and cancellation emails carry
+   a calendar invite built by the new `mail/invites.py` (one UID per seat or
+   booking; cancellation uses METHOD:CANCEL with the same UID).
+2. **Invite SEQUENCE = seconds since 1970.** RFC 5546 only needs it to grow for
+   the same UID. Using the clock means no counter column. It fits the 32-bit
+   INTEGER of RFC 5545 until 2038.
+3. **Links in emails.** We store only token hashes, so a link back to the
+   personal page (`/e/<token>`, `/b/<token>`) is included only when the guest
+   or diner is the one acting. When an organiser or staff member acts, the link
+   is the site home (events) or the restaurant page (restaurants).
+4. **Waitlist offer email does not promise a hold.** The table is not held for
+   the person (see restaurant entry 12), so `templates.waitlist_offer` now takes
+   `expires=None` and then says "the first person to book it gets it".
+5. **Restaurant client converts in one place.** `frontend/src/api/restaurant.ts`
+   now types what the backend really sends ("Server..." types) and turns it into
+   the screen shapes with small `to...` functions. Differences found and fixed:
+   hold id is text and the held table is `{table_ids, labels}`; booking body
+   needs `party`; booking answers use `id`, `restaurant`, `tables`, and never
+   the email; slots use `closed` + `reason`; the map sends a list of
+   recommendations and the extra table state `too_small`; waitlist body is
+   `{date, time, party, name, email}`; what-if uses `possible`, `tables`,
+   `from_tables`, `to_tables`; the dashboard has per-service suggestions and
+   `utilisation_percent`; the schedule uses `service_periods` and has no ids.
+   The test fixtures now hold real backend shapes, so the tests cover the
+   conversions too.
+6. **Backend fields added for the screens:** `max_party` on `GET /r/{vid}`;
+   `fits_party` on each diner-map table; zones, seats, the day's services and
+   `min_party`, `accessible`, `high_chair_ok`, `combine_group`, `party_size`,
+   `name` on the staff floor; `assignments` on every events scenario;
+   `held_until` in the attendee's `me`.
+7. **Erased guests** were already left out of `GET /events/{eid}/guests`, so the
+   frontend no longer guesses them by the name "Deleted guest".
+8. **Table labels in reasons.** `TableSpec` has an optional `label`; reasons such
+   as "Joins tables T5 + T6" now use labels, never database ids.
+9. **What-if refusal is a 409.** If the optimiser refuses a fixed booking that
+   breaks a rule (ValueError), staff get `409 conflict`, not a 500.
+10. **Waitlist offer link prefills the booking form.** `/r/<id>?date=&party=`
+    sets the date and party size when they are valid; time is still picked.
+11. **A recommended combination of tables** is held through "Choose for me"
+    (the optimiser returns the same best choice), because a hold names one table.
+12. **Contract updated:** `app` import name and seed command, demo password
+    variables, `events_service/` and `restaurant_service/` in the layout,
+    `sending` outbox status, raw-CSV import, `GET /a/{token}/people`,
+    `held_until`, `max_party`.
+13. **The seed command stays `cd backend && python -m app.seed.run`.** The task
+    text named `python -m backend.app.seed.run`; that cannot work without loading
+    every module under two names (entry "backend foundation" explains why).
+
+## 2026-11-10: fixes after the adversarial review (platform)
+
+1. **Demo reset needs `X-Demo-Key`, nothing else.** The organiser-session path
+   is gone: the demo organiser's password is public in the repository, so any
+   reader could wipe the graded demo. An empty `DEMO_KEY` rejects everyone.
+2. **No public demo passwords on Postgres.** `seed/run.py` uses the documented
+   defaults only on local SQLite with `DEMO_MODE=1`; on Postgres (any
+   deployment) `DEMO_ORGANISER_PASSWORD` and `DEMO_STAFF_PASSWORD` are required.
+3. **`SECRET_KEY` is required whenever the database is Postgres**, demo mode
+   or not. Before, demo mode on Postgres fell back to a random key per
+   instance, which logged people out at random on Vercel.
+4. **New table `demo_links`.** The demo entry links (raw tokens) used to sit
+   in `audit_log.detail`, against the rule that tokens are stored only as
+   hashes. They now live in their own table, wiped by every reset and read
+   only while `DEMO_MODE=1`; the audit row stores only `{"count": n}`.
+5. **No table creation at start-up on Postgres.** Several cold starts at once
+   raced on `CREATE TABLE` and crashed. Tables now come from
+   `python -m app.seed.migrate` (under a Postgres advisory lock); the app
+   still creates them on local SQLite. There is still no migration tool: a new
+   column or constraint on an existing table needs a hand-written change.
+6. **UNIQUE(event_id, seq) on `plan_snapshots`.** Two saves at once could give
+   two scenarios the same number; now the second save fails. Retrying it
+   once is up to the events code (`events_service/plans.py`).
+7. **Pooled Postgres URLs.** Query options libpq does not know (for example
+   `supa=`, `pgbouncer=`) are dropped, using libpq's own list of options. On
+   Vercel a missing `DATABASE_URL` now stops the app with a clear message
+   instead of falling back to SQLite on a read-only disk.
+8. **Live stream:** an `async` generator that holds no worker thread while it
+   waits, refused (429) past 30 opens a minute per address or 50 open streams
+   per instance. Polling stays the dependable path on serverless.
+9. **Error codes:** `method_not_allowed` (405) and `internal` (500 and any
+   status the API never plans to send) are now in contract section 5; 400 and
+   413 map to `validation`. Before, 405 claimed `not_found` and any unmapped
+   status claimed `conflict`.
+10. **Rate limit window described honestly.** It is a fixed window per
+    calendar minute, so a burst across a minute boundary can pass up to twice
+    the limit. Kept for simplicity; the login test now freezes the clock, which
+    removes the random failure when 11 slow logins crossed a minute boundary.
+11. **`tzdata` added to `requirements.txt`**, so `zoneinfo` does not depend on
+    the host having a time zone database (contract section 2 updated).
+12. **Security headers on the static frontend** (`vercel.json`): framing is
+    refused (`X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`), the CSP
+    allows only our own origin, `Referrer-Policy: no-referrer` keeps
+    `/e/<token>` and `/b/<token>` links from leaking, plus `nosniff`. Checked
+    with headless Chrome against a local build: no CSP violation on the home,
+    diner, attendee, staff, organiser and login pages.
+13. **Event reminders.** `mail/reminders.py` adds `sync_event_reminder()`: one
+    reminder per guest per event, a day before (or two hours before, or none),
+    rewritten when the seat changes and cancelled when the seat is released or
+    the guest erased. The events code calls it after every seat change
+   (`events_service/mailer.sync_reminder`, used by seating, plans and the
+   GDPR erase, which also wipes the reminder's words and address).
+14. **Contract corrections:** no Playwright suite and no `report/` folder
+    exist. End to end is `backend/tests/test_e2e_slice.py`; the browser check
+    was done by hand. `report/**` was removed from `vercel.json`.
+15. **CI now runs `ruff format --check .`**, so the README's "same checks" is
+    true.
+
+## 2026-11-10: fixes after the adversarial review (events, restaurants, frontend, verification)
+
+1. **Recommendations (contract section 5):** `GET /a/{token}/recommendations`
+   returns `rank` (1 = best), `match` (`strong`, `some`, `none`) and reasons,
+   never the raw gain. Ranking uses only the guest's own "knows" list, so the
+   order cannot reveal who listed them. `GET /a/{token}` also names the venue.
+2. **Exact check (events):** `heuristic_seated`, `exact_seated` and `note`
+   added; `gap_percent` is null when the two plans seat a different number of
+   guests, because the exact solver seats the most guests first.
+3. **Safety cut-offs** are 15 s for both optimisers (were 60 s and 30 s), so a
+   best-so-far answer comes back before Vercel's 30 s `maxDuration`, even when
+   an exact check runs in the same request. Tests read `vercel.json`.
+4. **Lock order and deadlocks:** every write on an event starts with
+   `seating.lock_event`. A Postgres deadlock or serialization failure
+   (sqlstate 40P01 or 40001) on ANY route is answered 409 `conflict` "please
+   try again" by `main.py`, instead of a 500.
+5. **Restaurant holds:** at most 3 live holds per client per venue and date,
+   and never more than half the tables of a slot; both give 429. A held table
+   can be given back with `DELETE /r/{vid}/hold/{hold_id}`.
+6. **`max_party` is per venue** (largest table or allowed combination, the
+   covers cap, at most 30) on `GET /r/{vid}` and `GET /b/{token}`.
+7. **Staff optimiser endpoints:** `POST /staff/{vid}/optimise/service`
+   (preview, then apply with the same `plan_id`) and
+   `/optimise/exact-check`, so `assign_service` and `assign_exact` are used by
+   the app, not only by tests and the gap report. `PartySpec` gained an
+   optional `label`, so messages name tables and parties, never ids.
+8. **Staff what-if and walk-ins** take an optional `date` (the day on screen).
+   The dashboard adds `covers.seated` and a per-service `covers_seated`.
+9. **One text rule:** `core/text.py` `PlainText` refuses control characters
+   (NUL above all, which Postgres cannot store) in every free-text field of
+   events, restaurants and venue layouts, so such input is a 422, not a 500.
+10. **One reminder-time rule** for both verticals: `mail/reminders.reminder_time`.
+11. **Plan snapshots** have `UNIQUE(event_id, seq)`. `save_snapshot` takes the
+    event lock first, so two saves cannot read the same highest number; no
+    retry is written, because with the lock it could never run.
+12. **Event reminders are wired in.** Every seat change (attendee confirm,
+    organiser move, release, applying a plan, undo and redo) keeps the
+    guest's one reminder in step through `events_service/mailer.sync_reminder`.
+    A plan sends no seat emails, but a guest it seats gets a reminder.
+13. **Staff actions are not read back as someone else's.** `SeatMap` takes
+    `actedOn`, the tables the staff member just seated or moved: their next
+    change moves silently, because the page already announced it.
+14. **A tap does not move the map.** Focus that comes from a pointer no
+    longer pans the camera to the cursor; on a phone the pan made the tap land
+    on empty floor, so diners could not pick a table by tapping it.
+15. **Real time wording corrected (contract section 2):** the browser uses the
+    stream first and polls only when the stream fails or is refused.
+16. **Opt-in Postgres test run:** `SEATPLAN_TEST_POSTGRES` in
+    `backend/tests/conftest.py` gives each test its own Postgres database.
+

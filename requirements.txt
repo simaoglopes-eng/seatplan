@@ -1,0 +1,10 @@
+# Runtime dependencies for the Vercel Python function (pinned, contract section 2).
+fastapi==0.162.2
+sqlalchemy==2.1.8
+pydantic==2.14.3
+email-validator==2.3.0
+psycopg[binary]==3.3.8
+httpx==0.28.1
+# Time zone data for zoneinfo (venue local times, email dates). Without it the
+# function would depend on the host having /usr/share/zoneinfo.
+tzdata==2026.6

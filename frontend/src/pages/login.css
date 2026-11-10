@@ -1,0 +1,19 @@
+.login {
+  max-width: var(--layout-narrow);
+  margin: var(--space-6) auto 0;
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--c-surface);
+  border: var(--border-width) solid var(--c-border);
+  box-shadow: var(--shadow-md);
+}
+
+.login-lede {
+  color: var(--c-text-muted);
+  margin-bottom: var(--space-5);
+}
+
+.login-submit {
+  width: 100%;
+  margin-top: var(--space-2);
+}

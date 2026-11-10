@@ -1,0 +1,324 @@
+/* Seat map styles. Colours, durations and easings come from tokens.css only. */
+
+.seatmap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.seatmap-viewport {
+  position: relative;
+  height: var(--map-height);
+  min-height: 18rem;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--c-surface-sunk);
+  border: var(--border-width) solid var(--c-border);
+  /* We handle every gesture ourselves; without this, touch would scroll the page. */
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.seatmap-viewport:active {
+  cursor: grabbing;
+}
+
+.seatmap-svg {
+  display: block;
+}
+
+/* ---------- Scenery ---------- */
+
+.zone-area {
+  fill: none;
+  stroke: var(--c-border-strong);
+  stroke-width: 1.2;
+  stroke-dasharray: 6 5;
+}
+
+/* Map text is drawn in venue units, so zooming out to fit a phone would shrink
+   it to 5 px. Dividing the minimum by the zoom (--map-zoom, set by SeatMap.tsx)
+   keeps it at least --map-label-min on screen. Outside a SeatMap (the editor)
+   --map-zoom is unset and counts as 1. */
+.zone-label {
+  fill: var(--c-text-muted);
+  font-family: var(--font-body);
+  font-size: max(var(--map-label-size), calc(var(--map-label-min) / var(--map-zoom, 1)));
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.table-shape {
+  fill: var(--c-surface-strong);
+  stroke: var(--c-border-strong);
+  stroke-width: 1;
+}
+
+.table-row {
+  fill: var(--c-surface-strong);
+  stroke: none;
+  opacity: 0.7;
+}
+
+.table-label {
+  fill: var(--c-text);
+  font-family: var(--font-display);
+  font-size: max(var(--map-label-size), calc(var(--map-label-min) / var(--map-zoom, 1)));
+  font-weight: var(--fw-bold);
+  pointer-events: none;
+}
+
+/* Theatre-row labels sit in the aisle, which is too narrow for enlarged text:
+   they keep the plain size and become readable once the person zooms in. */
+.table-label-row {
+  font-size: var(--map-label-size);
+}
+
+.occupant-name {
+  fill: var(--c-text);
+  font-family: var(--font-body);
+  font-size: 9px;
+  pointer-events: none;
+}
+
+.table-chair {
+  fill: var(--c-surface);
+  stroke: var(--c-border-strong);
+  stroke-width: 1;
+}
+
+/* ---------- Seat glyphs ---------- */
+
+.glyph-body {
+  stroke-width: 2;
+}
+
+.glyph-free .glyph-body {
+  fill: var(--seat-free-fill);
+  stroke: var(--seat-free-stroke);
+}
+
+.glyph-held .glyph-body {
+  stroke: var(--seat-held);
+  stroke-dasharray: 3.5 2.5;
+}
+
+.glyph-taken .glyph-body {
+  fill: var(--seat-taken);
+  stroke: var(--seat-taken);
+}
+
+.glyph-mine .glyph-body {
+  fill: var(--seat-mine);
+  stroke: var(--seat-mine);
+  stroke-width: 3;
+}
+
+.glyph-friend .glyph-body {
+  stroke: var(--seat-friend);
+}
+
+.glyph-blocked .glyph-body {
+  stroke: var(--seat-blocked);
+  stroke-width: 1.5;
+}
+
+/* Restaurant tables reuse the glyph classes on a bigger shape. */
+.table-shape.glyph-body {
+  stroke-width: 2.5;
+}
+
+.pat-held-bg { fill: var(--seat-held-soft); }
+.pat-held-fg { fill: var(--seat-held); }
+.pat-friend-bg { fill: var(--seat-friend-soft); }
+.pat-friend-fg { fill: var(--seat-friend); }
+.pat-blocked-bg { fill: var(--seat-blocked-soft); }
+.pat-blocked-fg { stroke: var(--seat-blocked); stroke-width: 0.9; }
+
+.mark {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mark-taken { stroke: var(--seat-taken-mark); }
+.mark-mine { stroke: var(--seat-mine-mark); }
+.mark-blocked { stroke: var(--seat-blocked); stroke-width: 3; }
+
+.badge-accessible-bg {
+  fill: var(--seat-accessible);
+  stroke: var(--c-surface-sunk);
+  stroke-width: 1.2;
+}
+
+.badge-accessible-head { fill: var(--seat-accessible-mark); }
+
+.badge-accessible-mark {
+  fill: none;
+  stroke: var(--seat-accessible-mark);
+  stroke-width: 0.95;
+  stroke-linecap: round;
+}
+
+/* ---------- Targets and rings ---------- */
+
+.target {
+  outline: none;
+}
+
+.target.is-selectable {
+  cursor: pointer;
+}
+
+.hit-area {
+  fill: transparent;
+}
+
+.ring-highlight {
+  fill: none;
+  stroke: var(--seat-highlight);
+  stroke-width: 2.5;
+  stroke-dasharray: 4 3;
+  animation: seat-breathe var(--dur-pulse) var(--ease-in-out) infinite alternate;
+}
+
+/* Second highlight (for example "changed by preview"): a square, so it differs
+   from the round recommendation halo in shape, not only in colour. */
+.ring-marked {
+  fill: none;
+  stroke: var(--c-text);
+  stroke-width: 2;
+}
+
+.ring-selected {
+  fill: none;
+  stroke: var(--c-text);
+  stroke-width: 2.5;
+}
+
+/* The keyboard cursor only shows while the map has keyboard focus. */
+.ring-active {
+  display: none;
+  fill: none;
+  stroke: var(--c-focus);
+  stroke-width: 3;
+}
+
+.seatmap-viewport:focus-visible .ring-active {
+  display: inline;
+}
+
+.target.is-selectable:hover .glyph-body {
+  filter: brightness(0.94);
+}
+
+/* ---------- Motion ---------- */
+/* Each animation runs on .target-inner, which has no transform attribute of
+   its own, so the CSS transform does not fight the seat's position. */
+
+.target-inner {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.target-inner[data-motion="hold"] {
+  animation: seat-hold var(--dur-slow) var(--ease-out);
+}
+
+.target-inner[data-motion="confirm"] {
+  animation: seat-confirm var(--dur-slow) var(--ease-spring);
+}
+
+.target-inner[data-motion="conflict"] {
+  animation: seat-conflict var(--dur-slow) var(--ease-in-out);
+}
+
+/* Hold: a quick inhale, the seat is being considered. */
+@keyframes seat-hold {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.82); }
+  100% { transform: scale(1); }
+}
+
+/* Confirm: a small pop, the seat is yours. */
+@keyframes seat-confirm {
+  0% { transform: scale(0.6); }
+  100% { transform: scale(1); }
+}
+
+/* Conflict: a short head-shake, the seat went to someone else. */
+@keyframes seat-conflict {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+@keyframes seat-breathe {
+  from { opacity: 1; }
+  to { opacity: 0.45; }
+}
+
+/* ---------- Controls and caption ---------- */
+
+.seatmap-controls {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: var(--z-map-controls);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.map-control {
+  display: grid;
+  place-items: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  border-bottom: var(--border-width) solid var(--c-border);
+  background: transparent;
+  color: var(--c-text);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.map-control:last-child {
+  border-bottom: 0;
+}
+
+.map-control:hover {
+  background: var(--c-primary-soft);
+}
+
+.map-control:focus-visible {
+  outline-offset: -3px;
+}
+
+.map-control svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.seatmap-caption {
+  margin: 0;
+  min-height: 1.6em;
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}

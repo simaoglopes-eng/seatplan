@@ -1,0 +1,595 @@
+/* Styles for src/design/components. Only tokens, no raw colours or sizes. */
+
+/* ---------- Page shell ---------- */
+
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.shell-inner {
+  width: 100%;
+  margin: 0 auto;
+  padding-inline: var(--space-4);
+}
+
+.shell-normal { max-width: var(--layout-max); }
+.shell-wide { max-width: none; }
+
+.skip-link {
+  position: absolute;
+  left: var(--space-3);
+  top: calc(-1 * var(--space-8));
+  z-index: var(--z-skip-link);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--c-primary);
+  color: var(--c-on-primary);
+  font-weight: var(--fw-bold);
+}
+
+.skip-link:focus {
+  top: var(--space-3);
+}
+
+.shell-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  background: var(--c-bg);
+  border-bottom: var(--border-width) solid var(--c-border);
+}
+
+.shell-header .shell-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 3.75rem;
+}
+
+.shell-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.shell-main {
+  flex: 1;
+  padding-block: var(--space-6) var(--space-7);
+}
+
+.shell-main:focus {
+  outline: none;
+}
+
+.shell-footer {
+  border-top: var(--border-width) solid var(--c-border);
+  color: var(--c-text-muted);
+  font-size: var(--fs-sm);
+  padding-block: var(--space-4);
+}
+
+.shell-footer p {
+  margin: 0;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  color: var(--c-text);
+  text-decoration: none;
+}
+
+.wordmark-mark {
+  width: 28px;
+  height: 28px;
+}
+
+.wordmark-table { fill: var(--c-primary); }
+.wordmark-seat { fill: var(--c-text); }
+.wordmark-seat-mine { fill: var(--c-accent-bright); }
+
+.wordmark-text {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.01em;
+}
+
+/* ---------- Button ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid transparent;
+  font: inherit;
+  font-weight: var(--fw-medium);
+  line-height: 1.2;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-instant) var(--ease-out);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Busy buttons stay focusable (Button.tsx explains why), so they get their own look. */
+.btn[aria-busy="true"] {
+  cursor: progress;
+  opacity: 0.8;
+}
+
+.btn-primary {
+  background: var(--c-primary);
+  color: var(--c-on-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--c-primary-hover);
+}
+
+.btn-secondary {
+  background: var(--c-surface);
+  color: var(--c-text);
+  border-color: var(--c-border-strong);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--c-primary-soft);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--c-primary);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--c-primary-soft);
+}
+
+.btn-danger {
+  background: var(--c-surface);
+  color: var(--c-danger);
+  border-color: var(--c-danger);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--c-danger-soft);
+}
+
+.btn-spinner {
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: spin calc(var(--dur-slow) * 2) linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- Field and Select ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+}
+
+.field-label {
+  font-weight: var(--fw-medium);
+}
+
+.field-hint {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.field-input {
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: var(--border-width) solid var(--c-border-strong);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.field-input:hover {
+  border-color: var(--c-text);
+}
+
+.field-invalid .field-input {
+  border-color: var(--c-danger);
+  border-width: 2px;
+}
+
+.field-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-danger);
+  font-weight: var(--fw-medium);
+}
+
+.field-error-icon {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.select-input {
+  appearance: none;
+  width: 100%;
+  padding-right: var(--space-7);
+  /* Arrow drawn in CSS so it inherits the text colour in both themes. */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--c-text) 50%),
+    linear-gradient(135deg, var(--c-text) 50%, transparent 50%);
+  background-position:
+    calc(100% - 20px) 50%,
+    calc(100% - 15px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+
+/* ---------- Checkbox ---------- */
+
+.checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.checkbox-input {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: calc((var(--touch-target) - 1.25rem) / 2) 0;
+  accent-color: var(--c-primary);
+}
+
+.checkbox-label {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: var(--touch-target);
+  cursor: pointer;
+}
+
+.checkbox-hint {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+/* ---------- Dialog ---------- */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: var(--c-overlay);
+  animation: fade-in var(--dur-base) var(--ease-out);
+}
+
+.dialog {
+  width: min(100%, 32rem);
+  max-height: calc(100vh - var(--space-7));
+  overflow: auto;
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--c-surface);
+  box-shadow: var(--shadow-lg);
+  animation: rise-in var(--dur-base) var(--ease-out);
+}
+
+.dialog:focus {
+  outline: none;
+}
+
+.dialog-title {
+  font-size: var(--fs-xl);
+}
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Toast ---------- */
+
+.toast-region {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  left: var(--space-4);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 28rem;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  box-shadow: var(--shadow-lg);
+  border-left: 4px solid var(--c-info);
+  pointer-events: auto;
+  animation: rise-in var(--dur-base) var(--ease-out);
+}
+
+.toast-success { border-left-color: var(--c-primary); }
+.toast-warning { border-left-color: var(--c-accent); }
+.toast-danger { border-left-color: var(--c-danger); }
+
+.toast-tone {
+  font-weight: var(--fw-bold);
+}
+
+.toast-message {
+  flex: 1;
+}
+
+.toast-close {
+  display: grid;
+  place-items: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--c-text-muted);
+  cursor: pointer;
+}
+
+.toast-close:hover {
+  background: var(--c-surface-sunk);
+}
+
+.toast-close svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* ---------- Badge ---------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1em 0.6em;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.02em;
+  background: var(--c-surface-sunk);
+  color: var(--c-text);
+  border: var(--border-width) solid var(--c-border);
+}
+
+.badge-success { background: var(--c-primary-soft); color: var(--c-primary); border-color: transparent; }
+.badge-warning { background: var(--c-accent-soft); color: var(--c-accent); border-color: transparent; }
+.badge-danger { background: var(--c-danger-soft); color: var(--c-danger); border-color: transparent; }
+.badge-info { background: var(--c-info-soft); color: var(--c-info); border-color: transparent; }
+.badge-friend { background: var(--c-friend-soft); color: var(--c-friend); border-color: transparent; }
+
+/* ---------- Skeleton, empty and error ---------- */
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.skeleton-line {
+  display: block;
+  height: 1.1rem;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--c-surface-sunk), var(--c-surface-strong), var(--c-surface-sunk));
+  background-size: 200% 100%;
+  animation: shimmer calc(var(--dur-pulse) * 0.8) var(--ease-in-out) infinite;
+}
+
+.skeleton-line:nth-child(3n) { width: 70%; }
+.skeleton-line:nth-child(3n + 1) { width: 90%; }
+
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+.state-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  border-radius: var(--radius-lg);
+  border: var(--border-width) dashed var(--c-border-strong);
+  text-align: center;
+}
+
+.state-error {
+  border-style: solid;
+  border-color: var(--c-danger);
+  background: var(--c-danger-soft);
+}
+
+.state-icon {
+  width: 48px;
+  height: 48px;
+  fill: none;
+  stroke: var(--c-text-muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.state-error .state-icon {
+  stroke: var(--c-danger);
+}
+
+.state-title {
+  font-size: var(--fs-xl);
+  margin: 0;
+}
+
+.state-body {
+  margin: 0 0 var(--space-2);
+  color: var(--c-text);
+}
+
+/* ---------- Stepper ---------- */
+
+.stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: 0 0 var(--space-5);
+  padding: 0;
+  list-style: none;
+}
+
+.stepper-step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--c-text-muted);
+}
+
+.stepper-dot {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: 2px solid var(--c-border-strong);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
+
+.stepper-dot svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.stepper-current {
+  color: var(--c-text);
+  font-weight: var(--fw-bold);
+}
+
+.stepper-current .stepper-dot {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: var(--c-on-primary);
+}
+
+.stepper-done {
+  color: var(--c-text);
+}
+
+.stepper-done .stepper-dot {
+  border-color: var(--c-primary);
+  color: var(--c-primary);
+}
+
+/* ---------- Legend ---------- */
+
+.legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.legend-swatch {
+  flex: none;
+  width: 32px;
+  height: 32px;
+}
+
+.legend-name {
+  display: block;
+  font-size: var(--fs-sm);
+}
+
+.legend-hint {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+}
+
+/* A legend is a picture of a rule, not a live seat: no pulsing. */
+.legend-static {
+  animation: none;
+}

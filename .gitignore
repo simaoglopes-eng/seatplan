@@ -1,0 +1,31 @@
+# Secrets: real environment files are never committed. Only .env.example is.
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.hypothesis/
+.ruff_cache/
+.mypy_cache/
+*.db
+*.sqlite3
+# A local Postgres data folder and server logs, if someone runs one in the repo.
+pgdata/
+*.log
+htmlcov/
+.coverage
+
+# Node
+node_modules/
+frontend/dist/
+
+# Tooling and OS
+.vercel/
+.claude/
+.DS_Store
+playwright-report/
+test-results/

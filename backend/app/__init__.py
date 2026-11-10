@@ -1,0 +1,1 @@
+"""SeatPlan backend application package."""

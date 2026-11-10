@@ -1,0 +1,208 @@
+/*
+  SeatPlan design tokens.
+
+  This is the ONLY file that defines colours, spacing, type, radii, shadows,
+  layers and motion. Every other stylesheet reads these variables, so changing
+  the look of the whole product is a one-line edit here.
+
+  Identity: "linen and bottle green". A seating plan is printed on paper and
+  hung at the door of a dining room; we borrow that calm: warm linen paper,
+  dark ink, bottle-green for "yours", brass for "recommended" and "on hold".
+
+  Every text colour is checked against every background it sits on by
+  scripts/contrast.mjs (WCAG 2.2 AA, 4.5:1). Results are in docs/design-system.md.
+*/
+
+:root {
+  color-scheme: light dark;
+
+  /* ---------- Colour: light theme ---------- */
+  --c-bg: #f4efe6;            /* linen page */
+  --c-surface: #fbf8f2;       /* cards, panels */
+  --c-surface-sunk: #ebe4d6;  /* the floor under a seat map */
+  --c-surface-strong: #dcd2c0;/* tables drawn on the floor */
+  --c-text: #1e2724;          /* ink */
+  --c-text-muted: #545d58;
+  --c-border: #c9bfae;        /* hairlines, decorative only */
+  --c-border-strong: #7d7466; /* input borders: 3:1 against surfaces */
+
+  --c-primary: #1f5a48;       /* bottle green */
+  --c-primary-hover: #17463a;
+  --c-on-primary: #fbf8f2;
+  --c-primary-soft: #dbe8e1;  /* tinted background behind green text */
+
+  --c-accent: #7f5310;        /* brass, dark enough for text */
+  --c-accent-bright: #a06a12; /* brass for large shapes and halos */
+  --c-accent-soft: #f3e4c4;
+
+  --c-danger: #9c3226;        /* brick */
+  --c-danger-soft: #f6dcd6;
+  --c-friend: #6b3a68;        /* plum */
+  --c-friend-soft: #eedcec;
+  --c-info: #2f4f6b;          /* slate, used sparingly */
+  --c-info-soft: #dde6ee;
+
+  --c-focus: #b0450c;         /* rust focus ring, never used for state */
+  --c-overlay: rgb(30 39 36 / 0.45);
+
+  /* Seat states. Colour is a helper only: every state also has a shape,
+     icon or pattern (see src/seatmap/glyphs.tsx). */
+  --seat-free-fill: #fbf8f2;
+  --seat-free-stroke: #3b4541;
+  --seat-held: #7f5310;
+  --seat-held-soft: #f3e4c4;
+  --seat-taken: #59625e;
+  --seat-taken-mark: #fbf8f2;
+  --seat-mine: #1f5a48;
+  --seat-mine-mark: #fbf8f2;
+  --seat-friend: #6b3a68;
+  --seat-friend-soft: #eedcec;
+  --seat-blocked: #7c7466;
+  --seat-blocked-soft: #e3dccf;
+  --seat-accessible: #2f4f6b;
+  --seat-accessible-mark: #fbf8f2;
+  --seat-highlight: #a06a12;
+
+  /* ---------- Type ---------- */
+  /* Display: an old-style book serif that ships with macOS and iOS (Iowan),
+     with Charter, Cambria and Georgia as close fallbacks elsewhere.
+     Body: a humanist sans that ships with the platform. No web-font download. */
+  --font-display: "Iowan Old Style", "Charter", "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+  --font-body: "Avenir Next", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Scale with ratio 1.2 from a 16px base. */
+  --fs-xs: 0.8125rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.2rem;
+  --fs-xl: 1.44rem;
+  --fs-2xl: 1.875rem;
+  --fs-3xl: clamp(2.1rem, 1.4rem + 2.6vw, 3.1rem);
+  --lh-tight: 1.15;
+  --lh-body: 1.55;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-bold: 650;
+
+  /* ---------- Space (4px base) ---------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+
+  /* ---------- Layout ---------- */
+  --layout-max: 72rem;        /* page content width */
+  --layout-narrow: 30rem;     /* forms such as login */
+  --layout-panel: 20rem;      /* editor side panel */
+  --touch-target: 44px;       /* WCAG 2.5.8 and Apple HIG minimum */
+  --map-height: min(70vh, 40rem);
+  /* Text inside the map is measured in venue units, so it scales with zoom. */
+  --map-label-size: 13px;
+  /* ...but never shrinks below this on screen (seatmap.css divides by the zoom). */
+  --map-label-min: 12px;
+
+  /* ---------- Shape ---------- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+  --border-width: 1px;
+  --focus-width: 3px;
+  --focus-offset: 2px;
+
+  /* ---------- Depth ---------- */
+  --shadow-sm: 0 1px 2px rgb(30 39 36 / 0.08);
+  --shadow-md: 0 4px 14px rgb(30 39 36 / 0.1), 0 1px 3px rgb(30 39 36 / 0.08);
+  --shadow-lg: 0 18px 48px rgb(30 39 36 / 0.18);
+
+  /* ---------- Layers ---------- */
+  --z-base: 0;
+  --z-map-controls: 10;
+  --z-header: 20;
+  --z-dialog: 100;
+  --z-toast: 200;
+  --z-skip-link: 300;
+
+  /* ---------- Motion ---------- */
+  --dur-instant: 80ms;
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-slow: 420ms;
+  --dur-pulse: 1600ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ---------- Colour: dark theme ---------- */
+/* Same roles, re-mixed for a dark room: the linen becomes a deep green-black,
+   ink becomes warm parchment, and state colours become lighter tints. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: #121715;
+    --c-surface: #1a211e;
+    --c-surface-sunk: #0d1110;
+    --c-surface-strong: #2c3632;
+    --c-text: #ece6da;
+    --c-text-muted: #a9b1ab;
+    --c-border: #34403b;
+    --c-border-strong: #7e8a84;
+
+    --c-primary: #8fd1b5;
+    --c-primary-hover: #a9e0c8;
+    --c-on-primary: #0d1110;
+    --c-primary-soft: #1e3a30;
+
+    --c-accent: #e2b464;
+    --c-accent-bright: #e2b464;
+    --c-accent-soft: #3a2f1a;
+
+    --c-danger: #f09484;
+    --c-danger-soft: #3d201b;
+    --c-friend: #d9aad4;
+    --c-friend-soft: #352533;
+    --c-info: #9cc0df;
+    --c-info-soft: #1d2a35;
+
+    --c-focus: #f4a259;
+    --c-overlay: rgb(0 0 0 / 0.6);
+
+    --seat-free-fill: #1a211e;
+    --seat-free-stroke: #c9c2b4;
+    --seat-held: #e2b464;
+    --seat-held-soft: #3a2f1a;
+    --seat-taken: #8d9690;
+    --seat-taken-mark: #0d1110;
+    --seat-mine: #8fd1b5;
+    --seat-mine-mark: #0d1110;
+    --seat-friend: #d9aad4;
+    --seat-friend-soft: #352533;
+    --seat-blocked: #6f7671;
+    --seat-blocked-soft: #252c29;
+    --seat-accessible: #9cc0df;
+    --seat-accessible-mark: #0d1110;
+    --seat-highlight: #e2b464;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 4px 14px rgb(0 0 0 / 0.45);
+    --shadow-lg: 0 18px 48px rgb(0 0 0 / 0.6);
+  }
+}
+
+/* ---------- Reduced motion ---------- */
+/* Turning the durations to (almost) zero here switches every transition and
+   animation in the product off at once, because they all read these tokens. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 0.01ms;
+    --dur-fast: 0.01ms;
+    --dur-base: 0.01ms;
+    --dur-slow: 0.01ms;
+    --dur-pulse: 0.01ms;
+  }
+}
