@@ -147,3 +147,11 @@ real email through Resend, usability sessions with real users.
   instead of the IP address; the console email provider masks addresses;
   `Strict-Transport-Security` in `vercel.json` ("documentation and
   verification", item 1; details in [`security.md`](security.md)).
+- Booking caps (S8): at most 4 upcoming diner bookings per mailbox and
+  restaurant, and 10 booking attempts per client address (IPv6: per /64) and
+  restaurant per UTC day; both answer 429 `rate_limited` ("booking caps and
+  outbox links", items 1 and 2).
+- Personal links leave the email outbox (S9): a finished row has every
+  `/b/`, `/e/` and `/a/` link replaced, cancelled reminders are blanked, and
+  finished rows are emptied after 30 days ("booking caps and outbox links",
+  items 3 and 4).

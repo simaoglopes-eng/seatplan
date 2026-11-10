@@ -252,17 +252,17 @@ Real output observed on 2026-11-10 in the final verification (macOS, Python
 | Check | Result |
 |---|---|
 | `ruff check .` (backend) | `All checks passed!` |
-| `ruff format --check .` (backend) | `135 files already formatted` |
-| `pytest` (backend, 41 `test_*.py` files, SQLite) | `443 passed, 1 warning in 30.52s` |
-| `pytest tests/test_e2e_slice.py` | `2 passed, 1 warning in 1.47s` |
+| `ruff format --check .` (backend) | `138 files already formatted` |
+| `pytest` (backend, 43 `test_*.py` files, SQLite) | `469 passed, 1 warning in 31.52s` |
+| `pytest tests/test_e2e_slice.py` | `2 passed, 1 warning in 1.45s` |
 | `npm run typecheck` | no errors (exit code 0) |
-| `npm test` (frontend) | `Test Files 15 passed (15)`, `Tests 133 passed (133)` |
-| `npm run build` (output sent to a temporary folder) | `✓ built in 158ms` |
+| `npm test` (frontend) | `Test Files 15 passed (15)`, `Tests 134 passed (134)` |
+| `npm run build` (output sent to a temporary folder) | `✓ built in 133ms` |
 | `npm run contrast` | `86 checks, 0 failures.` |
-| `npm run e2e` (Playwright, headless Chromium, 1440x900 and 390x844 with touch), three runs | `12 passed (10.4s)`, `12 passed (10.5s)`, `12 passed (9.5s)` |
+| `npm run e2e` (Playwright, headless Chromium, 1440x900 and 390x844 with touch), three runs | `12 passed (10.8s)`, `12 passed (10.4s)`, `12 passed (9.5s)` |
 | `npm audit --audit-level=high` | `found 0 vulnerabilities` |
 | `pip-audit -r requirements.txt --no-deps --disable-pip` | `No known vulnerabilities found` (direct dependencies only; the full run with transitive dependencies happens in CI) |
-| `pytest` with `SEATPLAN_TEST_POSTGRES` (local Postgres 16.2) | `430 passed, 1 skipped, 1 warning`, from an earlier run on 2026-11-10 with the 431-test suite. Not repeated in the final verification: no Postgres server was available on this machine |
+| `pytest` with `SEATPLAN_TEST_POSTGRES` (throwaway local Postgres 16.2 cluster, deleted afterwards) | `468 passed, 1 skipped, 1 warning in 62.08s (0:01:02)` (the skipped test is about table creation on local SQLite) |
 
 The one pytest warning is Starlette asking for the `httpx2` package in its test
 client; it does not come from SeatPlan code.

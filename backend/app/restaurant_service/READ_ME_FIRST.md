@@ -18,6 +18,7 @@ never touches the database; this package turns rows into its dataclasses.
 | `availability.py` | `PartyNeeds`, the covers cap (locked, see below), `max_party`, available / limited / full per seating time |
 | `map_view.py` | The diner map: state of every table plus the recommended tables |
 | `holding.py` | 5-minute table holds: one `holds` row per table per slot; caps per client and per slot; release |
+| `booking_caps.py` | Fair caps on diner bookings: upcoming bookings per email, bookings per address per day (S8) |
 | `booking_rows.py` | Write and release `table_slots`, load by manage token, describe a booking |
 | `diner_flow.py` | Hold a table, then confirm the booking |
 | `manage_flow.py` | Change or cancel a booking |
@@ -38,7 +39,7 @@ never touches the database; this package turns rows into its dataclasses.
 POST /r/{vid}/hold      check_bookable -> check_covers_cap -> recommend_table
                         -> check_hold_caps -> hold_tables (holds rows, 5 min) -> bump + audit
 DELETE /r/{vid}/hold/{hold_id}  delete the hold rows -> bump + audit
-POST /r/{vid}/bookings  read_hold -> lock the service row -> fit and covers cap checked again -> consume holds
+POST /r/{vid}/bookings  read_hold -> check_booking_caps -> lock the service row -> fit and covers cap checked again -> consume holds
                         -> Booking + ALL table_slots rows -> emails -> one commit
 PATCH /b/{token}        release old slots -> write new slots -> one commit
 DELETE /b/{token}       release slots -> cancellation email -> waitlist offer

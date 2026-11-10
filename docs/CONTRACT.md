@@ -71,7 +71,7 @@ seatplan/
       events_service/          Helpers behind routers/events.py and attendee.py
       restaurant_service/      Helpers behind routers/restaurants.py, bookings.py, staff.py
       mail/
-        outbox.py              enqueue() and process_due()
+        outbox.py              enqueue(), process_due(), redact_links(), scrub_expired()
         templates.py           Plain-text and HTML bodies
         ics.py                 Calendar invite builder
         invites.py             The invite every seat and booking email carries (sender, SEQUENCE)
@@ -122,7 +122,7 @@ Shared
 - `seat_neighbours` seat_id, neighbour_id (symmetric pairs; "next to" for events; built by the layout save)
 - `live_versions` scope (primary key, text), version (integer). Every write bumps the scope it touches.
 - `holds` id, scope, resource_kind (`seat` or `table`), resource_id, slot_key, holder_key, expires_at. **UNIQUE(scope, resource_kind, resource_id, slot_key)**
-- `email_outbox` id, idempotency_key (**unique**), to_email, kind, subject, body_text, body_html, ics (nullable), status (`queued`, `sending`, `sent`, `failed`, `skipped`; `sending` is a 10-minute claim by one processor), attempts, next_attempt_at, sent_at, provider_message_id, last_error
+- `email_outbox` id, idempotency_key (**unique**), to_email, kind, subject, body_text, body_html, ics (nullable), status (`queued`, `sending`, `sent`, `failed`, `skipped`; `sending` is a 10-minute claim by one processor), attempts, next_attempt_at, sent_at, provider_message_id, last_error. Only a `queued` or `sending` row may hold a raw personal link: once a row is `sent`, `skipped` or `failed`, every `/b/`, `/e/` and `/a/` link in body_text, body_html, ics and last_error is replaced by `[personal link removed]`, and 30 days after `sent_at` (or after `next_attempt_at` when never sent) its body_text, body_html and ics are emptied (`mail/outbox.py`)
 - `audit_log` id, at, actor, action, entity, entity_id, detail (JSON). Never tokens or links in `detail`.
 - `demo_links` name (primary key), path. The demo entry links, raw tokens included on purpose; wiped by every demo reset and read only while `DEMO_MODE=1`.
 - `rate_limits` key, window_start, count (primary key: key + window_start)
@@ -209,7 +209,7 @@ Restaurants, diner (`/r/{venue_public_id}`)
 - `GET /r/{vid}/map?date=&time=&party=` -> tables with state for that slot, recommended table and reasons
 - `POST /r/{vid}/hold` `{date, time, party, table_id?}` (no table: optimiser picks) -> `{hold_id, table, expires_at}`. 429 `rate_limited` when one client already holds 3 tables for that date, or when live holds would block more than half the tables of a slot
 - `DELETE /r/{vid}/hold/{hold_id}` gives a held table back -> 204, or 404 for an unknown hold
-- `POST /r/{vid}/bookings` `{hold_id, name, email, ...}` -> confirmation with manage link
+- `POST /r/{vid}/bookings` `{hold_id, name, email, ...}` -> confirmation with manage link. 429 `rate_limited` when this mailbox already has 4 upcoming diner bookings at this restaurant (capitals and a `+tag` count as the same mailbox), or this client address (an IPv6 address by its /64) has made 10 booking attempts here today (UTC); a refused booking keeps its hold (`restaurant_service/booking_caps.py`)
 - `POST /r/{vid}/waitlist` -> position and estimated wait
 - `GET /b/{manage_token}` (includes the venue's `max_party`), `PATCH /b/{manage_token}`, `DELETE /b/{manage_token}`
 

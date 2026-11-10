@@ -101,10 +101,12 @@ terminal.
 The outbox (idempotency key, retries, the 10-minute `sending` claim), the
 templates, the calendar invites (`.ics`, `SEQUENCE`), the reminder that
 follows the seat, the providers (Resend is faked, nothing is sent; the console
-provider prints) and the `/internal/email/process` endpoint with its secret.
+provider prints), the `/internal/email/process` endpoint with its secret, and
+(since security finding S9) that no finished row keeps a personal link and old
+rows are emptied after 30 days.
 
 ```bash
-cd backend && ../.venv/bin/python -m pytest tests/test_mail_ics.py tests/test_mail_invites.py tests/test_mail_outbox.py tests/test_mail_providers.py tests/test_mail_reminders.py tests/test_mail_router.py tests/test_mail_templates.py tests/test_outbox.py
+cd backend && ../.venv/bin/python -m pytest tests/test_mail_ics.py tests/test_mail_invites.py tests/test_mail_outbox.py tests/test_mail_providers.py tests/test_mail_reminders.py tests/test_mail_router.py tests/test_mail_templates.py tests/test_outbox.py tests/test_outbox_retention.py
 ```
 
 ### 7. Other checks
@@ -115,32 +117,49 @@ secret scan over the whole git history.
 
 ## Results on 2026-11-10
 
-From the final verification run, after the last code change of the day.
+From the final verification run, after the last code change of the day (the
+fixes for security findings S8 and S9 and their second review).
 
 | Check | Command | Result line |
 |---|---|---|
 | Backend lint | `cd backend && ../.venv/bin/ruff check .` | `All checks passed!` |
-| Backend formatting | `cd backend && ../.venv/bin/ruff format --check .` | `135 files already formatted` |
-| Backend, all tests (41 files) | `cd backend && ../.venv/bin/python -m pytest` | `443 passed, 1 warning in 30.52s` |
-| Property-based only | `... -m hypothesis` | `12 passed, 431 deselected, 1 warning in 1.93s` |
-| Concurrency only | `... -k "race or threads or concurrent"` | `4 passed, 439 deselected, 1 warning in 2.20s` |
-| Email only | the eight email files above | `48 passed, 1 warning in 1.65s` |
-| API end to end | `... tests/test_e2e_slice.py` | `2 passed, 1 warning in 1.47s` |
-| Security tests | `... tests/test_redteam.py` | `12 passed, 1 warning in 1.32s` |
+| Backend formatting | `cd backend && ../.venv/bin/ruff format --check .` | `138 files already formatted` |
+| Backend, all tests (43 files) | `cd backend && ../.venv/bin/python -m pytest` | `469 passed, 1 warning in 31.52s` |
+| Backend, all tests on Postgres 16.2 | the same with `SEATPLAN_TEST_POSTGRES` set to a throwaway local cluster (deleted afterwards) | `468 passed, 1 skipped, 1 warning in 62.08s (0:01:02)` |
+| Property-based only | `... -m hypothesis` | `12 passed, 457 deselected, 1 warning in 1.76s` |
+| Concurrency only | `... -k "race or threads or concurrent"` | `4 passed, 465 deselected, 1 warning in 2.14s` |
+| Email only | the nine email files above | `61 passed, 1 warning in 2.15s` |
+| API end to end | `... tests/test_e2e_slice.py` | `2 passed, 1 warning in 1.45s` |
+| Security tests | `... tests/test_redteam.py` | `12 passed, 1 warning in 1.29s` |
+| Booking caps (S8) | `... tests/test_booking_cap.py` | `13 passed, 1 warning in 2.65s` |
+| Outbox links and retention (S9) | `... tests/test_outbox_retention.py` | `13 passed, 1 warning in 1.07s` |
 | Frontend types | `cd frontend && npm run typecheck` | no errors (exit code 0) |
-| Frontend unit tests | `cd frontend && npm test` | `Test Files  15 passed (15)`, `Tests  133 passed (133)` |
-| Frontend build | `npm run build` with the output sent to a temporary folder | `✓ built in 158ms` |
+| Frontend unit tests | `cd frontend && npm test` | `Test Files  15 passed (15)`, `Tests  134 passed (134)` |
+| Frontend build | `npm run build` with the output sent to a temporary folder | `✓ built in 133ms` |
 | Colour contrast | `cd frontend && npm run contrast` | `86 checks, 0 failures.` |
 | npm audit | `cd frontend && npm audit --audit-level=high` | `found 0 vulnerabilities` |
 | Python audit | `.venv/bin/pip-audit -r requirements.txt --no-deps --disable-pip` | `No known vulnerabilities found` (direct dependencies only; CI checks the transitive ones too) |
-| Browser tests | `cd frontend && npm run e2e`, run 3 times | `12 passed (10.4s)`, `12 passed (10.5s)`, `12 passed (9.5s)` |
+| Browser tests | `cd frontend && npm run e2e`, run 3 times | `12 passed (10.8s)`, `12 passed (10.4s)`, `12 passed (9.5s)` |
 
 Earlier the same day, before the final accessibility fixes, the e2e work ran
 the browser tests six times (`12 passed` each time) and the frontend unit
 tests gave `Tests  132 passed (132)`. The final verification added one unit
-test (dates in British English), which is why the count is now 133. It was
+test (dates in British English), which made the count 133. It was
 shown to fail on the old code first: `Expected: "Saturday, 14 March 2026 at
-19:30"`, `Received: "Saturday, March 14, 2026 at 19:30"`.
+19:30"`, `Received: "Saturday, March 14, 2026 at 19:30"`. The S8 work added
+one more (the booking form shows the server's words for a 429), so the count
+is now 134; it passed at once, because the form already showed any error's
+message.
+
+The new S8 and S9 tests were shown to fail on the code before each fix: the
+first two S8 tests gave `2 failed, 5 passed` on the old code, the S9 file gave
+`9 failed` with the new behaviour switched off (fixers' runs). The second
+review then added attack tests that failed on the first fixes:
+`2 failed, 11 passed` for `test_booking_cap.py` (a `+tag` email and a new IPv6
+address in the same /64 both got 201), and for `test_outbox_retention.py` one
+failure (a link folded across two invite lines kept the rest of its token);
+with the `last_error` part of the fix taken out again, that test failed with
+the token still in `last_error` (`1 failed`).
 
 The one pytest warning is Starlette asking for the `httpx2` package in its
 test client; it does not come from SeatPlan code.
@@ -167,10 +186,9 @@ The `e2e` job and the gitleaks scan have not run on GitHub yet: not done yet.
 - **A real Vercel deployment:** not done yet. Nothing here runs against the
   serverless function, its 30-second limit, or real Postgres on Vercel; we
   also do not know whether Vercel buffers the live stream.
-- **Postgres:** CI uses SQLite. The full backend suite can run on a local
-  Postgres with `SEATPLAN_TEST_POSTGRES` (see README). The last such run
-  (README) used the older 431-test suite; it was not repeated in the final
-  verification, so the 12 security tests have not run on Postgres.
+- **Postgres in CI:** CI uses SQLite. The full backend suite ran once on a
+  local Postgres 16.2 in the final verification (table above); it is not
+  repeated automatically.
 - **Real email delivery through Resend:** not done yet. Tests fake the provider.
 - **Live updates in the browser:** no browser test waits for a change made by
   someone else to appear through the event stream or the polling fallback.

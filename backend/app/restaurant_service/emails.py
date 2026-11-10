@@ -144,6 +144,7 @@ def drop_reminder(session: Session, booking: Booking) -> None:
     """Stop every reminder of this booking that has not gone out yet (moved or cancelled).
 
     We mark it skipped instead of deleting it, so the email log still shows it.
+    The words and invite are blanked: they hold the raw manage link (S9).
     """
     session.execute(
         update(EmailOutbox)
@@ -151,7 +152,13 @@ def drop_reminder(session: Session, booking: Booking) -> None:
             EmailOutbox.idempotency_key.startswith(_reminder_prefix(booking), autoescape=True)
             & (EmailOutbox.status == "queued")
         )
-        .values(status="skipped", last_error="Booking changed or cancelled")
+        .values(
+            status="skipped",
+            last_error="Booking changed or cancelled",
+            body_text="",
+            body_html="",
+            ics=None,
+        )
     )
 
 

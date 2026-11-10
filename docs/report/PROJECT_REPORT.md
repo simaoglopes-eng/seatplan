@@ -91,14 +91,15 @@ change of the day; the same numbers as `README.md` and `docs/test-report.md`):
 
 | Check | Result (real output, 10 November 2026) |
 |---|---|
-| Backend tests | `443 passed, 1 warning in 30.52s` |
-| Concurrency tests only | `4 passed, 439 deselected, 1 warning in 2.20s` |
-| Property-based tests only | `12 passed, 431 deselected, 1 warning in 1.93s` |
-| Lint and format | `All checks passed!` and `135 files already formatted` |
-| Frontend unit tests | `Test Files 15 passed (15)`, `Tests 133 passed (133)` |
+| Backend tests | `469 passed, 1 warning in 31.52s` |
+| Backend tests on Postgres 16.2 | `468 passed, 1 skipped, 1 warning in 62.08s (0:01:02)` |
+| Concurrency tests only | `4 passed, 465 deselected, 1 warning in 2.14s` |
+| Property-based tests only | `12 passed, 457 deselected, 1 warning in 1.76s` |
+| Lint and format | `All checks passed!` and `138 files already formatted` |
+| Frontend unit tests | `Test Files 15 passed (15)`, `Tests 134 passed (134)` |
 | Events optimiser gap | 20 of 21 small instances at the proven optimum; one 3.7 % below |
 | Restaurant optimiser gap | 19 of 20 small services fully optimal; 4 of 8 demo-sized services reached the optimal covers, the other 4 were 1.3 % to 3.6 % below |
-| Browser tests (`npm run e2e`) | `12 passed (10.4s)`, `12 passed (10.5s)`, `12 passed (9.5s)` |
+| Browser tests (`npm run e2e`) | `12 passed (10.8s)`, `12 passed (10.4s)`, `12 passed (9.5s)` |
 
 **What is not done yet:** a real Vercel deployment, real email delivery, any
 usability session with real people, screen-reader and real-device testing,
@@ -1212,6 +1213,11 @@ case the button does not work.
 - **Reminders** are rows whose `next_attempt_at` is in the future. For events,
   `sync_event_reminder()` keeps exactly one reminder per guest per event and
   rewrites or skips it when the seat changes.
+- **No stored links once finished (S9).** A row keeps the reader's raw
+  personal link only while it waits to be sent. When it ends `sent`,
+  `skipped` or `failed`, every personal link in its words, invite and error
+  becomes `[personal link removed]`; each cron run also empties words and
+  invite of finished rows older than 30 days (`test_outbox_retention.py`).
 
 ### 9.3 Calendar invites
 
@@ -1276,19 +1282,27 @@ simplification (decisions log, "fixes after the adversarial review
 ### 10.2 Outcome of today's review
 
 From `docs/security.md`: no Critical or High findings; 23 findings in total;
-7 fixed today (1 Medium, 6 Low), 16 still open (2 Medium, 12 Low, 2 for
-information). Each fix came with a test in `backend/tests/test_redteam.py`
-that failed before the fix. The most important ones:
+9 fixed today (3 Medium, 6 Low), 14 still open (12 Low, 2 for information).
+Each fix came with a test that failed before the fix (`backend/tests/test_redteam.py`,
+`test_booking_cap.py`, `test_outbox_retention.py`). The most important ones:
 
 - **Fixed, Medium (S1).** Off Vercel, a caller could send any
   `X-Forwarded-For` header and dodge every rate limit. Now the header is
   trusted only when running on Vercel.
-- **Open, Medium (S8).** One person can fill a restaurant with fake bookings
-  by holding and booking again and again. A per-address cap would also block a
-  whole classroom on one Wi-Fi during the demo, so this needs a team decision.
-- **Open, Medium (S9).** The email outbox keeps the raw manage and attendee
-  links for ever. The local demo reads emails from the outbox, so the fix
-  (blank bodies after sending, a retention period) touches the mail design.
+- **Fixed, Medium (S8).** One person could fill a restaurant with fake
+  bookings by holding and booking again and again. Now one mailbox may have at
+  most 4 upcoming bookings at a restaurant, and one client address at most 10
+  booking attempts there per UTC day (an IPv6 address counts by its /64);
+  both answer 429. A second review found that `name+1@` and a fresh IPv6
+  address in the same /64 slipped through the first version; both are closed.
+  The email is never checked, so the address cap is the real brake, and a
+  classroom on one Wi-Fi shares it: the team should confirm the number 10.
+- **Fixed, Medium (S9).** The email outbox kept the raw manage and attendee
+  links for ever. Now a row keeps its link only while waiting to be sent;
+  once sent, skipped or failed, every personal link in words, invite and
+  error becomes `[personal link removed]`, and 30 days later words and invite
+  are emptied. The second review found a link cut in two by invite line
+  folding, and a link quoted in a stored provider error; both are closed.
 
 Dependency audits run today by the security and e2e work: `pip-audit` and
 `npm audit` both reported no known vulnerabilities (`docs/security.md`,
@@ -1308,7 +1322,8 @@ section 7).
   addresses (`an***@example.com`); since today, IP addresses in
   `rate_limits` are stored as keyed hashes (S7).
 - **Gaps.** Diners cannot ask to be erased, and no data is ever deleted on a
-  schedule (S23); the outbox keeps raw links (S9). `docs/security.md`,
+  schedule (S23), except outbox words and invites, which go 30 days after
+  sending (S9). `docs/security.md`,
   section 6, maps these to the General Data Protection Regulation [GDPR]. We
   confirmed today which regulation that is (Regulation (EU) 2016/679 of
   27 April 2016) from the EU Publications Office record; the article titles
@@ -1337,29 +1352,33 @@ CI runs. This section gives today's numbers and what they mean.
 | Concurrency | pytest with threads and a file database | 5 tests (section 6.4) | Exactly one winner when many people grab the same thing |
 | API end to end | FastAPI `TestClient` | `tests/test_e2e_slice.py` | Both verticals walk through the real HTTP API from a demo reset |
 | Browser end to end | Playwright [PLAYWRIGHT] with axe | `frontend/e2e/` (12 tests) | Real flows in Chromium at desktop and phone sizes; no page error or CSP violation; no axe finding at WCAG 2.1 A or AA on 6 pages |
-| Red team | pytest | `tests/test_redteam.py` (12 tests) | Each fixed security finding stays fixed |
+| Red team | pytest | `tests/test_redteam.py` (12 tests), `tests/test_booking_cap.py` (13), `tests/test_outbox_retention.py` (13) | Each fixed security finding stays fixed |
 | Static | ruff, TypeScript, contrast script, audits | | Style, types, colour contrast, known vulnerable packages |
 
 ### 11.2 Results of the final verification run (10 November 2026)
 
 Run on macOS, Python 3.12.13, Node 24.17.0, after the last code change of
-the day. Earlier runs for this report gave the same backend counts; the
-frontend count was 132 before the final verification added one unit test
-(dates in British English, section 12.4).
+the day (the S8 and S9 fixes and their second review). Earlier runs for this
+report gave 443 backend tests; the S8 and S9 work added 26. The frontend
+count was 132 before the final verification added one unit test (dates in
+British English, section 12.4) and 133 before the S8 work added one (the
+booking form shows a 429's words).
 
 | Command | Real output |
 |---|---|
-| `cd backend && ../.venv/bin/python -m pytest -p no:cacheprovider` | `443 passed, 1 warning in 30.52s` |
-| `... -k "race or threads or concurrent"` | `4 passed, 439 deselected, 1 warning in 2.20s` |
-| `... -m hypothesis` | `12 passed, 431 deselected, 1 warning in 1.93s` |
-| `... tests/test_redteam.py` | `12 passed, 1 warning in 1.32s` |
+| `cd backend && ../.venv/bin/python -m pytest -p no:cacheprovider` | `469 passed, 1 warning in 31.52s` |
+| the same with `SEATPLAN_TEST_POSTGRES` (throwaway Postgres 16.2 cluster, deleted afterwards) | `468 passed, 1 skipped, 1 warning in 62.08s (0:01:02)` |
+| `... -k "race or threads or concurrent"` | `4 passed, 465 deselected, 1 warning in 2.14s` |
+| `... -m hypothesis` | `12 passed, 457 deselected, 1 warning in 1.76s` |
+| `... tests/test_redteam.py` | `12 passed, 1 warning in 1.29s` |
+| `... tests/test_booking_cap.py`; `... tests/test_outbox_retention.py` | `13 passed, 1 warning in 2.65s`; `13 passed, 1 warning in 1.07s` |
 | `cd backend && ../.venv/bin/ruff check .` | `All checks passed!` |
-| `cd backend && ../.venv/bin/ruff format --check .` | `135 files already formatted` |
-| `cd frontend && npm test` | `Test Files  15 passed (15)`, `Tests  133 passed (133)` |
+| `cd backend && ../.venv/bin/ruff format --check .` | `138 files already formatted` |
+| `cd frontend && npm test` | `Test Files  15 passed (15)`, `Tests  134 passed (134)` |
 | `cd frontend && npm run typecheck` | exit code 0 |
-| `cd frontend && npm run build` (output to a temporary folder) | `✓ built in 158ms` |
+| `cd frontend && npm run build` (output to a temporary folder) | `✓ built in 133ms` |
 | `cd frontend && npm run contrast` | `86 checks, 0 failures.` |
-| `cd frontend && npm run e2e`, 3 runs | `12 passed (10.4s)`, `12 passed (10.5s)`, `12 passed (9.5s)` |
+| `cd frontend && npm run e2e`, 3 runs | `12 passed (10.8s)`, `12 passed (10.4s)`, `12 passed (9.5s)` |
 | `npm audit --audit-level=high`; `pip-audit -r requirements.txt --no-deps --disable-pip` | `found 0 vulnerabilities`; `No known vulnerabilities found` |
 | `python -B -m scripts.gap_report_events` | section 7.4 |
 | `python -B -m scripts.gap_report_restaurant` | section 7.7 |
@@ -1380,9 +1399,11 @@ These are quoted from the documents that recorded them today.
 | Red-team tests after the fixes | `12 passed` | `docs/security.md` |
 
 The backend count went from 431 to 443 today because the security work added
-12 red-team tests. Before that, the README records one run of the full
-backend suite on a local Postgres 16.2 (`430 passed, 1 skipped, 1 warning`);
-that run was not repeated today.
+12 red-team tests, then to 469 with the S8 and S9 tests (7 and 9 from the
+fixes, 6 and 4 from the second review). Earlier in the day the full suite
+ran once on a local Postgres 16.2 (`430 passed, 1 skipped, 1 warning`, 431
+tests); the final verification ran it again on a throwaway cluster (section
+11.2).
 
 ### 11.4 What the tests do not cover
 
@@ -1575,8 +1596,10 @@ risk log (`docs/risk-log.md`) gives likelihood, impact and an owner role for
    in that transaction) but leaves rows behind.
 9. **The rate limit window is fixed per calendar minute,** so a burst across a
    minute boundary can pass up to twice the limit.
-10. **Open security findings:** two Medium (S8 booking flood, S9 raw links in
-    the outbox) and twelve Low (`docs/security.md`).
+10. **Open security findings:** twelve Low and two for information, none
+    Medium (`docs/security.md`). The S8 booking caps are soft limits that an
+    attacker with many addresses can still go around, and they also hit
+    honest diners sharing one Wi-Fi address after 10 bookings a day.
 11. **Time limits were sized for a 30 s function.** If the project setting on
     Vercel differs, the 15 s optimiser cut-off and the exact-check limits
     still fit, but they have not been tried there.
@@ -1679,7 +1702,7 @@ today), **partial** (in the code, but something is missing or unchecked),
 | H5 | No private data to other attendees | `core/privacy.py`, `routers/attendee.py` | `test_attendee_privacy.py::test_people_entries_carry_only_safe_fields`, `test_attendee_flow.py::test_recommendations_do_not_reveal_who_listed_me` | Section 10.3 | done |
 | N1 | Runs on Vercel, one project | `vercel.json`, `api/index.py` | `test_optimiser_events_search.py::test_safety_cut_off_fires_before_the_platform_limit` (reads `vercel.json`) | Section 13; `docs/deployment.md` | not done (never deployed) |
 | N2 | Live updates on serverless | `core/live.py`, `frontend/src/api/useLive.ts` | `test_demo_live.py::test_stream_sends_version_and_ends`; `frontend/src/api/useLive.test.tsx` | Section 8 | partial (unchecked on Vercel; no status shown) |
-| N3 | Security basics | `security.py`, `config.py`, `vercel.json` | `test_security.py`, `test_redteam.py` | Section 10; `docs/security.md` | partial (2 Medium findings open) |
+| N3 | Security basics | `security.py`, `config.py`, `vercel.json`, `restaurant_service/booking_caps.py`, `mail/outbox.py` | `test_security.py`, `test_redteam.py`, `test_booking_cap.py`, `test_outbox_retention.py` | Section 10; `docs/security.md` | partial (Low findings open) |
 | N4 | Accessibility | `seatmap/mapKeyboard.ts`, `design/tokens.css` | `frontend/e2e/accessibility.spec.ts`; `npm run contrast` | Section 12; `docs/accessibility.md` | partial (no assistive-technology test) |
 | N5 | Standard tests and end to end | `backend/tests/`, `frontend/src/**/*.test.*`, `frontend/e2e/` | Section 11 | `docs/test-report.md` | done (CI e2e job not yet seen running) |
 | N6 | Explainable code and docs | `READ_ME_FIRST.md` in each package; `docs/` | `ruff check` | `docs/team/walkthrough-qa.md` | partial (walkthroughs not yet held) |
@@ -1858,3 +1881,5 @@ temporary folder and deleted; nothing was left in the repository.
 | 14 | `DATABASE_URL=sqlite:///<temp file> DEMO_MODE=1 ../.venv/bin/python -m app.seed.run`, then counts with `sqlite3` | `Demo data ready.`; wedding 72 guests, 43 seated, 80 seats, 10 tables; summit 116 guests, 58 seated, 150 seats, 30 tables; Casa Lumen 18 tables; 325 bookings; 24 tables in the database |
 | 15 | `find` and `wc -l` over `backend/app`, `backend/tests`, `frontend/src` | 83 files, 11,917 lines; 41 test files, 6,889 lines; 122 files, 11,753 lines; CSS 3,190 lines (final verification recount: 122 files, 11,756 lines; CSS 3,196 lines) |
 | 16 | Count of paths and operations in `docs/openapi.json` | `paths 56 ops 65` |
+| 17 | After the S8 and S9 work: `docs/openapi.json` exported again (docs/api.md), then counted | `3.1.0 SeatPlan API 0.1.0 paths 56 ops 65 schemas 38` |
+| 18 | After the S8 and S9 work: `find backend/app backend/tests -name '*.py'` (no `__pycache__`), files and `wc -l` | `backend/app` 84 files, 12,107 lines; `backend/tests` 44 files, 7,475 lines |

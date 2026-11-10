@@ -51,7 +51,8 @@ class ConsoleProvider:
 
     The body is left out on purpose: it holds a secret manage link, and server
     logs are read by more people than the guest. The address is masked for
-    the same reason (data minimisation). The full email stays in the outbox.
+    the same reason (data minimisation). The email stays in the outbox, its
+    personal link removed once it is finished (outbox.py, S9).
     """
 
     def send(self, message: OutgoingEmail) -> str:

@@ -17,7 +17,7 @@ who is calling and what they sent, calls a helper (in `events_service/`,
 | `demo.py` | `POST /demo/reset`, `GET /demo/links` | Only with `DEMO_MODE=1`; the reset only with a matching `X-Demo-Key` |
 | `events.py` | `/events/...` (guests, seats, auto-fill, scenarios, undo) | Organisers (`CurrentOrganiser`) |
 | `attendee.py` | `/a/{token}/...` | Whoever holds the personal link; rate limited per address |
-| `restaurants.py` | `/r/{vid}/...` (slots, map, hold, book) | Anyone; rate limited per address |
+| `restaurants.py` | `/r/{vid}/...` (slots, map, hold, book) | Anyone; rate limited per address. Booking also has daily caps per mailbox and per address (`restaurant_service/booking_caps.py`, S8) |
 | `bookings.py` | `/b/{manage_token}`, waitlist | Whoever holds the manage link; rate limited |
 | `staff.py` | `/staff/{vid}/...` (floor, walk-ins, dashboard, schedule) | A logged-in user |
 | `emails.py` | `POST /internal/email/process`, `GET /emails/log` | The cron (`X-Cron-Secret`) / organisers |

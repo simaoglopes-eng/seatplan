@@ -225,6 +225,27 @@ describe("Booking page", () => {
     expect((await screen.findByRole("alert")).textContent).toContain("Book or release one first.");
   });
 
+  it("shows the server's words when a diner has booked too much (booking caps, S8)", async () => {
+    const message = "This email already has 4 upcoming bookings here. Please change or cancel one of them first.";
+    mockApi({
+      [`GET ${API}`]: () => INFO,
+      [`GET ${API}/slots`]: () => SLOTS,
+      [`GET ${API}/map`]: () => dinerMap(),
+      [`POST ${API}/hold`]: () => heldTable(7, "7"),
+      [`POST ${API}/bookings`]: () => apiError(429, "rate_limited", message),
+    });
+    await reachTableStep();
+    fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
+    fireEvent.click(await screen.findByRole("button", { name: "Continue with table 7" }));
+    await screen.findByRole("heading", { name: "Your details" });
+    fireEvent.change(screen.getByLabelText("Name for the booking"), { target: { value: "Ana Pereira" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ana@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm booking" }));
+    expect((await screen.findByRole("alert")).textContent).toContain(message);
+    // The diner stays on the form with the hold, so they can change the email or go back.
+    expect(screen.getByRole("heading", { name: "Your details" })).toBeTruthy();
+  });
+
   it("offers party sizes only up to the restaurant's real limit", async () => {
     mockApi({ [`GET ${API}`]: () => ({ ...INFO, max_party: 5 }) });
     renderBooking();

@@ -182,6 +182,8 @@ reproduced on 2026-11-10.
 | Browser shows CORS errors | The page origin is not `FRONTEND_ORIGIN` | Set `FRONTEND_ORIGIN` to the exact origin, including the port |
 | 409 `conflict` "Many people are changing things right now" | Postgres broke a deadlock or serialization conflict; nothing was saved | Try again; it is expected under heavy load |
 | 429 `rate_limited` | Too many calls from one address this minute (fixed window per calendar minute) | Wait for the next minute |
+| 429 `rate_limited` on a booking, "Too many bookings from this connection today" | One address made 10 booking attempts at this restaurant in this UTC day (S8); a whole classroom on one Wi-Fi shares this, and the demo reset does not clear it | Book from another network, wait for midnight UTC, or delete that day's `r-book-day:` rows from `rate_limits` on a demo database only |
+| 429 `rate_limited`, "This email already has 4 upcoming bookings here" | That mailbox has 4 upcoming diner bookings at this restaurant (S8) | Cancel or change one, or use another email |
 | Changes on one screen appear late on another | Live stream refused or buffered; the page polls every 2 seconds instead | Usually nothing; check `GET /api/live/{scope}/version` grows after a change |
 | A guest's link stopped working | The organiser pressed "New link", which revokes the old token | Send the new link |
 

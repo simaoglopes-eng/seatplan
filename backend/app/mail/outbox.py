@@ -11,8 +11,16 @@ Life of one row (the "status" column):
                          |----not on allowlist--> skipped
                          |----error, tries left-> queued (later, see backoff_delay)
                          |----error, 5th try----> failed
+
+Personal links (security finding S9): a queued row must keep the diner's or
+guest's raw link, or the email could not be sent. Once a row is finished
+(sent, skipped or failed for good) the link has no more use, so the stored
+words and invite are rewritten without it. RETENTION_DAYS later the words and
+invite are blanked altogether; subject, recipient, status and times stay, so
+the log can still show that the email existed.
 """
 
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -30,6 +38,32 @@ FIRST_RETRY_DELAY = timedelta(minutes=5)
 # mid-send, another one may take the row again after this time.
 CLAIM_LEASE = timedelta(minutes=10)
 MAX_ERROR_LENGTH = 500
+# Statuses a row never leaves through process_due(): nothing more to send.
+FINISHED = ("sent", "skipped", "failed")
+# How long a finished row keeps its (link-free) words and invite.
+RETENTION_DAYS = 30
+# A personal link: optional "https://host" then /b/<token> (booking), /e/<token>
+# (attendee page) or /a/<token> (attendee API). Tokens are url-safe base64.
+_PERSONAL_LINK = re.compile(r"(?:https?://[^\s\"'<>]*?)?/[abe]/[A-Za-z0-9_-]+")
+LINK_REMOVED = "[personal link removed]"
+
+
+def redact_links(text: str) -> str:
+    """The same text with every personal link replaced by LINK_REMOVED."""
+    return _PERSONAL_LINK.sub(LINK_REMOVED, text)
+
+
+def _forget_links(row: EmailOutbox) -> None:
+    """Drop the raw links from a finished row; it will never be sent again."""
+    row.body_text = redact_links(row.body_text)
+    row.body_html = redact_links(row.body_html)
+    if row.ics is not None:
+        # An invite folds long lines ("CRLF space", RFC 5545 section 3.1), which
+        # can cut a link in two. Unfold first; nobody sends this invite again.
+        row.ics = redact_links(row.ics.replace("\r\n ", ""))
+    if row.last_error:
+        # A provider's error text may quote the email, link included.
+        row.last_error = redact_links(row.last_error)
 
 
 def enqueue(
@@ -136,7 +170,9 @@ def _record_failure(row: EmailOutbox, error: Exception, now: datetime) -> str:
     row.last_error = f"{type(error).__name__}: {error}"[:MAX_ERROR_LENGTH]
     if row.attempts >= MAX_ATTEMPTS:
         row.status = "failed"
+        _forget_links(row)
     else:
+        # The words stay whole: the next try must carry the working link.
         row.status = "queued"
         row.next_attempt_at = now + backoff_delay(row.attempts)
     return row.status
@@ -150,6 +186,7 @@ def _process_one(
         # Demo-safety rule: only addresses on EMAIL_ALLOWLIST ever get email.
         row.status = "skipped"
         row.last_error = "Not on EMAIL_ALLOWLIST, so not sent."
+        _forget_links(row)
         return row.status
     try:
         row.provider_message_id = provider.send(_to_message(row))
@@ -160,6 +197,7 @@ def _process_one(
     row.status = "sent"
     row.sent_at = now
     row.last_error = None
+    _forget_links(row)
     return row.status
 
 
@@ -194,3 +232,24 @@ def process_due(
         session.commit()
         _count(report, status)
     return report
+
+
+def scrub_expired(session: Session, now: datetime) -> int:
+    """Retention: blank words and invite of finished rows older than RETENTION_DAYS.
+
+    Called by the cron endpoint after process_due(). A row's age is its
+    sent_at, or next_attempt_at when it was never sent (skipped or failed);
+    the table has no created_at. Queued rows are never touched, so retries
+    still work. Commits; returns how many rows were blanked.
+    """
+    cutoff = now - timedelta(days=RETENTION_DAYS)
+    sent_at, waited = EmailOutbox.sent_at, EmailOutbox.next_attempt_at
+    old = (sent_at < cutoff) | (sent_at.is_(None) & (waited < cutoff))
+    not_blank = (EmailOutbox.body_text != "") | (EmailOutbox.body_html != "")
+    result = session.execute(
+        update(EmailOutbox)
+        .where(EmailOutbox.status.in_(FINISHED) & old & (not_blank | EmailOutbox.ics.is_not(None)))
+        .values(body_text="", body_html="", ics=None)
+    )
+    session.commit()
+    return result.rowcount

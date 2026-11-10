@@ -16,7 +16,9 @@ later. Longer design notes, RFC references and the provider comparison are in
 | `ics.py` | `build_invite(...)`, `make_uid(kind, public_id)` | The `.ics` calendar invite text |
 | `invites.py` | `calendar_invite(...)` | The invite every seat and booking email carries: sender from `EMAIL_FROM`, SEQUENCE that always grows |
 | `outbox.py` | `enqueue(session, ...)` | Queue one email (does not commit) |
-| `outbox.py` | `process_due(session, provider, now, batch=20)` | Send what is due; allowlist, retries, give-up |
+| `outbox.py` | `process_due(session, provider, now, batch=20)` | Send what is due; allowlist, retries, give-up; a finished row loses its personal links |
+| `outbox.py` | `redact_links(text)` | Replace every `/b/`, `/e/` and `/a/` personal link with `[personal link removed]` (S9) |
+| `outbox.py` | `scrub_expired(session, now)` | Retention: blank words and invite of finished rows older than `RETENTION_DAYS` (30) |
 | `reminders.py` | `sync_event_reminder(session, event=, guest=, seat_label=, link=)` | The event guest's reminder: queued with a seat, rewritten when the seat changes, cancelled (`skipped`) when it goes |
 | `providers.py` | `ConsoleProvider`, `ResendProvider`, `provider_from_settings` | Hand one email to the log or to Resend |
 
@@ -79,7 +81,14 @@ waiting it is rewritten in place (new seat, new time) instead of adding rows.
 3. `process_due()` picks due rows, claims each one (`queued` to `sending`),
    skips addresses not on `EMAIL_ALLOWLIST`, sends the rest and records the
    result: `sent`, `queued` again with a later time, or `failed` after 5 tries.
-4. Organisers read the result at `GET /api/emails/log`.
+   A row that ends `sent`, `skipped` or `failed` has every personal link in
+   its words, invite and error replaced by `[personal link removed]` (S9);
+   a `queued` row keeps it, because the email still has to work.
+4. The same cron call runs `scrub_expired()`: 30 days after `sent_at` (or
+   after `next_attempt_at` when never sent) a finished row keeps only subject,
+   recipient, status and times.
+5. Organisers read the result at `GET /api/emails/log` (subject and error
+   also pass through `redact_links()`).
 
 ## Three likely walkthrough questions
 

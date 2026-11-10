@@ -541,3 +541,42 @@ comparing the real JSON with the TypeScript types.
    the project report (`docs/report/`) and the team pack (`docs/team/`).
    README section "Documentation" lists them all.
 
+## 2026-11-10: booking caps and outbox links (security findings S8 and S9)
+
+1. **Booking caps (S8).** New `restaurant_service/booking_caps.py`, called by
+   `POST /r/{vid}/bookings` right after `read_hold` (so a dead hold never
+   counts) and before `confirm_booking`. One mailbox may have at most 4
+   upcoming diner bookings (status confirmed, seated or finishing, end still
+   in the future) at one restaurant; one client address may make at most 10
+   booking attempts at one restaurant per UTC day (`security.rate_limit`,
+   key `r-book-day:<venue>|<address>`, stored as a keyed hash). Both give
+   429 `rate_limited` in words the booking form already shows; the hold is
+   kept. Staff bookings and walk-ins never count. Chosen over a CAPTCHA or an
+   email check because both need a service we do not have. Trade-off the team
+   must confirm: more than 10 bookings at one restaurant in one UTC day from
+   one Wi-Fi address (a classroom demo, or one presenter rehearsing) get the
+   429, and the demo reset does not clear `rate_limits`.
+2. **Booking caps, holes closed by the verifier.** `mailbox()` reads capitals
+   and a `+tag` as the same inbox (dots are not merged: only some providers
+   ignore them). An IPv6 address counts by its /64 network (`network_of()`),
+   because one home connection gets a whole /64 and could use a new address
+   per request. The email is never checked, so the email cap only stops an
+   honest diner; the address cap is the real brake. Tests:
+   `tests/test_booking_cap.py` (13).
+3. **Personal links leave the outbox (S9).** Contract section 4 said tokens
+   are stored only as hashes, but outbox bodies kept the raw link. Now
+   `mail/outbox.py` keeps the link only while a row is `queued` (the email and
+   its retries must work); on `sent`, `skipped` or `failed` every `/b/`, `/e/`
+   and `/a/` link in the words, the invite (unfolded first, since RFC 5545
+   folding can split a link) and `last_error` becomes
+   `[personal link removed]`. `drop_reminder()` and the event reminder's
+   `_cancel()` blank words and invite. `GET /emails/log` passes subject and
+   error through `redact_links()`. Contract section 4 now says this.
+4. **Outbox retention (S9, part of S23).** `scrub_expired()` runs in every
+   `POST /internal/email/process` and empties words and invite of finished
+   rows 30 days after `sent_at` (or after `next_attempt_at` when never sent;
+   there is no `created_at`). Adding a `created_at` column was left out: it
+   needs a migration and is not needed for this fix. Tests:
+   `tests/test_outbox_retention.py` (13), including a scan of every table for
+   the raw token after a booking, a change and a cancellation.
+

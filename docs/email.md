@@ -31,7 +31,8 @@ process_due()  -> allowlist check -> Provider.send() -> Resend HTTP API (or cons
 - **providers.py**: `Provider` protocol with `send(message) -> provider id`;
   `ConsoleProvider` (logs one line, never the body, because the body holds a
   secret link) and `ResendProvider` (httpx, 10 s timeout, key never logged).
-- **outbox.py**: `enqueue()` and `process_due()` (section 2).
+- **outbox.py**: `enqueue()` and `process_due()` (section 2), `redact_links()`
+  and `scrub_expired()` (section 2, "Personal links and retention").
 
 Why an outbox instead of sending inside the request: a booking must not fail or
 hang because the email service is slow, and a stored row can be retried,
@@ -80,7 +81,32 @@ Restaurant reminders use `restaurant_service/emails.py`; event reminders use
 `mail/reminders.py`, where `sync_event_reminder()` keeps one row per guest per
 event (key `event-reminder-<event public id>-<guest id>`). A seat change
 rewrites that row while it is still waiting; a release or an erase marks it
-`skipped`; a sent reminder is never touched.
+`skipped` and blanks its words and invite; a sent reminder is never touched.
+
+**Personal links and retention (security finding S9).** An email body holds
+the reader's raw personal link (`/b/<token>`, `/e/<token>`), while the
+database keeps only hashes of those tokens everywhere else. So:
+
+- A `queued` row keeps the full link: the email, and every retry, must work.
+- When a row ends `sent`, `skipped` (not on the allowlist) or `failed` (fifth
+  error), `redact_links()` replaces every `/b/`, `/e/` and `/a/` link in
+  `body_text`, `body_html`, the invite (unfolded first, because RFC 5545
+  folding can cut a link in two) and `last_error` with
+  `[personal link removed]`. Subject, recipient, status, times and the
+  idempotency key stay, so the log still shows the email existed.
+- A cancelled reminder (`drop_reminder()`, and `sync_event_reminder()` when
+  the seat goes) is set to `skipped` with empty words and no invite.
+- Retention: every `POST /internal/email/process` also runs
+  `scrub_expired()`, which empties words and invite of finished rows older
+  than `RETENTION_DAYS = 30`. The table has no `created_at`, so the age is
+  `sent_at`, or `next_attempt_at` when the row was never sent. If the cron
+  stops, retention stops with it.
+- `GET /emails/log` never returned bodies; its subject and error columns now
+  also pass through `redact_links()`.
+
+Tests: `backend/tests/test_outbox_retention.py`, including a scan of every
+table in the database for the raw token after a booking, a change and a
+cancellation.
 
 ## 3. Demo-safety rules
 
@@ -97,7 +123,8 @@ rewrites that row while it is still waiting; a release or an erase marks it
 4. **The process endpoint is secret.** `X-Cron-Secret` is compared with
    `hmac.compare_digest` (same time whatever the input). An empty
    `CRON_SECRET` rejects every call. 30 calls per minute per IP at most.
-5. **The log hides addresses.** `/emails/log` shows `an***@example.com`.
+5. **The log hides addresses.** `/emails/log` shows `an***@example.com`,
+   and never a raw personal link (S9, section 2).
 
 ## 4. Calendar invites (RFC 5545 and RFC 5546)
 
@@ -177,7 +204,8 @@ record for bounce feedback, and says domains created after August 2026 may get
 CNAME records instead **[verified 2026-11-10, https://resend.com/docs/dashboard/domains/manage-domains]**.
 
 What the team **can** do without owning a domain: run everything with the
-console provider, see every email in the outbox and `/emails/log`, run all
+console provider, see every email in the outbox (once an email is finished
+its personal link reads `[personal link removed]`) and `/emails/log`, run all
 tests, and show the confirmation page with its link. What it **cannot** do:
 pass SPF, DKIM or DMARC for an address like `noreply@example.com`, because
 only the owner of a domain can publish its DNS records. Sending real email

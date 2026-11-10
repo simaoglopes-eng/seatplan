@@ -44,11 +44,21 @@ def reminder_key(event: Event, guest_id: int) -> str:
 
 
 def _cancel(session: Session, key: str) -> None:
-    """Stop a reminder that has not gone out yet. A sent one is history."""
+    """Stop a reminder that has not gone out yet. A sent one is history.
+
+    The words are blanked because they hold the guest's raw link (S9); if the
+    guest picks a seat again, sync_event_reminder() writes them anew.
+    """
     session.execute(
         update(EmailOutbox)
         .where((EmailOutbox.idempotency_key == key) & (EmailOutbox.status == "queued"))
-        .values(status="skipped", last_error="Seat released or guest removed")
+        .values(
+            status="skipped",
+            last_error="Seat released or guest removed",
+            body_text="",
+            body_html="",
+            ics=None,
+        )
     )
 
 

@@ -37,7 +37,7 @@ Seated, Conference Speaker, Restaurant Booking, Restaurant Staff.
 1. Reset the demo so every link is fresh (deployed site; the key is private):
 
    ```bash
-   curl -X POST -H "X-Demo-Key: <the key>" https://<deployed URL>/api/demo/reset
+   curl -X POST -H "X-Demo-Key: $DEMO_KEY" https://<deployed URL>/api/demo/reset
    ```
 
    Locally, use the backup plan below instead.
@@ -203,10 +203,10 @@ npm run dev
 
 Open <http://localhost:5173>. The home page lists the demo links.
 
-Reset between rehearsals without restarting (terminal 3):
+Reset between rehearsals without restarting (terminal 3, after running `export DEMO_KEY=local-demo-key` there):
 
 ```bash
-curl -X POST -H "X-Demo-Key: local-demo-key" http://127.0.0.1:8000/api/demo/reset
+curl -X POST -H "X-Demo-Key: $DEMO_KEY" http://127.0.0.1:8000/api/demo/reset
 ```
 
 Local demo accounts: `organiser@example.com` and `staff@example.com`, with the
@@ -226,3 +226,13 @@ reset (2 tests). Then open `backend/tests/test_holds.py` at line 209 and
 explain the 30-thread race.
 
 A recorded video of the demo would be a third backup: not made yet.
+
+## Booking caps to remember when rehearsing
+
+The restaurant refuses the 11th public booking made from one network address
+in a day (and the 5th active booking for one email address) with a 429
+"too many bookings" message. The demo reset does not clear these counters.
+If you rehearse the diner flow many times on one day, use a fresh local
+database, or seat the party as a staff walk-in, which is exempt. The exact
+numbers are the constants at the top of
+`backend/app/restaurant_service/booking_caps.py`.

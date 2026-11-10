@@ -5,10 +5,12 @@ its dependencies, done on 2026-11-10. We played the attacker against every
 route, then fixed what we could and wrote a test for each fix.
 
 **Verdict.** We found no Critical and no High problem. We found 23 issues:
-7 are fixed (1 Medium, 6 Low), 16 stay open (2 Medium, 12 Low, 2 for
-information). The open Medium ones are booking abuse by one person
-(S8) and personal links kept in the email outbox (S9). The app has not
-been deployed yet, so nothing here was tested on a real Vercel deployment.
+9 are fixed (3 Medium, 6 Low), 14 stay open (12 Low, 2 for information).
+No Medium issue is open: booking abuse by one person (S8) and personal links
+kept in the email outbox (S9) were fixed later the same day, then attacked
+again by a second reviewer, who found and closed two more holes in S8 and two
+in S9 (section 3). The app has not been deployed yet, so nothing here was
+tested on a real Vercel deployment.
 
 ## 1. How we tested
 
@@ -30,7 +32,7 @@ Every number in this file comes from the code or from those runs.
 | Asset | Where it lives |
 |---|---|
 | Guests' and diners' personal data: names, emails, phone, dietary notes, accessibility needs | `guests`, `bookings`, `waitlist_entries`, `email_outbox` |
-| Personal links (attendee `/e/<token>`, manage `/b/<token>`) | Only SHA-256 hashes in `guests.token_hash` and `bookings.manage_token_hash` (but see S9) |
+| Personal links (attendee `/e/<token>`, manage `/b/<token>`) | Only SHA-256 hashes in `guests.token_hash` and `bookings.manage_token_hash`; the raw link only in outbox rows still waiting to be sent (S9) |
 | Organiser and staff sessions | HMAC-signed tokens, `backend/app/security.py` |
 | Seats and tables: nobody may lose a seat they own | UNIQUE constraints on `seat_assignments`, `table_slots`, `holds` |
 | Server secrets: `SECRET_KEY`, `DEMO_KEY`, `CRON_SECRET`, `RESEND_API_KEY`, `DATABASE_URL` | Environment variables, read only in `backend/app/config.py` |
@@ -57,7 +59,7 @@ Severity: Critical (anyone can take over accounts or data), High (serious data
 leak or takeover with some effort), Medium (real harm, limited), Low (small
 harm or needs unusual access), Info (worth knowing, no harm found).
 
-Line numbers are those of 2026-11-10, after the fixes.
+Line numbers are those of 2026-11-10, after the fixes (S8 and S9: after the second review).
 
 | ID | Severity | Where | Attack | Fix | Status |
 |---|---|---|---|---|---|
@@ -68,8 +70,8 @@ Line numbers are those of 2026-11-10, after the fixes.
 | S5 | Low | `backend/app/config.py:97` | `SECRET_KEY=secret` was accepted on Postgres. Anyone holding one session token could then guess the key offline and sign a session for any user id. | On Postgres a key shorter than 32 characters stops the app at start-up with a clear message. Local SQLite still makes a random 64-character key. | Fixed. Test `test_s5_*` |
 | S6 | Low | `vercel.json` (headers) | The API sent `Strict-Transport-Security`, but the static pages (where the personal links open) did not, so a first visit over plain HTTP could be downgraded. | Added `Strict-Transport-Security: max-age=31536000; includeSubDomains` to every path. | Fixed. Test `test_s6_*` |
 | S7 | Low | `backend/app/security.py:156` (`_stored_key`) | The `rate_limits` table stored raw IP addresses (`login:203.0.113.5`), which are personal data, kept with no end date. `holding.client_key` already hashed addresses; the rate limit did not. | The part after the first `:` is stored as an HMAC-SHA256 keyed with `SECRET_KEY` (32 hex characters). | Fixed. Test `test_s7_*` |
-| S8 | Medium | `backend/app/routers/restaurants.py:197` (book), `backend/app/restaurant_service/holding.py:80` | One person can fill a restaurant with fake bookings: hold, book, repeat. The hold caps only count live holds, and a booking ends the hold, so the only brake is 20 holds a minute per address. In our probe one client turned every hold it had left that minute into a booking (13 bookings for one date, its other 7 holds were earlier probes), then got 429; a minute later it can go on. No email check is needed to book. | Options: a daily cap of bookings per client and venue; confirm by email before the table is kept; a CAPTCHA. A cap per address would also hit a whole classroom on one Wi-Fi during the demo, so the team must choose. | Open |
-| S9 | Medium | `backend/app/restaurant_service/emails.py:29`, `backend/app/mail/outbox.py:35` | Contract section 4 says secret tokens are stored only as hashes, but every email body in `email_outbox` keeps the raw link. Checked: after a diner booking, both the confirmation (status `skipped`) and the queued reminder contain the raw manage token in `body_text` and `body_html`. Anyone with a copy of the database or a backup can view, change or cancel those bookings, and open attendee pages. Rows are never deleted. | Blank `body_text`, `body_html` and `ics` once a row is `sent`, `skipped` or `failed`, and delete old rows after a set time. Not done here because the local demo reads emails from the outbox (the console provider prints no body on purpose). | Open |
+| S8 | Medium | `backend/app/routers/restaurants.py:212` (book), `backend/app/restaurant_service/booking_caps.py:77` | One person could fill a restaurant with fake bookings: hold, book, repeat. The hold caps only count live holds, and a booking ends the hold, so the only brake was 20 holds a minute per address. In our probe one client turned every hold it had left that minute into a booking (13 bookings for one date, its other 7 holds were earlier probes), then got 429; a minute later it could go on. No email check is needed to book. Second review: the first fix could be dodged with `name+1@`, `name+2@` (a new mailbox to the code, the same inbox in real life) and, on IPv6, with a new address per request inside one /64 (measured: the 11th booking from a new address in the same /64 got 201). | Two caps before the booking is written, both 429 `rate_limited`, the hold kept: (1) one mailbox may have at most 4 upcoming diner bookings at one restaurant (`mailbox()`: lower case, `+tag` dropped; dots are kept, since only some providers ignore them); (2) one client address may make at most 10 booking attempts at one restaurant per UTC day (`network_of()`: IPv6 counted by its /64; stored as a keyed hash through `rate_limit`). Staff bookings and walk-ins never count. Limits: soft (two requests at the same instant can both pass); the email is unchecked, so a new made-up email always passes the first cap and the address cap is the real brake; a burst at midnight UTC can reach 20; more than 10 bookings at one restaurant in a day from one Wi-Fi address (a classroom demo, or one presenter rehearsing, since the demo reset keeps `rate_limits`) get the 429, so the team should confirm the number. | Fixed. Tests in `test_booking_cap.py` (13) |
+| S9 | Medium | `backend/app/mail/outbox.py:56` (`_forget_links`), `:237` (`scrub_expired`) | Contract section 4 says secret tokens are stored only as hashes, but every email body in `email_outbox` kept the raw link. Checked: after a diner booking, both the confirmation (status `skipped`) and the queued reminder contained the raw manage token in `body_text` and `body_html`. Anyone with a copy of the database or a backup could view, change or cancel those bookings, and open attendee pages. Rows were never deleted. Second review: the first fix searched the invite as stored, but RFC 5545 folds lines at 75 octets, so a link in an invite description was cut in two and the rest of the token stayed (measured); and `last_error` kept a link when a provider error quoted it. | A `queued` row keeps its link (the email and its retries must work). When a row ends `sent`, `skipped` or `failed`, every `/b/`, `/e/` and `/a/` link in `body_text`, `body_html`, the unfolded invite and `last_error` becomes `[personal link removed]`; subject, recipient, status and times stay. Cancelled reminders (`drop_reminder`, the event reminder's `_cancel`) are blanked. Every cron call also runs `scrub_expired`, which empties words and invite of finished rows 30 days after `sent_at` (or `next_attempt_at` when never sent). `GET /emails/log` runs subject and error through `redact_links`. Limits: a waiting reminder holds its link until it goes; a new kind of personal link must be added to `_PERSONAL_LINK`; retention runs only when the cron runs. | Fixed. Tests in `test_outbox_retention.py` (13), including a scan of every table for the raw token |
 | S10 | Low | `backend/app/routers/bookings.py:117` | The waitlist accepts 10 entries a minute per address, with no check for duplicates. An attacker can push real diners down the queue and receive the table offers first. | Refuse a second waiting entry for the same email, venue and date; daily cap per client. | Open |
 | S11 | Low | `backend/app/routers/emails.py:85` | `GET /api/emails/log` shows every outbox row to any organiser, with no owner filter. Checked: after a wedding guest confirmed a seat, our second organiser (who owns nothing) saw 2 rows, the first with subject "Reminder: Ana and Bruno's wedding, Sat 12 Jun 2027, 16:00" and address `ze***@example.com`. | Add a venue column to `email_outbox` and filter by owner. Accepted for now: single-tenant demo (decisions log, email entry 3), and there is no sign-up route, so the seed makes the only accounts. | Open, accepted |
 | S12 | Low | `backend/app/routers/venues.py:135`, `backend/app/restaurant_service/venue_access.py:21` | A staff account sees every venue (including event venues in `GET /api/venues`) and can change bookings and schedules of every restaurant. | Link staff to venues. Accepted for now: decisions log, foundation entry 10. | Open, accepted |
@@ -83,7 +85,7 @@ Line numbers are those of 2026-11-10, after the fixes.
 | S20 | Info | `backend/app/main.py:156` | `GET /api/openapi.json` and `/api/docs` are public, so an attacker gets the full route list. The code is public anyway. | Turn the docs off on Postgres if the team wants. | Open, accepted |
 | S21 | Info | `backend/app/events_service/schemas.py:72`, `backend/app/events_service/plans.py:47` | A logged-in organiser can run auto-fill (up to 100 000 iterations, 15 s safety cut-off) as often as they like, and each run stores a new scenario with no limit. Only their own events are affected. | A per-organiser rate limit and a cap on stored scenarios. | Open |
 | S22 | Low | `backend/app/routers/demo.py:67`, `:53` | With `DEMO_MODE=1`, `GET /api/demo/links` gives anyone the raw demo attendee links, and the reset (with `X-Demo-Key`) wipes every table except accounts and rate limits. Safe for a demo; dangerous if real data ever lives in the same database. | Never run demo mode on a database with real data (README already says the key is the only way in). | Open, accepted |
-| S23 | Low | whole schema | No retention: bookings, waitlist entries, outbox rows and the audit log are kept for ever, and a diner can cancel but cannot ask for erasure in the app (guests can, through the organiser). See section 6. | A scheduled clean-up and a diner erasure route. | Open |
+| S23 | Low | whole schema | No retention: bookings, waitlist entries and the audit log are kept for ever (outbox words and invites now go after 30 days, S9), and a diner can cancel but cannot ask for erasure in the app (guests can, through the organiser). See section 6. | A scheduled clean-up and a diner erasure route. | Open |
 
 ### Checked and not vulnerable
 
@@ -113,7 +115,7 @@ Line numbers are those of 2026-11-10, after the fixes.
 | `POST /venues`, `PUT /venues/{id}/layout`, all 23 `/events...` routes, `GET /emails/log` | Organiser | Session plus `require_organiser`; events checked by `load_event` (owner) |
 | 10 `/staff/{vid}/...` routes | Staff (all restaurants) or the owning organiser | Session plus `load_for_staff` |
 | 9 `/a/{token}...` routes | Holder of the attendee link | 120 a minute per address, then token hash |
-| 7 `/r/{vid}...` routes (waitlist included) | Anyone | 120 reads, 20 holds, 30 bookings, 10 waitlist joins a minute per address; hold caps |
+| 7 `/r/{vid}...` routes (waitlist included) | Anyone | 120 reads, 20 holds, 30 bookings, 10 waitlist joins a minute per address; hold caps; booking caps (4 upcoming per mailbox, 10 a day per address, S8) |
 | 3 `/b/{token}` routes | Holder of the manage link | 30 a minute per address, then token hash |
 | `POST /demo/reset` | Holder of `DEMO_KEY`, demo mode only | 5 a minute per address, then key |
 | `GET /demo/links` | Anyone, demo mode only | None (S22) |
@@ -125,9 +127,9 @@ Line numbers are those of 2026-11-10, after the fixes.
 | Category | SeatPlan |
 |---|---|
 | A01 Broken access control | Owner checks in `events_service/access.py:33` and `restaurant_service/venue_access.py:21`; missing and forbidden both give 404. Open: S11, S12 (accepted single-tenant choices). |
-| A02 Cryptographic failures | scrypt passwords, SHA-256 token hashes, HMAC-SHA256 sessions (`security.py`). Fixed S5 (weak key), S6 (HSTS). Open: S9 (raw links in the outbox). |
+| A02 Cryptographic failures | scrypt passwords, SHA-256 token hashes, HMAC-SHA256 sessions (`security.py`). Fixed S5 (weak key), S6 (HSTS), S9 (raw links in the outbox). |
 | A03 Injection | Bound SQL parameters only; CSV export prefixes formula characters; email subject, HTML and `.ics` escaped; `PlainText` refuses control characters (`core/text.py`). Nothing open. |
-| A04 Insecure design | Database constraints stop double booking. Open: S8 and S10 (booking and waitlist abuse), S19 (no horizon). |
+| A04 Insecure design | Database constraints stop double booking; booking caps (fixed S8). Open: S10 (waitlist abuse), S19 (no horizon). |
 | A05 Security misconfiguration | Security headers on API and static pages; CORS to one origin; demo reset needs a key. Fixed S1, S2. Open: S20, S22. |
 | A06 Vulnerable and outdated components | `pip-audit` and `npm audit`: no known vulnerabilities (section 7). |
 | A07 Identification and authentication failures | Login rate limit, same message for wrong email and wrong password, dummy hash for unknown emails (`routers/auth.py:23`). Open: S13, S14. |
@@ -140,9 +142,9 @@ Line numbers are those of 2026-11-10, after the fixes.
 | Principle | How the code meets it | Gaps |
 |---|---|---|
 | Lawful basis | Our reading, not legal advice: diners give name, email and optional phone to make a booking, so the basis is performance of a contract (Art. 6(1)(b)). Guests are added by the organiser, who decides why their data is used (controller); SeatPlan stores it for them (processor). Emails are only about the booking or seat; the footer says "We never send marketing" (`mail/templates.py`). | We did not check whether the frontend shows a privacy notice. |
-| Data minimisation | Other attendees see only privacy-filtered names (`core/privacy.py`), never email, dietary note or accessibility need; the people search only searches the visible name (`routers/attendee.py:76`); the email log masks addresses (`core/privacy.py:32`); IP addresses are stored only as keyed hashes (fixed S7, and `restaurant_service/holding.py:55`); audit rows hold ids, not names (`events_service/guests.py:156`); the console log masks addresses (fixed S4). | Raw links in outbox bodies (S9); stable guest ids (S17). |
+| Data minimisation | Other attendees see only privacy-filtered names (`core/privacy.py`), never email, dietary note or accessibility need; the people search only searches the visible name (`routers/attendee.py:76`); the email log masks addresses (`core/privacy.py:32`); IP addresses are stored only as keyed hashes (fixed S7, and `restaurant_service/holding.py:55`); audit rows hold ids, not names (`events_service/guests.py:156`); the console log masks addresses (fixed S4). | Stable guest ids (S17). |
 | Right to erasure | `DELETE /api/events/{eid}/guests/{gid}` overwrites name, email, dietary note and needs, deletes acquaintances, frees the seat, revokes the link (`events_service/guests.py:129`) and blanks that guest's outbox rows (`events_service/mailer.py:143`). | Diners and waitlist entries have no erasure route (S23); staff would have to delete rows by hand. |
-| Retention | Rate-limit rows of past windows are deleted when the same key comes back (`security.py`); demo reset wipes demo data. | No time limit on bookings, waitlist, outbox or audit log (S23). A suggested rule: delete or anonymise diner data some months after the visit, and outbox bodies once sent. The team has not decided a period. |
+| Retention | Rate-limit rows of past windows are deleted when the same key comes back (`security.py`); demo reset wipes demo data; a finished outbox row loses its personal links at once and its words and invite 30 days after `sent_at`, or after `next_attempt_at` when never sent (`mail/outbox.py`, S9). | No time limit on bookings, waitlist, the rest of each outbox row (subject, recipient) or the audit log (S23). A suggested rule: delete or anonymise diner data some months after the visit. The team has not decided a period. |
 | Security of processing (Art. 32) | Sections 3 and 5. | Not tested on a real deployment. |
 
 ## 7. Commands run on 2026-11-10
@@ -158,6 +160,21 @@ From `backend/`:
 | `../.venv/bin/ruff check .` | `All checks passed!` |
 | `../.venv/bin/ruff format --check .` | `135 files already formatted` |
 
+S8 and S9, later the same day (first the two fixes, then a second review that
+attacked them):
+
+| Command | Real output |
+|---|---|
+| `... pytest tests/test_booking_cap.py` with its first 7 tests, on the code before the S8 fix (fixer's run) | `2 failed, 5 passed, 1 warning in 1.48s` (the email cap and the address cap) |
+| the 9 S9 tests with the new behaviour switched off in a temporary copy (fixer's run) | `9 failed, 1 warning in 1.21s` |
+| second review: 6 attack tests added to `tests/test_booking_cap.py`, run on the first S8 fix | `2 failed, 11 passed, 1 warning in 3.89s` (`lia.moreno+again@example.com` got 201; the 11th booking from `2001:db8:1:2:ffff::1` after 10 from the same /64 got 201) |
+| second review: 4 attack tests added to `tests/test_outbox_retention.py`, run on the first S9 fix | `1 failed, 12 passed, 1 warning in 1.22s` (the tail of a token folded across two invite lines stayed); with only the `last_error` part of the fix taken out again, the same test gave `1 failed` with the token in `last_error` |
+| `... pytest tests/test_booking_cap.py`, after both fixes | `13 passed, 1 warning in 2.65s` |
+| `... pytest tests/test_outbox_retention.py`, after both fixes | `13 passed, 1 warning in 1.07s` |
+| `../.venv/bin/python -m pytest -p no:cacheprovider` (whole suite, SQLite) | `469 passed, 1 warning in 31.52s` |
+| the same with `SEATPLAN_TEST_POSTGRES` on a throwaway local Postgres 16.2 cluster (deleted afterwards) | `468 passed, 1 skipped, 1 warning in 62.08s (0:01:02)` |
+| `../.venv/bin/ruff check .`; `../.venv/bin/ruff format --check .` | `All checks passed!`; `138 files already formatted` |
+
 From the repository root and `frontend/`:
 
 | Command | Real output |
@@ -166,14 +183,16 @@ From the repository root and `frontend/`:
 | `.venv/bin/pip-audit` (every package in the virtual environment, dev tools included) | `No known vulnerabilities found` |
 | `npm audit` (all frontend packages) | `found 0 vulnerabilities` |
 | `npm audit --omit=dev` | `found 0 vulnerabilities` |
+| after S8 and S9: `.venv/bin/pip-audit -r requirements.txt --no-deps --disable-pip`; `npm audit --audit-level=high` | `No known vulnerabilities found`; `found 0 vulnerabilities` |
 
 ## 8. Not tested
 
 - A real Vercel deployment: not done yet. We rely on Vercel's documentation
   for `X-Forwarded-For`; whether Vercel adds HSTS by itself, its request size
   limit and whether it buffers the live stream were not checked.
-- Postgres: this audit ran on SQLite only (the opt-in Postgres test run was
-  not repeated today).
+- Postgres: the first audit ran on SQLite only. After the S8 and S9 fixes
+  the whole suite, including their tests, also passed on a local Postgres 16.2
+  (section 7); the probes of section 1 were not repeated there.
 - Real email through Resend: not done yet, so SPF, DKIM and DMARC of a
   sending domain were not checked.
 - The frontend code was not audited line by line. We only searched it for

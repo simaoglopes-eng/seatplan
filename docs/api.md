@@ -97,7 +97,7 @@ Every error has the same shape:
 | `hold_expired` | 409 | The 5-minute hold ran out before confirming |
 | `deadline_passed` | 409 | The event's change deadline has passed |
 | `conflict` | 409 | Any other clash, including "please try again" after a Postgres deadlock |
-| `rate_limited` | 429 | Too many calls in this minute, or too many live streams |
+| `rate_limited` | 429 | Too many calls in this minute, too many live streams, too many held tables, or a booking cap (4 upcoming bookings per mailbox, 10 booking attempts per address and day at one restaurant) |
 | `internal` | 500 | A bug; the message never shows a stack trace |
 
 The frontend adds two of its own codes that never come from the server:

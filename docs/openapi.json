@@ -2806,7 +2806,7 @@
           "restaurants"
         ],
         "summary": "Book",
-        "description": "Turn a hold into a confirmed booking and queue the confirmation email.",
+        "description": "Turn a hold into a confirmed booking and queue the confirmation email.\n\n429 `rate_limited` when the booking caps say no: 4 upcoming bookings per\nmailbox, 10 attempts per client address per UTC day (booking_caps.py).",
         "operationId": "book_api_r__venue_public_id__bookings_post",
         "parameters": [
           {
@@ -3839,7 +3839,7 @@
           "emails"
         ],
         "summary": "Email Log",
-        "description": "The newest outbox rows, with recipients partly hidden. Organisers only.\n\nThe log is for checking that emails went out, not for collecting\naddresses, so organisers see just enough to recognise a guest.",
+        "description": "The newest outbox rows, with recipients partly hidden. Organisers only.\n\nThe log is for checking that emails went out, not for collecting\naddresses, so organisers see just enough to recognise a guest. Subject and\nerror pass through redact_links(): a queued row still holds the raw link\nin its body, and a provider error may quote it (S9).",
         "operationId": "email_log_api_emails_log_get",
         "parameters": [
           {

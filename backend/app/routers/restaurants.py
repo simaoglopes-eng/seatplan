@@ -26,6 +26,7 @@ from app.restaurant_service.availability import (
     day_summary,
     max_party,
 )
+from app.restaurant_service.booking_caps import check_booking_caps
 from app.restaurant_service.booking_rows import describe
 from app.restaurant_service.changes import record_change
 from app.restaurant_service.clock import time_of_slot
@@ -39,6 +40,7 @@ router = APIRouter(tags=["restaurants"])
 # Requests per minute per client address. Reads are cheap, writes less so.
 # Holds are also capped by how many a client has live (see holding.py), so
 # HOLD_LIMIT only has to leave room for a diner clicking through tables.
+# Bookings are also capped per email and per address per day (booking_caps.py).
 READ_LIMIT = 120
 HOLD_LIMIT = 20
 BOOK_LIMIT = 30
@@ -197,10 +199,17 @@ def release_hold(
 def book(
     venue_public_id: str, body: BookingIn, request: Request, session: db.SessionDep
 ) -> dict[str, Any] | JSONResponse:
-    """Turn a hold into a confirmed booking and queue the confirmation email."""
+    """Turn a hold into a confirmed booking and queue the confirmation email.
+
+    429 `rate_limited` when the booking caps say no: 4 upcoming bookings per
+    mailbox, 10 attempts per client address per UTC day (booking_caps.py).
+    """
     _limit(session, request, "book", BOOK_LIMIT)
     venue = load_restaurant(session, venue_public_id)
     held = holding.read_hold(session, venue, body.hold_id)
+    # After read_hold, so a dead or made-up hold_id never counts against the
+    # daily cap; before confirm_booking, because the cap commits its count.
+    check_booking_caps(session, venue, str(body.email), client_ip(request))
     needs = PartyNeeds(body.party, body.needs_accessible, body.high_chairs)
     contact = diner_flow.Contact(body.name, str(body.email), body.phone, body.notes)
     try:
