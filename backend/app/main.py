@@ -99,6 +99,16 @@ async def _database_error(request: Request, exc: Exception) -> JSONResponse:
     return await _unexpected_error(request, exc)
 
 
+async def _out_of_range(_request: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, OverflowError)
+    # Dates are accepted from year 1 to 9999. Near those ends, adding a day
+    # (a stay that ends at midnight) or looking 90 days back leaves the
+    # calendar Python can represent. That is a request we cannot serve, not a
+    # crash: answer 422 instead of 500.
+    message = "This date is too far in the past or the future."
+    return JSONResponse(error_body("validation", message), status_code=422)
+
+
 async def _unexpected_error(_request: Request, _exc: Exception) -> JSONResponse:
     # Never show a stack trace to the browser; the server log still has it.
     return JSONResponse(error_body("internal", "Something went wrong."), status_code=500)
@@ -151,6 +161,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_exception_handler(StarletteHTTPException, _http_error)
     app.add_exception_handler(RequestValidationError, _validation_error)
     app.add_exception_handler(OperationalError, _database_error)
+    app.add_exception_handler(OverflowError, _out_of_range)
     app.add_exception_handler(Exception, _unexpected_error)
     app.middleware("http")(_add_security_headers)
     # Only our own frontend may call the API from a browser.

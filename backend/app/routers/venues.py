@@ -1,9 +1,10 @@
 """Venues and their floor plans: list, create, read, and save a full layout."""
 
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -22,6 +23,24 @@ Coordinate = Field(ge=-10000, le=10000)
 Size = Field(gt=0, le=10000)
 
 
+def known_time_zone(name: str) -> str:
+    """Refuse a time zone Python does not know, such as "Not/AZone".
+
+    Every date shown to diners and guests goes through ZoneInfo(venue.timezone).
+    An unknown name would make each of those pages fail with a 500 later, so
+    it is refused here, once, with a 422.
+    """
+    try:
+        ZoneInfo(name)
+    # A folder name such as "Europe" raises IsADirectoryError, an OSError.
+    except (ZoneInfoNotFoundError, ValueError, OSError):
+        raise ValueError("Unknown time zone. Use a name such as Europe/Lisbon.") from None
+    return name
+
+
+TimeZoneName = Annotated[str, AfterValidator(known_time_zone)]
+
+
 class Strict(BaseModel):
     # Unknown fields are rejected (contract section 7).
     model_config = ConfigDict(extra="forbid")
@@ -30,7 +49,7 @@ class Strict(BaseModel):
 class VenueIn(Strict):
     kind: Literal["event", "restaurant"]
     name: PlainText = Field(min_length=1, max_length=120)
-    timezone: str = Field(default="Europe/Lisbon", min_length=1, max_length=64)
+    timezone: TimeZoneName = Field(default="Europe/Lisbon", min_length=1, max_length=64)
     width: float = Size
     height: float = Size
 

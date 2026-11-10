@@ -88,6 +88,11 @@ describe("format helpers", () => {
     expect(formatDateTime(midnight)).not.toMatch(/AM|PM/);
   });
 
+  it("writes dates in British English whatever the browser's language, to match the page", () => {
+    const text = formatDateTime(new Date(2026, 2, 14, 19, 30).toISOString());
+    expect(text).toBe("Saturday, 14 March 2026 at 19:30");
+  });
+
   it("writes a midnight deadline as the last minute of the day before", () => {
     const text = formatDeadline(new Date(2027, 5, 6, 0, 0).toISOString());
     expect(text).toContain("23:59");

@@ -4,13 +4,16 @@ import type { MapSeat, MapTable } from "../../api/types";
 import type { PrivacyMode, ScoreBreakdown } from "../../api/events";
 import { tableName } from "../../seatmap/describe";
 
+/** The page is in English (index.html), so dates are too, as on the restaurant pages. */
+const DATE_LOCALE = "en-GB";
+
 /**
- * "Saturday 14 March 2026, 19:30". Uses the browser's own language and time
- * zone, but always a 24-hour clock: "12:00 AM" leaves people unsure which
- * midnight is meant.
+ * "Saturday, 14 March 2026 at 19:30". British English, to match the page's
+ * lang="en" (WCAG 3.1.2), in the browser's own time zone, and always a 24-hour
+ * clock: "12:00 AM" leaves people unsure which midnight is meant.
  */
 export function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
+  return new Date(iso).toLocaleString(DATE_LOCALE, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -32,7 +35,7 @@ export function formatDeadline(iso: string): string {
   const date = new Date(iso);
   const atMidnight = date.getHours() === 0 && date.getMinutes() === 0;
   const shown = atMidnight ? new Date(date.getTime() - ONE_MINUTE_MS) : date;
-  return shown.toLocaleString(undefined, {
+  return shown.toLocaleString(DATE_LOCALE, {
     weekday: "long",
     day: "numeric",
     month: "long",

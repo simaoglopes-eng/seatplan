@@ -26,7 +26,7 @@ minimal change. Human choices and hard rules are never violated.
 | Hosting | One Vercel project: static frontend + `api/index.py` Python function | One URL, one deploy, continuous deployment from `main` |
 | Email | Outbox table + provider adapter (Resend over HTTPS with `httpx`; console provider locally) | Idempotent, retried, logged; no vendor SDK |
 | Exact solver | OR-tools CP-SAT when importable, pure-Python branch and bound otherwise | Exact check must also run where OR-tools cannot be installed |
-| Tests | pytest, hypothesis, FastAPI TestClient; vitest for frontend units; end to end through the real HTTP API in `backend/tests/test_e2e_slice.py` | Standard tools. No browser test suite: the browser checks were done by hand (see README) |
+| Tests | pytest, hypothesis, FastAPI TestClient; vitest for frontend units; end to end through the real HTTP API in `backend/tests/test_e2e_slice.py`; browser tests with Playwright and `@axe-core/playwright` in `frontend/e2e/` (headless Chromium) | Standard tools. The browser tests drive the real built app against a real backend on a temporary SQLite database |
 
 Python standard library is preferred over new dependencies (`secrets`, `hmac`,
 `hashlib.scrypt`, `csv`, `random.Random(seed)`). Backend runtime dependencies are
@@ -91,7 +91,14 @@ seatplan/
       pages/restaurant/        Diner booking flow, staff floor
       pages/editor/            Floor-plan editor
       pages/Home.tsx  pages/Login.tsx
-  docs/                        Contract, decisions log, optimiser, email, user guides, UX notes
+    e2e/                       Playwright browser tests and their two test servers
+  docs/                        Contract, decisions log, optimiser, email, user guides, UX notes,
+                               product spec, personas, accessibility, architecture, data model,
+                               API (api.md, openapi.json), runbook, deployment, security,
+                               test report, risk log, changelog, FAQ, contributing
+    usability/                 Usability test kit (script, consent, SUS, results template)
+    report/                    Project report (Markdown and PDF)
+    team/                      Team pack: tasks, issues, walkthrough questions, demo script
   .github/workflows/           CI and the email cron
 ```
 
@@ -187,6 +194,14 @@ Events, attendee (`/a/{token}`)
 - `POST /a/{token}/hold` `{seat_id}` -> `{expires_at}` or 409; `POST /a/{token}/confirm` `{seat_id}`; `DELETE /a/{token}/seat`
 
 Seat states returned to the map: `free`, `held`, `taken`, `mine`, `friend`, `blocked`, plus the flag `accessible`.
+
+Seat map payload (every map endpoint: `GET /a/{token}`, `GET /events/{eid}`,
+`GET /r/{vid}/map`, `GET /staff/{vid}/floor`): `{width, height, zones, tables,
+seats}` with `MapTable {id, label, shape, x, y, w, h, rotation, zone_id?,
+state?, accessible?}` and `MapSeat {id, table_id, label, x, y, state,
+accessible, occupant?}`. `occupant` is a name already filtered by
+`core/privacy.py`. Endpoints may add fields of their own (decisions log).
+Types: `frontend/src/api/types.ts`.
 
 Restaurants, diner (`/r/{venue_public_id}`)
 - `GET /r/{vid}` restaurant, zones, schedule summary, `max_party` (the largest party one table or allowed combination and the covers cap can seat, at most 30; a bigger party gets 422 on slots, map, hold, change and waitlist)
@@ -299,7 +314,8 @@ likely walkthrough questions with answers.
 email; everything else is logged as `skipped`), `PUBLIC_BASE_URL`,
 `DEMO_ORGANISER_PASSWORD`, `DEMO_STAFF_PASSWORD` (demo accounts; the public
 documented defaults apply only on local SQLite with `DEMO_MODE=1`, never on
-Postgres). `SECRET_KEY` is required whenever `DATABASE_URL` is Postgres.
+Postgres). `SECRET_KEY` is required whenever `DATABASE_URL` is Postgres, with
+at least 32 characters.
 
 The seed command is `cd backend && python -m app.seed.run` (the backend
 package is imported as `app` everywhere: tests, seed and `api/index.py`).

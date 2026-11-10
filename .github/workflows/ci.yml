@@ -72,6 +72,40 @@ jobs:
       - name: Dependency audit (fails on high or critical)
         run: npm audit --audit-level=high
 
+  e2e:
+    # Browser tests: the real backend on a fresh temporary SQLite database with
+    # the demo data, the freshly built frontend, and headless Chromium
+    # (frontend/playwright.config.ts starts and stops both servers).
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            backend/requirements-dev.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install backend dependencies (uvicorn comes from requirements-dev)
+        run: pip install -r ../requirements.txt -r ../backend/requirements-dev.txt
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Install headless Chromium and its system libraries
+        run: npx playwright install --with-deps --only-shell chromium
+      - name: Browser tests (Playwright)
+        env:
+          E2E_PYTHON: python
+        run: npm run e2e
+
   secrets:
     runs-on: ubuntu-latest
     timeout-minutes: 10

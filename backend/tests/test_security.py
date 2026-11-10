@@ -78,7 +78,7 @@ def test_token_signed_with_another_key_is_rejected(
     from app.config import get_settings
 
     token = create_session_token(42)
-    monkeypatch.setenv("SECRET_KEY", "a-completely-different-key")
+    monkeypatch.setenv("SECRET_KEY", "a-completely-different-key-of-40-characters")
     get_settings.cache_clear()
     assert verify_session_token(token) is None
 

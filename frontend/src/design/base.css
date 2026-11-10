@@ -10,6 +10,10 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* The header sticks to the top and the hold bars stick to the bottom. This
+     space keeps a focused control from scrolling under them (WCAG 2.4.11). */
+  scroll-padding-top: var(--space-8);
+  scroll-padding-bottom: var(--space-8);
 }
 
 body {

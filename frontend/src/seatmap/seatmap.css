@@ -184,7 +184,9 @@
   stroke: var(--seat-highlight);
   stroke-width: 2.5;
   stroke-dasharray: 4 3;
-  animation: seat-breathe var(--dur-pulse) var(--ease-in-out) infinite alternate;
+  /* Two runs (fade out, fade back) take 3.2 s and end fully visible. A halo
+     that moved without end would break WCAG 2.2.2 (pause, stop, hide). */
+  animation: seat-breathe var(--dur-pulse) var(--ease-in-out) 2 alternate;
 }
 
 /* Second highlight (for example "changed by preview"): a square, so it differs

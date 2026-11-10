@@ -138,12 +138,34 @@ CurrentOrganiser = Annotated[Organiser, Depends(require_organiser)]
 
 
 def client_ip(request: Request) -> str:
-    """The caller's address. On Vercel the platform sets X-Forwarded-For itself,
-    so its first entry is the real client; locally we use the socket address."""
-    forwarded = request.headers.get("x-forwarded-for", "")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    """The caller's address, used as the key of every per-address rate limit.
+
+    Vercel overwrites X-Forwarded-For with the real client address (its
+    request-headers documentation says so), so there we read that header.
+    Anywhere else the header is whatever the caller typed: trusting it would
+    let one person claim a new address on every request and never hit a
+    limit. So off Vercel we use the socket address only.
+    """
+    if get_settings().trust_forwarded_for:
+        forwarded = request.headers.get("x-forwarded-for", "")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
+
+
+def _stored_key(key: str) -> str:
+    """Turn "login:203.0.113.5" into "login:<keyed hash>".
+
+    Callers name the limit, then who is counted (usually an IP address). An IP
+    address is personal data, so the table keeps only a keyed hash of that
+    part: enough to count the same caller again, useless to anyone reading
+    the table. The key is SECRET_KEY, because a plain SHA-256 of an IPv4
+    address can be reversed by trying all 4 billion of them.
+    """
+    name, _, who = key.partition(":")
+    secret = get_settings().secret_key.encode("utf-8")
+    digest = hmac.new(secret, who.encode("utf-8"), hashlib.sha256).hexdigest()[:32]
+    return f"{name}:{digest}"
 
 
 def rate_limit(session: Session, key: str, limit: int, window_s: int) -> None:
@@ -159,6 +181,7 @@ def rate_limit(session: Session, key: str, limit: int, window_s: int) -> None:
     to twice `limit` can pass in a short burst. Enough to slow down password
     guessing; not a precise quota.
     """
+    key = _stored_key(key)
     window_start = int(time.time()) // window_s * window_s
     # Old windows are never needed again; removing them keeps the table small.
     session.execute(

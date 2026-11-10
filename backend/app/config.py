@@ -17,6 +17,8 @@ APP_VERSION = "0.1.0"
 # from the repository root without any setup.
 _BACKEND_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DATABASE_URL = f"sqlite:///{_BACKEND_DIR / 'seatplan.db'}"
+# secrets.token_hex(32) gives 64 characters; 32 is the least we accept.
+MIN_SECRET_KEY_LENGTH = 32
 
 
 @dataclass(frozen=True)
@@ -32,6 +34,8 @@ class Settings:
     email_from: str
     email_allowlist: tuple[str, ...]
     public_base_url: str
+    # True only on Vercel, which writes X-Forwarded-For itself (see security.client_ip).
+    trust_forwarded_for: bool = False
 
     @property
     def is_postgres(self) -> bool:
@@ -100,10 +104,15 @@ def _choose_secret_key(is_postgres: bool) -> str:
     instances.
     """
     key = os.environ.get("SECRET_KEY", "").strip()
+    if is_postgres and len(key) < MIN_SECRET_KEY_LENGTH:
+        # A short key such as "secret" can be guessed offline from one signed
+        # session token, and then anyone could sign in as anyone.
+        raise RuntimeError(
+            f"SECRET_KEY is missing or shorter than {MIN_SECRET_KEY_LENGTH} characters. "
+            "Set a long random one before running against Postgres."
+        )
     if key:
         return key
-    if is_postgres:
-        raise RuntimeError("SECRET_KEY is missing. Set it before running against Postgres.")
     return secrets.token_hex(32)
 
 
@@ -132,6 +141,8 @@ def load_settings() -> Settings:
         email_from=os.environ.get("EMAIL_FROM", "SeatPlan <noreply@example.com>"),
         email_allowlist=_read_list("EMAIL_ALLOWLIST"),
         public_base_url=os.environ.get("PUBLIC_BASE_URL", "http://localhost:5173"),
+        # Vercel sets VERCEL=1 in every function it runs.
+        trust_forwarded_for=bool(os.environ.get("VERCEL")),
     )
 
 

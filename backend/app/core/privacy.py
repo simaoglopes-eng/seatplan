@@ -27,3 +27,14 @@ def display_name(name: str, mode: str, wants_anonymous: bool) -> str:
     if len(parts) == 1:
         return parts[0]
     return f"{parts[0]} {parts[-1][0]}."
+
+
+def mask_email(address: str) -> str:
+    """Hide most of an address: ana.silva@example.com becomes an***@example.com.
+
+    Used wherever an address is shown or logged only so a person can recognise
+    it (the email log, the console provider's log line), never to contact it.
+    """
+    local, _, domain = address.partition("@")
+    visible = local[:2] if len(local) > 2 else local[:1]
+    return f"{visible}***@{domain}"

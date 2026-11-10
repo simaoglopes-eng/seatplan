@@ -31,7 +31,7 @@ describe("Home demo links", () => {
 
   it("describes each link in words instead of printing its long secret token", async () => {
     // A real token is 43 characters with no place to break: printed, it pushed the page sideways on a phone.
-    const token = "pG6SL15ZXUgKWAZpsa0djyvw70bNZJiUmTfzWzMVSx4";
+    const token = "x".repeat(43);
     const links = { wedding_guest_choosing: `/a/${token}`, staff_floor: "/staff/demo-venue" };
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ links }), { status: 200 })));
     renderHome();

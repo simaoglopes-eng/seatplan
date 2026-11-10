@@ -273,7 +273,9 @@ time zone; `expires_at` is an ISO date-time in UTC.
     "friend"), so on the staff floor the screen reader hears those words for
     reserved and finishing tables. The table board next to the map carries the
     correct staff words for every table. A `describe` override on `SeatMap` is
-    requested from the seat-map owner.
+    requested from the seat-map owner. (Done later: `SeatMap` takes a
+    `describe` prop, and `StaffFloor.tsx` and `StepTable.tsx` pass their own
+    words; see the "documentation and verification" section.)
 
 ## 2026-11-10: restaurants vertical API
 
@@ -299,7 +301,9 @@ time zone; `expires_at` is an ISO date-time in UTC.
 6. **Covers cap = guests arriving at one seating time** (kitchen pacing), not
    guests present. Breaking it is 409 `conflict`. The cap is checked by the
    application, so two simultaneous bookings could exceed it by one party;
-   tables themselves can never be double booked.
+   tables themselves can never be double booked. (Superseded: the check now
+   locks the service period row first, so this can no longer happen; see the
+   "documentation and verification" section.)
 7. **Slots answer** `{date, closed, reason, slots: [{time, service, status,
    reason}]}`; past times are listed as `full` with reason `past`.
 8. **Map table states** add `too_small` (not a seat state); in `seats[]` it is
@@ -436,7 +440,8 @@ comparing the real JSON with the TypeScript types.
    GDPR erase, which also wipes the reminder's words and address).
 14. **Contract corrections:** no Playwright suite and no `report/` folder
     exist. End to end is `backend/tests/test_e2e_slice.py`; the browser check
-    was done by hand. `report/**` was removed from `vercel.json`.
+    was done by hand. `report/**` was removed from `vercel.json`. (Reversed
+    later for Playwright: see the "documentation and verification" section.)
 15. **CI now runs `ruff format --check .`**, so the README's "same checks" is
     true.
 
@@ -489,4 +494,50 @@ comparing the real JSON with the TypeScript types.
     stream first and polls only when the stream fails or is refused.
 16. **Opt-in Postgres test run:** `SEATPLAN_TEST_POSTGRES` in
     `backend/tests/conftest.py` gives each test its own Postgres database.
+
+## 2026-11-10: documentation and verification (security fixes, browser tests)
+
+1. **Security review fixes** (full table in [`security.md`](security.md)):
+   S1, `X-Forwarded-For` is trusted only on Vercel (`config.py`
+   `trust_forwarded_for`, true only when `VERCEL` is set; `security.py`
+   `client_ip`), because off Vercel any caller could type a new address and
+   dodge every rate limit. S2, an unknown venue time zone is refused with 422
+   (`routers/venues.py`). S3, `OverflowError` (dates such as 9999-12-31) is a
+   422, not a 500 (`main.py`). S4, the console email provider masks
+   addresses (`core/privacy.py` `mask_email`). S5, on Postgres a `SECRET_KEY`
+   shorter than 32 characters stops the app. S6, `Strict-Transport-Security`
+   in `vercel.json`. S7, `rate_limits` stores a keyed hash instead of the raw
+   IP address (`security.py` `_stored_key`). Tests: `tests/test_redteam.py`.
+   Still open (team decision needed): S8, one client can fill a restaurant
+   with bookings; S9, the outbox keeps raw personal links.
+2. **Browser test suite (reverses platform item 14).** Playwright
+   (`@playwright/test` 1.64.1) and `@axe-core/playwright` 4.14.0 in
+   `frontend/e2e/`, run with `npm run e2e` and by a new `e2e` job in
+   `ci.yml`. `package.json` pins `playwright-core` to 1.64.1 with
+   `overrides`: without it the axe package pulled in 1.65.0 and TypeScript
+   refused the two different `Page` types. A small Node server
+   (`e2e/servers/frontend.mjs`) serves the build instead of `vite preview`,
+   whose `/api` proxy always points at port 8000; it also sends the
+   `vercel.json` headers. The tests use fixed ports 8765 (backend) and 4317
+   (frontend), changeable with `E2E_API_PORT` and `E2E_WEB_PORT`.
+3. **Covers cap under concurrency.** `check_covers_cap` first locks the
+   service period row (`restaurant_service/availability.py`, `_lock_period`),
+   so two confirms at the same moment are checked one after the other. Test:
+   `test_covers_cap_holds_under_concurrent_confirms`. Restaurants vertical API
+   item 6 no longer applies.
+4. **Staff map words.** `SeatMap` takes a `describe` prop; the staff floor
+   and the diner's table step pass their own wording (restaurant screens
+   item 13 is done).
+5. **Seat map payload** (frontend foundation item 1) is now written in
+   contract section 5, because every map endpoint returns it.
+6. **Accessibility fixes from `accessibility.md`:** the recommended-seat halo
+   breathes twice and stops (WCAG 2.2.2); `html` has `scroll-padding-top` and
+   `scroll-padding-bottom` so focus is not hidden under the sticky header and
+   hold bars (2.4.11); event dates use `"en-GB"` like the restaurant pages
+   (3.1.2). Not done: a visible "live" or "reconnecting" sign.
+7. **New documents** in `docs/`: product spec, personas, accessibility,
+   usability kit, architecture, data model, API and `openapi.json`, runbook,
+   deployment, contributing, FAQ, changelog, risk log, security, test report,
+   the project report (`docs/report/`) and the team pack (`docs/team/`).
+   README section "Documentation" lists them all.
 

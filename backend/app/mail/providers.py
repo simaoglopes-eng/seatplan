@@ -17,6 +17,7 @@ from typing import Protocol
 import httpx
 
 from app.config import APP_VERSION, Settings
+from app.core.privacy import mask_email
 
 logger = logging.getLogger("seatplan.mail")
 
@@ -49,14 +50,14 @@ class ConsoleProvider:
     """Writes a one-line note to the log instead of sending anything.
 
     The body is left out on purpose: it holds a secret manage link, and server
-    logs are read by more people than the guest. The full body stays in the
-    outbox table.
+    logs are read by more people than the guest. The address is masked for
+    the same reason (data minimisation). The full email stays in the outbox.
     """
 
     def send(self, message: OutgoingEmail) -> str:
         logger.info(
             "EMAIL (console, not sent) to=%s subject=%r has_invite=%s",
-            message.to_email,
+            mask_email(message.to_email),
             message.subject,
             message.ics is not None,
         )

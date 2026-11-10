@@ -75,5 +75,7 @@ def test_console_provider_logs_without_the_body(caplog: pytest.LogCaptureFixture
     secret_body = OutgoingEmail("ana@example.com", "Hi", "secret-link-xyz", "<p>x</p>", None, "k")
     message_id = ConsoleProvider().send(secret_body)
     assert message_id.startswith("console-")
-    assert "ana@example.com" in caplog.text
+    # Masked, so server logs never hold full addresses (docs/security.md, S4).
+    assert "an***@example.com" in caplog.text
+    assert "ana@example.com" not in caplog.text
     assert "secret-link-xyz" not in caplog.text

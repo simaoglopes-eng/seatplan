@@ -88,6 +88,7 @@ nobody can.
 | Frontend unit tests | `cd frontend && npm test` |
 | Frontend build | `cd frontend && npm run build` |
 | Colour contrast | `cd frontend && npm run contrast` |
+| Browser tests (Playwright, axe) | `cd frontend && npx playwright install chromium` once, then `npm run e2e` |
 | Python dependency audit | `.venv/bin/pip-audit -r requirements.txt` |
 | npm dependency audit | `cd frontend && npm audit --audit-level=high` |
 
@@ -99,10 +100,16 @@ allowed to create databases. One test, about table creation on local SQLite,
 is skipped there. `tests/test_e2e_slice.py` walks both verticals
 through the real HTTP API, starting from `POST /api/demo/reset`.
 
-The same checks (all rows above), plus a gitleaks secret scan, run in GitHub
-Actions on every pull request and every push to `main`
-(`.github/workflows/ci.yml`). There is no browser test suite: the browser check
-in the test report below was done by hand.
+`npm run e2e` starts its own backend on a new temporary SQLite database with
+the demo data (port 8765) and serves a fresh build with the `vercel.json`
+headers (port 4317), then drives headless Chromium through the attendee,
+organiser, diner and staff flows and runs an axe-core accessibility scan on
+six pages (`frontend/e2e/READ_ME_FIRST.md`). Inside a sandboxed tool on a Mac,
+Chromium may refuse to start; run it from a normal terminal.
+
+The same checks (all rows above, the Postgres run excepted), plus a gitleaks
+secret scan, run in GitHub Actions on every pull request and every push to
+`main` (`.github/workflows/ci.yml`). Full details: [`docs/test-report.md`](docs/test-report.md).
 
 ## Environment variables
 
@@ -113,7 +120,7 @@ locally `export` the ones you need before starting it.
 | Variable | Meaning | Local default |
 |---|---|---|
 | `DATABASE_URL` | Postgres URL in production; empty means `backend/seatplan.db` | empty |
-| `SECRET_KEY` | Signs login sessions. Required whenever `DATABASE_URL` is Postgres (the app refuses to start without it, demo mode or not) | random per process |
+| `SECRET_KEY` | Signs login sessions. Required whenever `DATABASE_URL` is Postgres, with at least 32 characters (the app refuses to start otherwise, demo mode or not) | random per process |
 | `FRONTEND_ORIGIN` | The only browser origin allowed by CORS | `http://localhost:5173` |
 | `PUBLIC_BASE_URL` | Base of the links written in emails | `http://localhost:5173` |
 | `DEMO_MODE` | `1` turns on `/api/demo/*` (demo links and reset) | off |
@@ -133,6 +140,9 @@ Resend only sends from a domain you own and have verified; without one the demo
 stays on the console provider. Details: [`docs/email.md`](docs/email.md).
 
 ## Deploying to Vercel
+
+**Not done yet:** SeatPlan has never been deployed. The step-by-step plan,
+with a status line per step, is [`docs/deployment.md`](docs/deployment.md).
 
 1. Create the Postgres database and set the environment variables above in the
    Vercel project (`DATABASE_URL`, `SECRET_KEY`, `FRONTEND_ORIGIN`,
@@ -159,8 +169,9 @@ stays on the console provider. Details: [`docs/email.md`](docs/email.md).
 `vercel.json` adds security headers to every page, including the static
 frontend: `X-Frame-Options: DENY` and a Content-Security-Policy with
 `frame-ancestors 'none'` (no framing), `Referrer-Policy: no-referrer` (the
-personal `/e/<token>` and `/b/<token>` links never leak to other sites) and
-`X-Content-Type-Options: nosniff`. The API sets its own headers too.
+personal `/e/<token>` and `/b/<token>` links never leak to other sites),
+`Strict-Transport-Security` and `X-Content-Type-Options: nosniff`. The API
+sets its own headers too.
 
 Live updates: pages open the 25-second event stream
 (`GET /api/live/{scope}/stream`) and reconnect when it ends. When the stream
@@ -194,45 +205,79 @@ polling.
 | `frontend/src/pages/restaurant/` | Diner booking, manage-or-cancel page, staff floor |
 | `frontend/src/pages/editor/` | Floor-plan editor for both kinds of venue |
 | `frontend/scripts/` | Colour contrast checker |
-| `docs/` | Contract, decisions log, optimiser notes, email design, user guides, UX notes |
+| `frontend/e2e/` | Playwright browser tests and the two small servers they start |
+| `docs/` | Contract, decisions log and every other document (see "Documentation" below) |
+| `docs/usability/` | Usability test kit: script, consent form, observer sheet, SUS, empty results template |
+| `docs/report/` | Project report (Markdown and PDF) |
+| `docs/team/` | Team pack: tasks, issues, walkthrough questions, demo script, self-assessment, AI use |
 | `.github/workflows/` | CI (`ci.yml`) and the email cron (`email-cron.yml`) |
 
 Each backend package (`backend/app` and every folder in it) has a
 `READ_ME_FIRST.md` with the key functions, the data flow and likely walkthrough
 questions. On the frontend there is one in `frontend/` and one in each of
 `src/api/`, `src/seatmap/`, `src/design/`, `src/pages/events/`,
-`src/pages/restaurant/` and `src/pages/editor/`.
+`src/pages/restaurant/`, `src/pages/editor/` and `e2e/`.
+
+## Documentation
+
+| Document | What it answers |
+|---|---|
+| [`docs/CONTRACT.md`](docs/CONTRACT.md) | The design agreement: stack, layout, data model, HTTP API, optimiser interfaces, security rules |
+| [`docs/decisions-log.md`](docs/decisions-log.md) | Every change to the contract, with its date and reason |
+| [`docs/product-spec.md`](docs/product-spec.md) | The problem, the users, scope and user stories with acceptance criteria |
+| [`docs/personas.md`](docs/personas.md) | Four assumption personas (not research) tied to real screens |
+| [`docs/architecture.md`](docs/architecture.md) | Diagrams: components, hold and confirm, live updates, email outbox |
+| [`docs/data-model.md`](docs/data-model.md) | The 24 tables and the constraints that stop double booking |
+| [`docs/api.md`](docs/api.md), [`docs/openapi.json`](docs/openapi.json) | The HTTP API, short and in full (exported from the app) |
+| [`docs/optimiser-events.md`](docs/optimiser-events.md), [`docs/optimiser-restaurant.md`](docs/optimiser-restaurant.md) | How the optimisers work and how close they get to the proven optimum |
+| [`docs/email.md`](docs/email.md) | The email outbox, templates, invites and providers |
+| [`docs/design-system.md`](docs/design-system.md), [`docs/ux-events.md`](docs/ux-events.md), [`docs/ux-restaurant.md`](docs/ux-restaurant.md) | Design tokens, seat states and the screen-by-screen UX notes |
+| [`docs/accessibility.md`](docs/accessibility.md) | Accessibility statement (no conformance claim), WCAG 2.2 A and AA review, heuristic review |
+| [`docs/usability/`](docs/usability/README.md) | Usability test kit; no session has been run yet |
+| User guides: [attendee](docs/user-guide-attendee.md), [organiser](docs/user-guide-organiser.md), [diner](docs/user-guide-diner.md), [staff](docs/user-guide-staff.md) | How to use each screen |
+| [`docs/security.md`](docs/security.md) | Threat model, findings (fixed and open), who may call each route |
+| [`docs/test-report.md`](docs/test-report.md) | Every test layer, how to run it and today's results |
+| [`docs/runbook.md`](docs/runbook.md) | Running locally, environment variables, common failures |
+| [`docs/deployment.md`](docs/deployment.md) | The Vercel, Neon and Resend plan (not done yet) |
+| [`docs/risk-log.md`](docs/risk-log.md) | What could go wrong and what we do about it |
+| [`docs/CHANGELOG.md`](docs/CHANGELOG.md), [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md), [`docs/FAQ.md`](docs/FAQ.md) | Versions, how to contribute, short answers |
+| [`docs/report/PROJECT_REPORT.md`](docs/report/PROJECT_REPORT.md) ([PDF](docs/report/PROJECT_REPORT.pdf)) | The project report |
+| [`docs/team/`](docs/team/tasks.md) | Who owns what, issues to open, walkthrough questions, demo script, revision plan, self-assessment, AI use |
 
 ## Test report
 
-Real output observed on 2026-11-10 (macOS, Python 3.12.13, Node 24.17.0).
+Real output observed on 2026-11-10 in the final verification (macOS, Python
+3.12.13, Node 24.17.0). More detail in [`docs/test-report.md`](docs/test-report.md).
 
 | Check | Result |
 |---|---|
 | `ruff check .` (backend) | `All checks passed!` |
-| `ruff format --check .` (backend) | `134 files already formatted` |
-| `pytest` (backend, 40 `test_*.py` files, SQLite) | `431 passed, 1 warning` |
-| `pytest` with `SEATPLAN_TEST_POSTGRES` (local Postgres 16.2) | `430 passed, 1 skipped, 1 warning` (the skipped test is the SQLite-only one) |
-| `pytest tests/test_e2e_slice.py` | `2 passed, 1 warning` (run 3 times, passed each time) |
-| `npm run typecheck` | no errors |
-| `npm test` (frontend) | `Test Files 15 passed (15)`, `Tests 132 passed (132)` |
-| `npm run build` | `✓ built in 146ms` |
+| `ruff format --check .` (backend) | `135 files already formatted` |
+| `pytest` (backend, 41 `test_*.py` files, SQLite) | `443 passed, 1 warning in 30.52s` |
+| `pytest tests/test_e2e_slice.py` | `2 passed, 1 warning in 1.47s` |
+| `npm run typecheck` | no errors (exit code 0) |
+| `npm test` (frontend) | `Test Files 15 passed (15)`, `Tests 133 passed (133)` |
+| `npm run build` (output sent to a temporary folder) | `✓ built in 158ms` |
 | `npm run contrast` | `86 checks, 0 failures.` |
+| `npm run e2e` (Playwright, headless Chromium, 1440x900 and 390x844 with touch), three runs | `12 passed (10.4s)`, `12 passed (10.5s)`, `12 passed (9.5s)` |
 | `npm audit --audit-level=high` | `found 0 vulnerabilities` |
 | `pip-audit -r requirements.txt --no-deps --disable-pip` | `No known vulnerabilities found` (direct dependencies only; the full run with transitive dependencies happens in CI) |
-| Headless Chromium, by hand (no script in the repository), at 390x844 and 1440x900, against the built app served with the `vercel.json` headers and a seeded SQLite backend | attendee to a confirmed seat (on the phone by tapping the map), organiser auto-fill preview, apply, undo and exact check, diner booking to the confirmation page, cancel through the manage link, staff walk-in: all finished, with no console errors, no failed requests, no Content-Security-Policy violation and no sideways scrolling |
+| `pytest` with `SEATPLAN_TEST_POSTGRES` (local Postgres 16.2) | `430 passed, 1 skipped, 1 warning`, from an earlier run on 2026-11-10 with the 431-test suite. Not repeated in the final verification: no Postgres server was available on this machine |
 
 The one pytest warning is Starlette asking for the `httpx2` package in its test
 client; it does not come from SeatPlan code.
 
-Also checked on that local Postgres 16.2 (not in CI): `app.seed.migrate` and
-`app.seed.run` on an empty database; eight `app.seed.migrate` runs started
-together on an empty database, three rounds, all succeeded, with a
-pooled-style URL carrying `supa=` and `pgbouncer=` options; two guests racing
-for one seat (one confirming, one holding) give 200 and a clean 409, where the
-old lock order gave a deadlock and a 500; four auto-fills at once save
-scenarios 1 to 4, never a duplicate number.
+Also checked earlier on 2026-11-10 on that local Postgres 16.2 (not in CI, not
+repeated in the final verification): `app.seed.migrate` and `app.seed.run` on
+an empty database; eight `app.seed.migrate` runs started together on an empty
+database, three rounds, all succeeded, with a pooled-style URL carrying
+`supa=` and `pgbouncer=` options; two guests racing for one seat (one
+confirming, one holding) give 200 and a clean 409, where the old lock order
+gave a deadlock and a 500; four auto-fills at once save scenarios 1 to 4,
+never a duplicate number.
 
-Not verified: a real Vercel deployment (including whether it buffers the live
-stream), real email delivery through Resend, the gitleaks scan (it runs only
-in CI), screen readers and real touch devices.
+Not verified: a real Vercel deployment (not done yet, including whether it
+buffers the live stream), real email delivery through Resend (not done yet),
+usability sessions with real people (not done yet), the gitleaks scan and the
+new `e2e` CI job (they run only on GitHub and have not run yet), screen readers
+and real touch devices.

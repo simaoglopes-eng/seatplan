@@ -144,7 +144,7 @@ Text needs 4.5:1 (1.4.3). Borders, focus rings, icons and seat shapes need 3:1
    - *hold* (a seat becomes `held`): a quick inhale, scale 1 to 0.82 to 1, `--dur-slow`, `--ease-out`.
    - *confirm* (a seat becomes `mine`): a small pop from 0.6 to 1, `--dur-slow`, `--ease-spring`.
    - *conflict* (the seat you selected was taken by someone else): a short head-shake, `--dur-slow`, `--ease-in-out`.
-   The recommended halo breathes slowly (`--dur-pulse`) to draw the eye.
+   The recommended halo breathes slowly (`--dur-pulse`), twice, to draw the eye, then stays still (WCAG 2.2.2).
 2. **Only when something changed.** The first render never animates; the
    map compares old and new states (`useSeatChanges.ts`) and animates only
    the seats that changed. The cue is cleared after 900 ms.

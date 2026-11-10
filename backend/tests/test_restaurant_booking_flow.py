@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from test_restaurant_helpers import Place, book, future_day, hold, hold_and_book, make_restaurant
 
+from app.config import get_settings
 from app.models import (
     AuditLog,
     Booking,
@@ -248,9 +249,13 @@ def test_one_client_can_hold_only_a_few_tables_per_date(
 
 
 def test_holds_never_block_more_than_half_the_tables(
-    client: TestClient, session: Session, organiser: Organiser
+    client: TestClient, session: Session, organiser: Organiser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Six tables: at most three may be held at once at any time, whoever holds them."""
+    # Different X-Forwarded-For values stand for different people only on
+    # Vercel, which writes that header itself (security.client_ip).
+    monkeypatch.setenv("VERCEL", "1")
+    get_settings.cache_clear()
     place = make_restaurant(session, organiser)
     day = future_day()
     for number, label in enumerate(("T1", "T2", "T4")):

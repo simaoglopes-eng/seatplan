@@ -15,6 +15,7 @@ from sqlalchemy import select
 from app import db
 from app.config import get_settings
 from app.core.errors import ApiError
+from app.core.privacy import mask_email
 from app.mail.outbox import process_due
 from app.mail.providers import provider_from_settings
 from app.models import EmailOutbox, utc_now
@@ -40,17 +41,6 @@ class EmailLogItem(BaseModel):
     next_attempt_at: datetime
     sent_at: datetime | None
     last_error: str | None
-
-
-def mask_email(address: str) -> str:
-    """Hide most of the address: ana.silva@example.com becomes an***@example.com.
-
-    The log is for checking that emails went out, not for collecting addresses,
-    so organisers see just enough to recognise a guest.
-    """
-    local, _, domain = address.partition("@")
-    visible = local[:2] if len(local) > 2 else local[:1]
-    return f"{visible}***@{domain}"
 
 
 def _check_cron_secret(given: str | None) -> None:
@@ -87,7 +77,11 @@ def email_log(
     status: Literal["queued", "sending", "sent", "failed", "skipped"] | None = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> list[EmailLogItem]:
-    """The newest outbox rows, with recipients partly hidden. Organisers only."""
+    """The newest outbox rows, with recipients partly hidden. Organisers only.
+
+    The log is for checking that emails went out, not for collecting
+    addresses, so organisers see just enough to recognise a guest.
+    """
     query = select(EmailOutbox)
     if status is not None:
         query = query.where(EmailOutbox.status == status)
