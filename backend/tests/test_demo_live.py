@@ -169,3 +169,30 @@ def test_stream_refused_when_instance_is_full(
 ) -> None:
     monkeypatch.setattr(live, "MAX_OPEN_STREAMS", 0)
     assert client.get(f"/api/live/{SCOPE}/stream").status_code == 429
+
+
+def test_demo_reset_wipes_guest_accounts_and_codes(
+    client: TestClient, session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from guest_helpers import make_account
+
+    from app.models import EmailCode, GuestAccount, utc_now
+
+    monkeypatch.setenv("DEMO_KEY", "a-long-demo-key-for-tests")
+    get_settings.cache_clear()
+    make_account(session, "demo.visitor@example.com")
+    session.add(
+        EmailCode(
+            email="demo.visitor@example.com",
+            purpose="reset",
+            code_hash="0" * 64,
+            expires_at=utc_now(),
+        )
+    )
+    session.commit()
+    reset = client.post("/api/demo/reset", headers={"X-Demo-Key": "a-long-demo-key-for-tests"})
+    assert reset.status_code == 200, reset.text
+    session.expire_all()
+    assert session.scalars(select(GuestAccount)).all() == []
+    assert session.scalars(select(EmailCode)).all() == []
+    assert {"wedding_share", "conference_share"} <= set(reset.json()["links"])

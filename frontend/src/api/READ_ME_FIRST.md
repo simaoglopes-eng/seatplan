@@ -11,8 +11,9 @@ header and the error handling live in one place.
 | File | What it holds |
 |---|---|
 | `types.ts` | Shapes shared by every page (error codes, seat states, map, venue, layout), copied from `docs/CONTRACT.md` with the backend's snake_case names |
-| `client.ts` | `request()` and `api.get/post/put/patch/delete`; `ApiError` (status, `code`, message); the session token in `sessionStorage`; `API_BASE` (`/api`) |
-| `events.ts` | Typed calls for the attendee (`/a/{token}`) and organiser (`/events/...`) endpoints, plus CSV import and export (`csvFetch`, which keeps the server's error code like `request()` does) |
+| `client.ts` | `request()` and `api.get/post/put/patch/delete`; `ApiError` (status, `code`, message); the organiser token and the guest account token in `sessionStorage` under separate keys; `API_BASE` (`/api`). The last argument `auth` picks the session: `"organiser"` (default), `"guest"` or `"none"`. A 401 on a guest call forgets the guest token |
+| `guest.ts` | Shared event link (`/j/{token}`, no session), guest account calls (`/guest/...`) and the account holder's event calls (`/guest/events/{eid}`), shapes from `docs/guest-accounts.md` section 6 |
+| `events.ts` | Typed calls for the attendee (`/a/{token}`) and organiser (`/events/...`) endpoints, including the shared-link settings (`getShare`, `patchShare`, `regenerateShare`), plus CSV import and export (`csvFetch`, which keeps the server's error code like `request()` does) |
 | `restaurant.ts` | Typed calls for diners, manage links and staff. `Server...` types copy the backend; `to...()` functions turn them into the shapes the screens use |
 | `useLive.ts` | Live updates for one scope: the server-sent event stream first, polling `GET /live/{scope}/version` every 2 s when the stream fails or is refused |
 
@@ -34,6 +35,8 @@ A page only has to catch one type and read `error.code` (`seat_taken`,
 section 5, plus `network` and `unknown`, which only the browser creates.
 
 **Why is the login token in `sessionStorage` and not `localStorage`?**
+(The same holds for the guest account token, which has its own key so the two
+sessions can never be mixed up.)
 It disappears when the tab closes, so a shared computer does not stay signed
 in. It is sent as `Authorization: Bearer <token>`, never as a cookie, so other
 sites cannot make the browser send it for them.

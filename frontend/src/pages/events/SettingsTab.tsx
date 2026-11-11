@@ -1,10 +1,12 @@
 // Settings tab: how attendees see each other (with a live preview before
-// saving) and the deadline after which seats can no longer be changed.
+// saving), the deadline after which seats can no longer be changed, and the
+// event's shared link (ShareLinkCard.tsx).
 import { useState } from "react";
 import * as eventsApi from "../../api/events";
 import type { OrganiserEvent, PrivacyMode } from "../../api/events";
 import { Button, Field } from "../../design/components";
 import { previewName } from "./format";
+import { ShareLinkCard } from "./ShareLinkCard";
 import type { OrganiserState } from "./useOrganiser";
 
 const MODES: { value: PrivacyMode; label: string; hint: string }[] = [
@@ -21,6 +23,7 @@ export function SettingsTab({ org, data }: { org: OrganiserState; data: Organise
     <div className="ev-panel-stack">
       <PrivacySetting org={org} data={data} />
       <DeadlineSetting org={org} data={data} />
+      <ShareLinkCard org={org} data={data} />
     </div>
   );
 }

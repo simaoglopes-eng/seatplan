@@ -580,3 +580,86 @@ comparing the real JSON with the TypeScript types.
    `tests/test_outbox_retention.py` (13), including a scan of every table for
    the raw token after a booking, a change and a cancellation.
 
+
+## 2026-11-10: guest accounts and the shared event link
+
+The product owner asked for "a guest profile for when the link is shared",
+with an account needed to get the seat email "with the view of the venue and
+their seat". The full design is [`guest-accounts.md`](guest-accounts.md);
+these are the decisions that change the contract.
+
+1. **D1. Nothing counts until the emailed code is typed.** The account, its
+   guest row and its session are made only by `POST /guest/verify`. Before
+   that only a pending row in the new `email_codes` table exists (15
+   minutes). This stops fake addresses filling an event and makes linking an
+   invited guest safe.
+2. **D2. The shared token is derived, not random:** HMAC-SHA256 of
+   `SECRET_KEY`, the event's public id and `share_version`; only its SHA-256
+   is stored. The organiser can copy the link again at any time; "Make a new
+   link" adds 1 to the version. Kept after review (S41, accepted).
+3. **D3.** A switched-off link answers 403 `link_closed`, a wrong or replaced
+   one 404. Two new error codes: `link_closed` (403) and `event_full` (409).
+4. **D4.** Seat emails still wait for the outbox cron; only code emails are
+   sent at once (`send_now`, which uses the same claim so a row is never
+   sent twice).
+5. **D5.** The account holder's seat email (picture, invite, link to
+   `/my/<event>`) goes out on their own confirm, on a single organiser move
+   and, **changed after review**, on an applied plan, undo or redo. Guests
+   with only a personal link keep today's emails and get nothing from a plan.
+6. **D6.** Deleting an account erases the rows it made, and unlinks (seat
+   freed, emails wiped, no cancellation email) rows the organiser made.
+7. **D7.** Code emails follow the same `EMAIL_ALLOWLIST` as every email.
+   **Open for the product owner:** with today's list real guests outside it
+   never get a code.
+8. **Migration.** `app.seed.migrate` now adds the columns and indexes in
+   `NEW_COLUMNS` and `NEW_INDEXES` (`ALTER TABLE ... ADD COLUMN`, `IF NOT
+   EXISTS` on Postgres, after an inspector check on both) as well as missing
+   tables, in one transaction after the advisory lock; on SQLite it now takes
+   `BEGIN IMMEDIATE`, because two runs at once both tried `CREATE TABLE`
+   (150 of 150 stress runs failed before, 0 after). Model `server_default`
+   values match the DDL word for word (`text("FALSE")`, `text("0")`), so a
+   fresh and an upgraded database compare equal.
+9. **No new dependency.** The seat picture is an indexed PNG drawn with the
+   standard library (`zlib`, `struct`, `binascii`) in `mail/png.py`,
+   `mail/pixel_font.py` and `mail/seat_picture.py` (21 706 bytes of source).
+   Its types have no field for a person, so it cannot show a name.
+
+## 2026-11-10 to 11: guest accounts, fixes after the reviews
+
+A security review and a correctness review attacked the feature the same
+night. What changed (each with a test that failed before it; `security.md`
+section 9 and `guest-accounts.md` section 2.1):
+
+1. **Demo codes (S30).** `demo_code` only when demo mode and the console
+   provider are on, the address ends in `@example.com` and no organiser
+   invited it; never for a password reset (this declines the frontend's
+   request to show the reset code in the demo). An account made with a shown
+   code has `guest_accounts.email_proven = false` and is never linked to an
+   invitation. Declined: refusing to start with demo mode, console and
+   Postgres together, because the graded deployment runs exactly so.
+2. **Sign-up id (S31).** `POST /j/{token}/register` returns a random
+   `signup_id`; `/guest/verify` requires it (`email_codes.signup_hash` keeps
+   its keyed hash). A new contract field in both directions.
+3. **Limits (S32, S33, S38, S39, S40).** scrypt on every register; link and
+   deadline checked before any count; per-address code counts split by
+   purpose; app-wide count only for queued emails; per-network limits raised
+   (60 code emails an hour, 200 a day, 100 code checks per 10 minutes, 600
+   visitor views a minute); failed logins counted per address and network
+   (20) and per address (100); code tries counted in one guarded `UPDATE`
+   before the compare.
+4. **Removed guests (S35).** `erase_guest` keeps `account_id` on the erased
+   row; `join` answers `removed`, HTTP 403 `forbidden`. This answers the
+   spec's open question 3 with "no".
+5. **Smaller fixes.** `AUTOINCREMENT` for `guest_accounts` on SQLite (S36);
+   `email_codes.share_version` (S37); "Hello," without the typed name in code
+   emails (S34); `set_rsvp` checks for room before "no" becomes "yes"
+   (409 `event_full`); places left ignores seats reserved for a tag; a full
+   event no longer refuses `register`; the picture's `width` is its real
+   width; a wrong password on account deletion is 422 `validation`
+   ("password: That password is not correct."), not 401, as the frontend
+   asked.
+6. **New columns on new tables only.** `email_proven`, `signup_hash`,
+   `share_version` and `code_shown` live in `guest_accounts` and
+   `email_codes`, which no deployed database has yet, so `create_all` makes
+   them and `NEW_COLUMNS` did not need to grow. A database that ran the
+   pre-review migrate would lack them; none exists outside test machines.

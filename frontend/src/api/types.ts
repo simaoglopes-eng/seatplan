@@ -20,6 +20,8 @@ export type ErrorCode =
   | "deadline_passed"
   | "rate_limited"
   | "conflict"
+  | "event_full" // HTTP 409: no place left for one more guest (docs/guest-accounts.md)
+  | "link_closed" // HTTP 403: the shared link is valid but switched off
   | "method_not_allowed" // HTTP 405
   | "internal" // HTTP 500, or a status the API never plans to send
   | "network" // client only: the request never reached the server

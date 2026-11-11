@@ -3,10 +3,15 @@
 // Journey: Reply -> People you know (optional) -> Choose seat -> Done.
 // useAttendee owns the data and the API calls; attendeeRules.currentStep
 // decides which step to show; this file only puts the pieces together.
-import { useEffect, useRef, useState } from "react";
+//
+// AttendeeJourney is also used by the guest account's seat page
+// (pages/account/MySeatPage.tsx), which passes accountApi instead of linkApi.
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { PageShell, Stepper } from "../../design/components";
 import { ClosedStep, DeclinedStep, AttendeeSkeleton, LinkProblem } from "./AttendeeStates";
+import { linkApi } from "./attendeeApi";
 import { currentStep, stepIndex } from "./attendeeRules";
 import type { AttendeeStep } from "./attendeeRules";
 import { DoneStep } from "./DoneStep";
@@ -22,8 +27,9 @@ const STEPS = ["Reply", "People you know", "Choose seat", "Done"];
 
 export default function AttendeePage() {
   const { token = "" } = useParams();
-  const state = useAttendee(token);
-  const [peopleDone, setPeopleDone] = useState(false);
+  // One adapter per token, so the hooks below do not reload on every render.
+  const attendeeApi = useMemo(() => linkApi(token), [token]);
+  const state = useAttendee(attendeeApi);
 
   if (state.load.status === "loading") {
     return (
@@ -39,30 +45,49 @@ export default function AttendeePage() {
       </PageShell>
     );
   }
+  return (
+    <PageShell title={state.load.view.event.name}>
+      <AttendeeJourney state={state} />
+    </PageShell>
+  );
+}
+
+interface JourneyProps {
+  state: AttendeeState;
+  /** Shown above the event header, for example "Signed in as ...". */
+  top?: ReactNode;
+  /** Replaces the Done step's email sentence. */
+  doneEmailNote?: string;
+}
+
+/** The header, the progress steps and the current step, for a loaded view. */
+export function AttendeeJourney({ state, top, doneEmailNote }: JourneyProps) {
+  const [peopleDone, setPeopleDone] = useState(false);
+  if (state.load.status !== "ready") return null;
   const view = state.load.view;
   const step = currentStep({ view, peopleDone, changingSeat: state.changingSeat });
   return (
-    <PageShell title={view.event.name}>
-      <div className="ev-page">
-        <EventHeader event={view.event} venueName={view.venue.name} />
-        <Stepper steps={STEPS} current={stepIndex(step)} label="Your progress" />
-        {/* One polite live region for the results of everything the person does on this page. */}
-        <p className="visually-hidden" role="status" aria-live="polite">
-          {state.message}
-        </p>
-        <StepBody step={step} state={state} onPeopleDone={() => setPeopleDone(true)} />
-      </div>
-    </PageShell>
+    <div className="ev-page">
+      {top}
+      <EventHeader event={view.event} venueName={view.venue.name} />
+      <Stepper steps={STEPS} current={stepIndex(step)} label="Your progress" />
+      {/* One polite live region for the results of everything the person does on this page. */}
+      <p className="visually-hidden" role="status" aria-live="polite">
+        {state.message}
+      </p>
+      <StepBody step={step} state={state} doneEmailNote={doneEmailNote} onPeopleDone={() => setPeopleDone(true)} />
+    </div>
   );
 }
 
 interface StepBodyProps {
   step: AttendeeStep;
   state: AttendeeState;
+  doneEmailNote?: string;
   onPeopleDone: () => void;
 }
 
-function StepBody({ step, state, onPeopleDone }: StepBodyProps) {
+function StepBody({ step, state, doneEmailNote, onPeopleDone }: StepBodyProps) {
   // Focus moves to the new step's heading only after the first screen, never on page load.
   const firstStep = useRef(step);
   const [moved, setMoved] = useState(false);
@@ -85,6 +110,6 @@ function StepBody({ step, state, onPeopleDone }: StepBodyProps) {
     case "seat":
       return <SeatStep state={state} view={view} moved={moved} />;
     case "done":
-      return <DoneStep state={state} view={view} moved={moved} />;
+      return <DoneStep state={state} view={view} moved={moved} emailNote={doneEmailNote} />;
   }
 }

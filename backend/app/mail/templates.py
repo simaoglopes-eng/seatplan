@@ -13,6 +13,7 @@ Two rules hold for every email:
 """
 
 import html
+from dataclasses import dataclass
 from datetime import datetime
 from typing import NamedTuple
 from zoneinfo import ZoneInfo
@@ -66,13 +67,18 @@ _STOP_TEXT = (
 
 
 def _text_version(
-    greeting: str, paragraphs: list[str], link_label: str, link: str, reason: str
+    greeting: str,
+    paragraphs: list[str],
+    link_label: str,
+    link: str,
+    reason: str,
+    stop: str = _STOP_TEXT,
 ) -> str:
     lines = [greeting, ""]
     for paragraph in paragraphs:
         lines += [paragraph, ""]
     lines += [f"{link_label}: {link}", "", f"The {SENDER_NAME} team", "", "--", reason]
-    lines.append(_STOP_TEXT)
+    lines.append(stop)
     return "\n".join(lines) + "\n"
 
 
@@ -98,29 +104,45 @@ _BUTTON = (
 )
 
 
+def _paragraph(text: str) -> str:
+    return f'<p style="margin:0 0 16px;">{html.escape(text)}</p>'
+
+
 def _html_version(
-    greeting: str, paragraphs: list[str], link_label: str, link: str, reason: str
+    greeting: str,
+    paragraphs: list[str],
+    link_label: str,
+    link: str,
+    reason: str,
+    stop: str = _STOP_TEXT,
 ) -> str:
     escape = html.escape
-    content = f'<p style="margin:0 0 16px;">{escape(greeting)}</p>'
-    for paragraph in paragraphs:
-        content += f'<p style="margin:0 0 16px;">{escape(paragraph)}</p>'
+    content = _paragraph(greeting) + "".join(_paragraph(text) for text in paragraphs)
     content += _BUTTON.format(href=escape(link, quote=True), label=escape(link_label))
     content += f'<p style="margin:0;">The {SENDER_NAME} team</p>'
-    footer = f"{escape(reason)}<br>{escape(_STOP_TEXT)}"
+    footer = f"{escape(reason)}<br>{escape(stop)}"
     return _PAGE.format(sender=SENDER_NAME, content=content, footer=footer)
 
 
 def _compose(
-    subject: str, name: str, paragraphs: list[str], link_label: str, link: str, reason: str
+    subject: str,
+    name: str,
+    paragraphs: list[str],
+    link_label: str,
+    link: str,
+    reason: str,
+    stop: str = _STOP_TEXT,
 ) -> EmailParts:
-    """Build both versions from the same plain sentences, so they never disagree."""
-    greeting = f"Hello {_one_line(name)},"
+    """Build both versions from the same plain sentences, so they never disagree.
+
+    An empty `name` gives a plain "Hello," (used when the name is not proven).
+    """
+    greeting = f"Hello {_one_line(name)}," if name.strip() else "Hello,"
     _check_link(link)
     return EmailParts(
         subject=_subject(subject),
-        body_text=_text_version(greeting, paragraphs, link_label, link, reason),
-        body_html=_html_version(greeting, paragraphs, link_label, link, reason),
+        body_text=_text_version(greeting, paragraphs, link_label, link, reason, stop),
+        body_html=_html_version(greeting, paragraphs, link_label, link, reason, stop),
     )
 
 
@@ -223,6 +245,216 @@ def event_reminder(
         "Manage my seat",
         manage_link,
         _event_reason(event_name),
+    )
+
+
+# ---------------------------------------------------------------- guest accounts
+#
+# Emails for people with a SeatPlan guest account (docs/guest-accounts.md,
+# section 9). None of them carries a secret link: the seat page needs a
+# sign-in, so a forwarded email opens nothing.
+
+_ACCOUNT_STOP_TEXT = (
+    "To stop these emails, give up your seat or delete your account on the page above. "
+    "We never send marketing."
+)
+_CODE_STOP_TEXT = "You will not get more emails unless you ask for another code."
+_CODE_REASON = "You received this email because someone typed this address on SeatPlan."
+_PICTURE_NOTE = (
+    "The picture shows the room from above. Your seat is the large black dot inside a "
+    "ring, with the label YOU. If your email app shows no picture, it is attached as "
+    "seat-map.png."
+)
+MAX_ALT_LENGTH = 300
+
+
+@dataclass(frozen=True)
+class AccountSeat:
+    """The facts of an account holder's seat email, already formatted.
+
+    `old_seat` is set (for example "4 at table T2") when the seat changed;
+    `deadline` is format_when() of the change deadline, or None.
+    """
+
+    guest_name: str
+    event_name: str
+    when: str
+    venue_name: str
+    seat_label: str
+    table_label: str
+    deadline: str | None
+    link: str
+    old_seat: str | None = None
+    moved_by_organiser: bool = False
+    # The picture's real width in pixels: a tall room gives a narrow picture,
+    # and stretching it to 560 would blur it (Outlook reads only `width`).
+    picture_width: int = 560
+
+
+def seat_picture_alt(venue_name: str, seat_label: str, table_label: str) -> str:
+    """The picture's alt text: the whole message in words, for screen readers."""
+    text = (
+        f"Floor plan of {_one_line(venue_name)} seen from above. Your seat, seat "
+        f"{_one_line(seat_label)} at table {_one_line(table_label)}, is marked with a large "
+        "black dot inside a ring and the label YOU."
+    )
+    return text[:MAX_ALT_LENGTH]
+
+
+def _account_opening(facts: AccountSeat) -> list[str]:
+    if facts.old_seat is None:
+        return [f"Your seat for {facts.event_name} is confirmed."]
+    sentences = [f"Your seat for {facts.event_name} has changed."]
+    if facts.moved_by_organiser:
+        sentences.append("The organiser moved you to a new seat.")
+    new_seat = f"{facts.seat_label} at table {facts.table_label}"
+    return [*sentences, f"Before: seat {facts.old_seat}. Now: seat {new_seat}."]
+
+
+def _account_details(facts: AccountSeat) -> list[tuple[str, str]]:
+    return [
+        ("Event", facts.event_name),
+        ("When", facts.when),
+        ("Where", facts.venue_name),
+        ("Your seat", f"seat {facts.seat_label} at table {facts.table_label}"),
+    ]
+
+
+def _deadline_sentence(facts: AccountSeat) -> str:
+    until = facts.deadline or "the organiser closes changes"
+    return f"You can change or give up your seat until {until}."
+
+
+def _account_reason(event_name: str) -> str:
+    return f"You received this email because you have a SeatPlan account and joined {event_name}."
+
+
+def _account_seat_text(facts: AccountSeat) -> str:
+    lines = [f"Hello {_one_line(facts.guest_name)},", ""]
+    for sentence in _account_opening(facts):
+        lines += [sentence, ""]
+    lines += [f"{label}: {value}" for label, value in _account_details(facts)]
+    lines += ["", _PICTURE_NOTE, "", _deadline_sentence(facts), ""]
+    lines += [f"See my seat: {facts.link}", "", f"The {SENDER_NAME} team", "", "--"]
+    lines += [_account_reason(facts.event_name), _ACCOUNT_STOP_TEXT]
+    return "\n".join(lines) + "\n"
+
+
+def _details_table(facts: AccountSeat) -> str:
+    rows = "".join(
+        '<tr><th scope="row" style="text-align:left;padding:4px 16px 4px 0;'
+        f'font-weight:bold;vertical-align:top;">{html.escape(label)}</th>'
+        f'<td style="padding:4px 0;">{html.escape(value)}</td></tr>'
+        for label, value in _account_details(facts)
+    )
+    return f'<table role="presentation" style="margin:0 0 16px;border-collapse:collapse;">{rows}</table>'
+
+
+def _picture_html(facts: AccountSeat) -> str:
+    alt = html.escape(seat_picture_alt(facts.venue_name, facts.seat_label, facts.table_label))
+    seat = html.escape(f"seat {facts.seat_label} at table {facts.table_label}")
+    width = min(facts.picture_width, 560)
+    return (
+        f'<img src="cid:seatmap" width="{width}" alt="{alt}" '
+        f'style="display:block;width:100%;max-width:{width}px;height:auto;'
+        'border:1px solid #d4d4d8;border-radius:6px;margin:16px 0 8px;">'
+        f'<p style="margin:0 0 16px;font-size:14px;color:#3f3f46;">Your seat: {seat}, marked YOU.</p>'
+    )
+
+
+def _account_seat_html(facts: AccountSeat) -> str:
+    escape = html.escape
+    content = _paragraph(f"Hello {_one_line(facts.guest_name)},")
+    content += "".join(_paragraph(sentence) for sentence in _account_opening(facts))
+    content += _details_table(facts) + _picture_html(facts)
+    content += _paragraph(_deadline_sentence(facts))
+    content += _BUTTON.format(href=escape(facts.link, quote=True), label="See my seat")
+    content += f'<p style="margin:0;">The {SENDER_NAME} team</p>'
+    footer = f"{escape(_account_reason(facts.event_name))}<br>{escape(_ACCOUNT_STOP_TEXT)}"
+    return _PAGE.format(sender=SENDER_NAME, content=content, footer=footer)
+
+
+def account_seat_email(facts: AccountSeat) -> EmailParts:
+    """Seat confirmed or changed, for an account holder: details, picture, link."""
+    _check_link(facts.link)
+    seat = f"seat {facts.seat_label} at table {facts.table_label}"
+    if facts.old_seat is None:
+        subject = f"Your seat for {facts.event_name}: {seat}"
+    else:
+        subject = f"Your seat for {facts.event_name} has changed: now {seat}"
+    return EmailParts(
+        subject=_subject(subject),
+        body_text=_account_seat_text(facts),
+        body_html=_account_seat_html(facts),
+    )
+
+
+def account_code(event_name: str, code: str, sign_in_link: str) -> EmailParts:
+    """The 6-digit code that finishes a sign-up. Never in the subject: lock screens show it.
+
+    The greeting has no name: whoever filled in the form typed it, and it is
+    not proven yet, so it must not reach someone else's inbox in our words.
+    """
+    paragraphs = [
+        f"Your code to finish creating your SeatPlan account for {event_name} is: {code}",
+        (
+            "It works for 15 minutes. If you did not ask for it, ignore this email: "
+            "no account is made without the code."
+        ),
+        "Never give this code to anyone. SeatPlan never asks for it by phone or message.",
+    ]
+    return _compose(
+        "Your SeatPlan code",
+        "",
+        paragraphs,
+        "Open SeatPlan",
+        sign_in_link,
+        _CODE_REASON,
+        _CODE_STOP_TEXT,
+    )
+
+
+def password_code(name: str, code: str, sign_in_link: str) -> EmailParts:
+    """The 6-digit code for choosing a new password."""
+    paragraphs = [
+        f"Your code to choose a new SeatPlan password is: {code}",
+        (
+            "It works for 15 minutes. If you did not ask for it, ignore this email: "
+            "your password stays the same."
+        ),
+    ]
+    return _compose(
+        "Your SeatPlan password reset code",
+        name,
+        paragraphs,
+        "Open SeatPlan",
+        sign_in_link,
+        _CODE_REASON,
+        _CODE_STOP_TEXT,
+    )
+
+
+def account_exists(name: str, event_name: str, sign_in_link: str) -> EmailParts:
+    """Sent instead of a code when the address already has an account."""
+    paragraphs = [
+        (
+            "Someone, probably you, tried to create a SeatPlan account with this address to "
+            f"join {event_name}. You already have one, so nothing changed."
+        ),
+        (
+            "To join this event, open again the link the organiser shared and choose "
+            '"I already have an account". Sign in with your password, or choose a new '
+            "one if you forgot it."
+        ),
+    ]
+    return _compose(
+        "You already have a SeatPlan account",
+        name,
+        paragraphs,
+        "Sign in",
+        sign_in_link,
+        _CODE_REASON,
+        _CODE_STOP_TEXT,
     )
 
 

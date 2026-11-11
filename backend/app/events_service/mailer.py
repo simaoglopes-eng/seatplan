@@ -3,7 +3,18 @@
 Emails are only queued here (mail/outbox.py); a separate job sends them later.
 The words come from mail/templates.py, and every email carries a calendar
 invite (mail/invites.py) so the guest's calendar follows their seat.
+
+Two kinds of guest get different emails (docs/guest-accounts.md, 9.1):
+- a guest with only a personal link gets today's emails, linking to /e/<token>
+  when we know the token;
+- a guest row owned by a guest account (guest.account_id is set) gets, for a
+  confirmed or changed seat, the account email with a picture of the room
+  (mail/seat_picture.py). Its link is /my/<event id>, a page that needs a
+  sign-in, so the email holds no secret.
 """
+
+import base64
+from dataclasses import replace
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -12,8 +23,16 @@ from app.config import get_settings
 from app.mail import templates
 from app.mail.invites import calendar_invite
 from app.mail.outbox import enqueue
+from app.mail.png import png_width
 from app.mail.reminders import reminder_key, sync_event_reminder
-from app.models import EmailOutbox, Event, Guest, Seat, Venue, VenueTable
+from app.mail.seat_picture import (
+    PictureRoom,
+    PictureSeat,
+    PictureTable,
+    PictureZone,
+    render_seat_picture,
+)
+from app.models import EmailOutbox, Event, Guest, GuestAccount, Seat, Venue, VenueTable, Zone
 
 SEAT_KINDS = ("seat_confirmed", "seat_changed", "seat_cancelled")
 
@@ -26,6 +45,15 @@ def guest_link(token: str | None) -> str:
     """
     base = get_settings().public_base_url
     return f"{base}/e/{token}" if token else f"{base}/"
+
+
+def account_link(event: Event) -> str:
+    """The account holder's seat page. It needs a sign-in, so it is not a secret."""
+    return f"{get_settings().public_base_url}/my/{event.public_id}"
+
+
+def _link_for(event: Event, guest: Guest, token: str | None) -> str:
+    return account_link(event) if guest.account_id is not None else guest_link(token)
 
 
 def _seat_words(session: Session, seat: Seat | None) -> str:
@@ -82,6 +110,70 @@ def _invite(session: Session, kind: str, guest: Guest, event: Event, seat: Seat)
     )
 
 
+def picture_room(session: Session, venue: Venue) -> PictureRoom:
+    """The room as the seat picture sees it: zones, tables and seats, nothing else.
+
+    No guest, assignment or hold is read here, which is why the picture can
+    never show who sits where.
+    """
+    zones = session.scalars(select(Zone).where(Zone.venue_id == venue.id).order_by(Zone.id))
+    tables = session.scalars(
+        select(VenueTable).where(VenueTable.venue_id == venue.id).order_by(VenueTable.id)
+    )
+    seats = session.scalars(select(Seat).where(Seat.venue_id == venue.id).order_by(Seat.id))
+    return PictureRoom(
+        width=venue.width,
+        height=venue.height,
+        zones=tuple(PictureZone(z.kind, z.name, z.x, z.y, z.w, z.h) for z in zones),
+        tables=tuple(
+            PictureTable(t.id, t.label, t.shape, t.x, t.y, t.w, t.h, t.rotation) for t in tables
+        ),
+        seats=tuple(PictureSeat(s.id, s.table_id, s.x, s.y) for s in seats),
+    )
+
+
+def seat_picture_base64(session: Session, venue: Venue, seat: Seat, table_label: str) -> str:
+    png = render_seat_picture(picture_room(session, venue), seat.id, seat.label, table_label)
+    return base64.b64encode(png).decode("ascii")
+
+
+def _account_parts(
+    session: Session, event: Event, guest: Guest, seat: Seat, old: Seat | None, moved: bool
+) -> tuple[templates.EmailParts, str]:
+    """The account seat email and its picture (Base64) for a confirmed or changed seat."""
+    venue = session.get(Venue, event.venue_id)
+    if venue is None:
+        raise ValueError("The event has no venue.")
+    table = session.get(VenueTable, seat.table_id)
+    table_label = table.label if table else "-"
+    deadline = event.change_deadline
+    facts = templates.AccountSeat(
+        guest_name=guest.name,
+        event_name=event.name,
+        when=templates.format_when(event.starts_at, venue.timezone),
+        venue_name=venue.name,
+        seat_label=seat.label,
+        table_label=table_label,
+        deadline=templates.format_when(deadline, venue.timezone) if deadline else None,
+        link=account_link(event),
+        old_seat=_seat_words(session, old) if old is not None else None,
+        moved_by_organiser=moved,
+    )
+    png = render_seat_picture(picture_room(session, venue), seat.id, seat.label, table_label)
+    facts = replace(facts, picture_width=png_width(png))
+    return templates.account_seat_email(facts), base64.b64encode(png).decode("ascii")
+
+
+def _recipient(session: Session, guest: Guest) -> str | None:
+    """Where the guest's seat emails go: the account's proven address when
+    there is one, else the address the organiser typed (None when erased)."""
+    if guest.account_id is not None:
+        account = session.get(GuestAccount, guest.account_id)
+        if account is not None:
+            return account.email
+    return guest.email or None
+
+
 def queue_seat_email(
     session: Session,
     *,
@@ -92,26 +184,34 @@ def queue_seat_email(
     seat: Seat,
     old_seat: Seat | None = None,
     token: str | None = None,
+    moved_by_organiser: bool = False,
 ) -> None:
     """Queue one seat email, unless the guest has no address (for example erased).
 
     `key` must name this exact action, so a retry never sends it twice.
     `token` is the guest's raw link token when the guest is the one acting.
+    `moved_by_organiser` adds "The organiser moved you" to an account email.
     """
-    if not guest.email:
+    to_email = _recipient(session, guest)
+    if not guest.email or not to_email:
         return
     if kind not in SEAT_KINDS:
         raise ValueError(f"Unknown seat email kind: {kind}")
-    parts = _parts(session, kind, guest, event, seat, old_seat, guest_link(token))
+    picture = None
+    if guest.account_id is not None and kind != "seat_cancelled":
+        parts, picture = _account_parts(session, event, guest, seat, old_seat, moved_by_organiser)
+    else:
+        parts = _parts(session, kind, guest, event, seat, old_seat, _link_for(event, guest, token))
     enqueue(
         session,
         idempotency_key=key,
-        to_email=guest.email,
+        to_email=to_email,
         kind=kind,
         subject=parts.subject,
         body_text=parts.body_text,
         body_html=parts.body_html,
         ics=_invite(session, kind, guest, event, seat),
+        image_png=picture,
     )
 
 
@@ -123,7 +223,8 @@ def sync_reminder(
     `seat` is the guest's seat now, or None when they no longer have one.
     """
     label = _seat_words(session, seat) if seat is not None else None
-    sync_event_reminder(session, event=event, guest=guest, seat_label=label, link=guest_link(token))
+    link = _link_for(event, guest, token)
+    sync_event_reminder(session, event=event, guest=guest, seat_label=label, link=link)
 
 
 def _guest_rows(session: Session, event: Event, guest_id: int) -> list[EmailOutbox]:
@@ -154,6 +255,7 @@ def forget_guest_emails(session: Session, event: Event, guest_id: int) -> int:
         row.body_text = ""
         row.body_html = ""
         row.ics = None
+        row.image_png = None
         row.last_error = None  # a provider error can quote the address
         if row.status != "sent":
             row.status = "skipped"

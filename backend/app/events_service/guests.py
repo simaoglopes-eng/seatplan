@@ -41,6 +41,10 @@ def guest_dict(guest: Guest, group: str | None, seat_id: int | None) -> dict[str
         "dietary_note": guest.dietary_note,
         "reserved_tag": guest.reserved_tag,
         "seat_id": seat_id,
+        # How the guest got on the list, and whether a guest account owns the
+        # row. Never the account's id or email.
+        "source": guest.source,
+        "has_account": guest.account_id is not None,
     }
 
 
@@ -126,16 +130,22 @@ def update_guest(
     )
 
 
-def erase_guest(session: Session, event: Event, guest: Guest, user: Organiser) -> None:
+def erase_guest(session: Session, event: Event, guest: Guest, actor: str) -> None:
     """GDPR delete: free the seat, forget who knows whom, overwrite personal data.
 
-    The address goes first, so freeing the seat cannot queue a "your seat was
-    released" email to someone who asked to be forgotten. Their earlier emails
-    in the outbox are wiped too.
+    `actor` is who asked: the organiser's email, or "account:<id>" when a
+    guest deletes their own account. The address goes first, so freeing the
+    seat cannot queue a "your seat was released" email to someone who asked to
+    be forgotten. Their earlier emails in the outbox are wiped too.
+
+    A guest account that owned the row stays written on it (only the
+    account's number, no personal data), so that account cannot simply join
+    again with the shared link (share.join answers "removed"). Deleting the
+    account clears it (accounts.delete_account).
     """
     lock_event(session, event)  # before any other write, see seating.py
     guest.email = None
-    drop_assignment(session, event, guest, actor=user.email)
+    drop_assignment(session, event, guest, actor=actor)
     forget_guest_emails(session, event, guest.id)
     session.execute(
         delete(Acquaintance).where(
@@ -154,7 +164,7 @@ def erase_guest(session: Session, event: Event, guest: Guest, user: Organiser) -
     guest.token_revoked_at = utc_now()
     # The audit row names only the id: writing the name here would undo the erasure.
     audit.record(
-        session, actor=user.email, action="guest.erase", entity="guest", entity_id=str(guest.id)
+        session, actor=actor, action="guest.erase", entity="guest", entity_id=str(guest.id)
     )
 
 

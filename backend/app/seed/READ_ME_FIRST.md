@@ -4,8 +4,10 @@
 
 Two commands, run from `backend/`:
 
-- `python -m app.seed.migrate` creates any missing tables. On Postgres it is
-  the only place tables are created; the app never does it itself.
+- `python -m app.seed.migrate` creates any missing tables, then adds the
+  columns and indexes listed in `NEW_COLUMNS` and `NEW_INDEXES` that the
+  database lacks. Safe to run again. On Postgres it is the only place DDL
+  runs; the app never does it itself.
 - `python -m app.seed.run` creates the tables too, then the two demo accounts
   and the demo data for both verticals, and prints the links to open.
 
@@ -16,11 +18,12 @@ same `seed_all()`.
 
 | File | Function | Job |
 |---|---|---|
-| `migrate.py` | `main()` | `db.create_all()`: missing tables only, under a Postgres advisory lock |
+| `migrate.py` | `main()` | `db.create_all()` under a Postgres advisory lock: missing tables, then `upgrade_schema()` |
+| `migrate.py` | `upgrade_schema(connection)` | `ALTER TABLE ... ADD COLUMN` for each missing `NEW_COLUMNS` entry (checked with the inspector first, plus `IF NOT EXISTS` on Postgres), then `CREATE INDEX IF NOT EXISTS` |
 | `run.py` | `demo_password(env_name, settings)` | The password from the environment; the public default only on local SQLite with `DEMO_MODE=1` |
 | `run.py` | `ensure_demo_users(session, settings)` | Creates or updates `organiser@example.com` and `staff@example.com` |
 | `run.py` | `seed_all(session, settings, actor)` | Users plus both verticals; saves the links in `demo_links`; commits |
-| `demo_events.py` | `seed(session)` | A wedding and a conference: venues, tables, guests, groups, who knows whom |
+| `demo_events.py` | `seed(session)` | A wedding and a conference: venues, tables, guests, groups, who knows whom. Both have the shared link on (`wedding_share`, `conference_share`) |
 | `demo_restaurant.py` | `seed(session)` | "Casa Lumen": 18 tables in four zones, opening hours, bookings for today and the next three days, two weeks of past dinners |
 
 ## Data flow
@@ -28,7 +31,7 @@ same `seed_all()`.
 ```
 seed_all()
   ensure_demo_users()            organisers table (passwords hashed with scrypt)
-  demo_events.seed()      -> {"wedding_guest_choosing": "/e/<token>", ...}
+  demo_events.seed()      -> {"wedding_guest_choosing": "/e/<token>", "wedding_share": "/j/<token>", ...}
   demo_restaurant.seed()  -> {"restaurant_booking": "/r/<id>", ...}
   demo_links rows          <- those links, for GET /demo/links
   audit_log row            <- {"count": n}, never the links themselves

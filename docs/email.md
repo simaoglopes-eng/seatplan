@@ -263,3 +263,37 @@ takes a few seconds.
 `CRON_SECRET`, `EMAIL_PROVIDER` (`console` or `resend`), `RESEND_API_KEY`,
 `EMAIL_FROM` (for example `SeatPlan <noreply@your-domain>`), `EMAIL_ALLOWLIST`,
 `PUBLIC_BASE_URL` (for links built by the callers).
+
+## 10. Guest accounts: codes, the seat picture and `send_now`
+
+Added 2026-11-10 (`docs/guest-accounts.md`, section 9, has every word).
+
+| Kind | Sent to | When | Picture | Notes |
+|---|---|---|---|---|
+| `account_code` | The address typed on the sign-up form | At once (`send_now`), after `POST /j/{token}/register` | No | Greets "Hello," with no name (the name is not proven yet); the 6-digit code is never in the subject; "Never give this code to anyone" |
+| `password_code` | An existing account's address | At once, after `POST /guest/password/forgot` | No | Only when the account exists; the answer is the same either way |
+| `account_exists` | An address that already has an account | At once, after a sign-up attempt | No | At most one an hour per address; says to open the shared link again and choose "I already have an account" |
+| `seat_confirmed`, `seat_changed` for an account holder | The account's proven address | Outbox cron, as today | **Yes** | After the holder's own confirm, a single organiser move, or an applied plan, undo or redo |
+| `seat_cancelled`, reminder for an account holder | The account's address | As today | No | Link to `/my/<event>`, which needs a sign-in, so no secret link is in the email |
+
+- **The picture** is an indexed-colour PNG (8 colours, white background)
+  drawn by `mail/seat_picture.py` and written by `mail/png.py` with `zlib`,
+  `struct` and `binascii` only. It is stored as Base64 in
+  `email_outbox.image_png` and sent as an attachment `seat-map.png` with
+  `content_id: "seatmap"` (Resend's field for inline images); the HTML shows
+  `<img src="cid:seatmap" width="{real width, at most 560}" alt="...">` and
+  the seat in words below it. Measured on the demo seed (2026-11-11):
+  wedding 640 x 467, 3 744 bytes; conference 2 657 bytes. Tests cap it at
+  60 KB and 150 ms.
+- **Codes are secrets.** Code emails are sent at once by `send_now`, which
+  claims the one row with the same `_claim` as the cron, so a code is never
+  sent twice. Once a code row is finished its words become `[code removed]`;
+  a code that is used or replaced stops its queued email. The cron deletes
+  expired `email_codes` rows.
+- **Allowlist.** Code emails follow `EMAIL_ALLOWLIST` like every email. With
+  today's list, real guests outside it never get a code: an open question for
+  the product owner (D7).
+- **Erasure.** `forget_guest_emails`, `scrub_expired` and account deletion
+  also empty `image_png`.
+- **Not verified yet:** a real Resend send with an inline image, and how
+  Gmail, Outlook and Apple Mail show it.

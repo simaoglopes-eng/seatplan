@@ -7,7 +7,7 @@ read. The design agreement is section 5 of [`CONTRACT.md`](CONTRACT.md).
 ## Where the OpenAPI file comes from
 
 `docs/openapi.json` is exported from the real FastAPI app, not written by
-hand. It was made on 2026-11-10 with this command (run from `backend/`; the
+hand. It was last made on 2026-11-11 (after guest accounts) with this command (run from `backend/`; the
 temporary SQLite file goes in `$TMPDIR` so nothing is left in the repository):
 
 ```bash
@@ -24,7 +24,8 @@ rm -f "$TMPDIR/openapi.db"
 ```
 
 What that run reported: OpenAPI `3.1.0`, title `SeatPlan API`, version
-`0.1.0`, **56 paths, 65 operations, 38 schemas**. Run the command again after
+`0.1.0`, **77 paths, 87 operations, 46 schemas** (before guest accounts: 56
+paths, 65 operations, 38 schemas). Run the command again after
 changing any router, so the file never drifts from the code.
 
 While the backend is running you can also read it live:
@@ -51,6 +52,8 @@ While the backend is running you can also read it live:
 |---|---|---|
 | Anyone | Nothing (rate limited) | `/health`, `/r/{vid}/...` (diner), `/live/...`, `/demo/links` (only when `DEMO_MODE=1`) |
 | Attendee | Secret token in the URL | `/a/{token}/...` |
+| Visitor with the shared link | The event's shared token in the URL (read-only, one token for everyone) | `/j/{token}`, `/j/{token}/register` |
+| Guest account holder | `Authorization: Bearer <guest session>` from `/guest/verify`, `/guest/login` or `/guest/password/reset` (5-part token starting `g.`, never accepted as an organiser session) | `/j/{token}/join`, `/guest/logout`, `/guest/me`, `/guest/me/delete`, `/guest/events/{eid}/...` |
 | Diner with a booking | Secret manage token in the URL | `/b/{manage_token}` |
 | Organiser or staff | `Authorization: Bearer <session>` from `POST /auth/login` | `/venues`, `/events/...`, `/staff/...`, `/emails/log`, `/auth/me` |
 | The email cron | Header `X-Cron-Secret` equal to `CRON_SECRET` | `POST /internal/email/process` |
@@ -69,14 +72,16 @@ Counted from `openapi.json` by tag:
 | `auth` | 2 | Log in, who am I | `routers/auth.py` |
 | `venues` | 4 | List, create, read venues; save a floor plan | `routers/venues.py` |
 | `demo` | 2 | Demo links and demo reset | `routers/demo.py` |
-| `events` | 23 | Organiser: guests, import and export, moves, auto-fill, re-plan, scenarios, what-if, undo and redo, exact check | `routers/events.py` |
+| `events` | 26 | Organiser: guests, import and export, moves, auto-fill, re-plan, scenarios, what-if, undo and redo, exact check, and the shared link (read, switch and cap, make a new link) | `routers/events.py` |
 | `attendee` | 9 | Personal link: page, people search, RSVP, "knows", privacy, recommendations, hold, confirm, release | `routers/attendee.py` |
+| `visitor` | 3 | Shared link: the visitor's view, create an account (emails a code), join with an account | `routers/visitor.py` |
+| `guest accounts` | 16 | Verify the code, sign in and out, forgotten password, my events, delete my account (`routers/guest_accounts.py`), and the account holder's event routes under `/guest/events/{eid}`, the same 9 as `attendee` (`routers/guest_events.py`) | `routers/guest_accounts.py`, `routers/guest_events.py` |
 | `restaurants` | 6 | Diner: restaurant, slots, map, hold, give back a hold, book | `routers/restaurants.py` |
 | `bookings` | 4 | Manage or cancel a booking, join the waitlist | `routers/bookings.py` |
 | `staff` | 10 | Floor, walk-ins, status, move, what-if, service optimiser, exact check, dashboard, schedule | `routers/staff.py` |
 | `emails` | 2 | Process the outbox, read the email log | `routers/emails.py` |
 | `live` | 2 | Version number and the live stream | `core/live.py` |
-| **Total** | **65** | | |
+| **Total** | **87** | | |
 
 ## Errors
 
@@ -90,12 +95,14 @@ Every error has the same shape:
 |---|---|---|
 | `validation` | 400, 413, 422 | A field is missing, too long, or unknown; a body too large |
 | `unauthorised` | 401 | No session, an expired session, a wrong cron secret |
-| `forbidden` | 403 | A staff account calling an organiser-only endpoint |
+| `forbidden` | 403 | A staff account calling an organiser-only endpoint; a guest account the organiser removed trying to join again with the shared link |
+| `link_closed` | 403 | The shared link is valid but the organiser switched it off |
+| `event_full` | 409 | No place left for one more guest (join with the shared link, or "yes" again after "no") |
 | `not_found` | 404 | Unknown id, a wrong or revoked token, or another organiser's event or venue (missing and not yours look the same on purpose) |
 | `method_not_allowed` | 405 | Wrong HTTP method for this path |
 | `seat_taken` | 409 | Someone else holds or owns the seat or table (the database said no) |
 | `hold_expired` | 409 | The 5-minute hold ran out before confirming |
-| `deadline_passed` | 409 | The event's change deadline has passed |
+| `deadline_passed` | 409 | The event's change deadline has passed (also: joining with the shared link after it) |
 | `conflict` | 409 | Any other clash, including "please try again" after a Postgres deadlock |
 | `rate_limited` | 429 | Too many calls in this minute, too many live streams, too many held tables, or a booking cap (4 upcoming bookings per mailbox, 10 booking attempts per address and day at one restaurant) |
 | `internal` | 500 | A bug; the message never shows a stack trace |

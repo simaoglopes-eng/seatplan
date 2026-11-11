@@ -106,6 +106,11 @@ export function getAttendeeView(token: string): Promise<AttendeeView> {
   return api.get<AttendeeView>(attendeePath(token));
 }
 
+/** Other attendees whose shown name matches `q`, names already filtered by the server. */
+export function getPeople(token: string, q: string): Promise<VisiblePerson[]> {
+  return api.get<VisiblePerson[]>(attendeePath(token, `/people?q=${encodeURIComponent(q)}`));
+}
+
 export function sendRsvp(token: string, rsvp: "yes" | "no"): Promise<unknown> {
   return api.post(attendeePath(token, "/rsvp"), { rsvp });
 }
@@ -168,6 +173,36 @@ export interface OrganiserGuest {
   dietary_note: string | null;
   reserved_tag: "vip" | "family" | "speaker" | null;
   seat_id: number | null;
+  /** "self_registered": joined with the shared link (docs/guest-accounts.md). */
+  source: GuestSource;
+  /** True when a guest account belongs to this row. Never the account's id or email. */
+  has_account: boolean;
+}
+
+export type GuestSource = "invited" | "self_registered";
+
+/** GET, PATCH /events/{eid}/share and POST .../share/regenerate (docs/guest-accounts.md 6.3). */
+export interface ShareSettings {
+  enabled: boolean;
+  /** "/j/<token>", a path: the page adds its own origin. Null when never switched on, or when it must be made again. */
+  link: string | null;
+  /** True when the server secret changed since the link was made: a new link is needed. */
+  needs_new_link: boolean;
+  /** Most people who may join with the link; null means no cap. */
+  cap: number | null;
+  /** Active guests who joined with the link. */
+  joined: number;
+  /** Seats that are not blocked. */
+  capacity: number;
+  /** Active guests, any source. */
+  guests: number;
+  /** The same number visitors see. */
+  places_left: number;
+}
+
+export interface SharePatch {
+  enabled?: boolean;
+  cap?: number | null;
 }
 
 /** Both organiser reads together: the screen always needs the map and the list. */
@@ -306,6 +341,19 @@ export function deleteGuest(eventId: string, guestId: number): Promise<unknown> 
 /** Makes a new personal link; the old one stops working at once. */
 export function newGuestLink(eventId: string, guestId: number): Promise<{ token: string; link: string }> {
   return api.post<{ token: string; link: string }>(eventPath(eventId, `/guests/${guestId}/new-link`));
+}
+
+export function getShare(eventId: string): Promise<ShareSettings> {
+  return api.get<ShareSettings>(eventPath(eventId, "/share"));
+}
+
+export function patchShare(eventId: string, changes: SharePatch): Promise<ShareSettings> {
+  return api.patch<ShareSettings>(eventPath(eventId, "/share"), changes);
+}
+
+/** Makes a new shared link; the old one stops working at once. */
+export function regenerateShare(eventId: string): Promise<ShareSettings> {
+  return api.post<ShareSettings>(eventPath(eventId, "/share/regenerate"), {});
 }
 
 export function getChart(eventId: string): Promise<SeatingChart> {

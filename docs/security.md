@@ -12,6 +12,13 @@ again by a second reviewer, who found and closed two more holes in S8 and two
 in S9 (section 3). The app has not been deployed yet, so nothing here was
 tested on a real Vercel deployment.
 
+**Guest accounts and the shared link (added 2026-11-10, reviewed the same
+night).** Two reviews of the new feature found 1 High, 6 Medium and 5 Low
+security problems (S30 to S41) and one High capacity bug. 11 are fixed, each
+with a test that failed before its fix; 1 (S41) is open and accepted. One
+product question (the email allowlist, D7) still stops real guests from
+getting their code outside the demo. Section 9 has the details.
+
 ## 1. How we tested
 
 - Read every router in `backend/app/routers/` (65 API operations, listed from
@@ -117,6 +124,13 @@ Line numbers are those of 2026-11-10, after the fixes (S8 and S9: after the seco
 | 9 `/a/{token}...` routes | Holder of the attendee link | 120 a minute per address, then token hash |
 | 7 `/r/{vid}...` routes (waitlist included) | Anyone | 120 reads, 20 holds, 30 bookings, 10 waitlist joins a minute per address; hold caps; booking caps (4 upcoming per mailbox, 10 a day per address, S8) |
 | 3 `/b/{token}` routes | Holder of the manage link | 30 a minute per address, then token hash |
+| `GET /j/{token}` | Anyone with the shared link | 600 a minute per address, then token hash; 403 when switched off |
+| `POST /j/{token}/register` | Anyone with the shared link | Link and deadline first, then code limits (section 9) |
+| `POST /j/{token}/join` | Guest account | Guest session, 30 a minute per address, token, capacity after the event lock |
+| `POST /guest/verify`, `/guest/login`, `/guest/password/forgot`, `/guest/password/reset` | Anyone | Code, login and failed-login limits (section 9) |
+| `POST /guest/logout`, `GET /guest/me`, `POST /guest/me/delete` | Guest account | Guest session (5-part token, own signed message); delete: password and 10 a minute |
+| 10 `/guest/events/{eid}...` routes | Guest account with an active guest row on that event | Guest session, 120 a minute per address, then `load_account_guest` (404 otherwise) |
+| `GET`, `PATCH /events/{eid}/share`, `POST /events/{eid}/share/regenerate` | Organiser who owns the event | Session, `require_organiser`, `load_event` |
 | `POST /demo/reset` | Holder of `DEMO_KEY`, demo mode only | 5 a minute per address, then key |
 | `GET /demo/links` | Anyone, demo mode only | None (S22) |
 | `POST /internal/email/process` | Holder of `CRON_SECRET` | 30 a minute per address, then secret |
@@ -202,3 +216,64 @@ From the repository root and `frontend/`:
 - GitHub Actions settings and repository secrets (only the workflow files
   were read).
 - The gitleaks scan (it runs only in CI).
+
+## 9. Guest accounts and the shared link
+
+The feature is described in `docs/guest-accounts.md`. A security review and
+a correctness review attacked it on 2026-11-10 with throwaway tests on a
+temporary SQLite database (outside the repository). The fixes and their
+tests followed the same night (2026-11-10 and 11). Each fix has a test in
+`backend/tests/test_guest_review_fixes.py` (unless named) that failed when
+the fix was undone; `docs/test-report.md` lists those runs.
+
+| ID | Severity | Where | Attack | Fix | Status |
+|---|---|---|---|---|---|
+| S30 | High | `events_service/accounts.py` (`may_show_code`, `code_sent`) | With `DEMO_MODE=1` and the console provider (the documented setting for the graded demo), the sign-up answer carried the code for any address. Anyone typed an invited guest's address, read the code and took over the invitation: `201 {"status": "linked"}`, then the victim's seat page. | `demo_code` only for `@example.com` addresses that no organiser invited; never for a password reset; an account made with a shown code has `email_proven = false` and is never linked to an invitation. | Fixed |
+| S31 | Medium | `accounts.start_sign_up`, `finish_sign_up` | The password is chosen at register time and verify needed only email and code. A second register replaced the pending row; the victim typed the newest code and the account got the attacker's password. A code read out on the phone did the same. | A random `signup_id` goes only to the browser that registered; verify needs it (only its keyed hash is stored). The code email says "Never give this code to anyone". A code the victim reads out to the person who started the sign-up still works: that is what an emailed code proves. | Fixed (residual: social engineering) |
+| S32 | Medium | `accounts.start_sign_up` | scrypt ran only for new addresses: 8 ms for an existing account against 28 ms for a new one, so the time told who had an account. | scrypt runs for every address. | Fixed |
+| S33 | Medium | `routers/visitor.py`, `routers/guest_accounts.py` | Code limits were counted before the link was checked: 3 calls with a made-up link blocked a person's sign-up for an hour; 3 "forgot password" calls did the same; about 25 networks could use up the app-wide 500 an hour. | Link and deadline checked before counting; sign-up and reset counted apart per address; the app-wide count only counts emails really queued. Someone with the real link can still use up one address's 3 sign-up codes an hour. | Fixed (residual noted) |
+| S34 | Medium | `mail/templates.account_code` | The name typed on the form went into the code email to any address ("Hello Win a prize at https://evil.example.com/claim"): spam from our domain. | Code emails greet with a plain "Hello,". | Fixed |
+| S35 | Medium | `events_service/guests.erase_guest`, `share.join` | A guest the organiser removed rejoined at once (`200 joined`); with no default cap an abuser could keep filling the event. | The erased row keeps the account number (no personal data); `join` answers 403 `forbidden` "The organiser removed you from this event." Account deletion clears it. No default cap or approval step (open question 3 in `guest-accounts.md`). | Fixed (cap: open) |
+| S36 | Low | `models.GuestAccount` | SQLite gave a deleted account's id to the next account, so the old token (account id plus version 0) opened the new account. Postgres is not affected. | `sqlite_autoincrement` on `guest_accounts`. | Fixed |
+| S37 | Low | `accounts.finish_sign_up` | A sign-up started before "Make a new link" still joined after it. | The pending row stores `share_version`; a changed version answers `link_closed`. | Fixed |
+| S38 | Medium | `accounts.py` limits, `routers/visitor.py` | A conference on one Wi-Fi hit 429 at the 21st sign-up in an hour, and live map refreshes were silently refused at 120 a minute per address. | 60 code emails an hour and 200 a day per network, 100 code checks per 10 minutes, 600 visitor views a minute; the visitor page says when the map may be out of date. | Fixed |
+| S39 | Low | `accounts.log_in` | 20 wrong passwords from anywhere locked the owner out for an hour. | The 20-an-hour block counts per address and network; a second block at 100 an hour per address covers guessing from many networks. | Fixed (an attacker with many networks can still lock the owner out; the reset code clears it) |
+| S40 | Low | `accounts._check_code` | The try counter was read and raised in Python, so parallel requests could get more than 5 guesses per code. | One `UPDATE ... WHERE attempts < 5 RETURNING attempts` counts the try before the code is compared. | Fixed |
+| S41 | Low | `events_service/share.py` (`derive_token`) | The shared token is HMAC(`SECRET_KEY`, public id, version), not random: a leaked key reveals every event's link, and switching off and on keeps the same link. | Accepted (decision D2): the organiser can copy the link again at any time; a leaked `SECRET_KEY` already breaks sessions and every other check. "Make a new link" is the way to kill old copies. | Open, accepted |
+
+The correctness review also found a capacity bug with a security side: saying
+"no" and then "yes" again made 9 guests for 8 seats and passed the organiser's
+cap. Fixed in `attendee_view.set_rsvp` (room checked after the event lock).
+
+S13 and S14 for guest accounts: guest sessions carry a version number, so
+sign-out and a password reset end every older session (S13 does not apply to
+them); failed guest logins are counted per address (S14, as changed by S39).
+
+Rejected: making the app refuse to start with demo mode, the console
+provider and a Postgres database together (security review finding 1). The
+graded deployment runs exactly so (`docs/deployment.md`); S30 removes the
+takeover without it.
+
+**Checked and found sound** (security review): guest tokens on all organiser
+routes give 401 and organiser tokens on guest routes give 401; a guest account
+reaches only events where it has a guest row; the shared token has 256 bits;
+a switched-off link answers 403 and a replaced one 404; the visitor map uses
+the same privacy-filtered names as attendees; the seat picture reads no guest
+data; email HTML is escaped and subjects stay on one line; deleting an account
+blanks its outbox rows, pictures included; guest tokens live in
+`sessionStorage`; no new Python package.
+
+Commands (run 2026-11-10 to 11, from `backend/` unless named):
+
+| Command | Real output |
+|---|---|
+| `../.venv/bin/python -m pytest -p no:cacheprovider` before the review fixes | `571 passed in 38.28s` |
+| the 22 undo-the-fix runs (`docs/test-report.md`) | every one `CAUGHT`: the matching test failed |
+| `../.venv/bin/python -m pytest -p no:cacheprovider` after the fixes (2026-11-11 00:01) | `598 passed, 3 warnings in 66.38s (0:01:06)` |
+| the same with `SEATPLAN_TEST_POSTGRES` on a throwaway Postgres 16.2 cluster (deleted afterwards) | `597 passed, 1 skipped in 144.30s (0:02:24)` |
+| `.venv/bin/pip-audit -r requirements.txt` (repository root) | `No known vulnerabilities found` |
+| `npm audit` (`frontend/`) | `found 0 vulnerabilities` |
+
+Not tested for this feature: a real Resend send (inline image and the
+`content_id` field), real mail clients, a real Vercel deployment.
+

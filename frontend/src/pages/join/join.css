@@ -1,0 +1,56 @@
+/* The shared event link (/j/:token): the visitor's map, the places-left
+   panel and the panel that opens when a free seat is picked. The page frame
+   (.ev-page, .ev-card, .ev-map) comes from pages/events/events.css. */
+
+.join-status p {
+  margin: 0;
+}
+
+.join-places {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+}
+
+.join-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* On a phone each button fills the width: bigger targets, no hunting. */
+.join-actions .btn {
+  flex: 1 1 14rem;
+}
+
+.join-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--c-surface);
+  border: var(--border-width) solid var(--c-border-strong);
+  border-left: calc(var(--border-width) * 4) solid var(--c-primary);
+  border-radius: var(--radius-lg);
+}
+
+.join-panel p {
+  margin: 0;
+}
+
+.join-panel-title {
+  margin: 0;
+  font-size: var(--fs-lg);
+}
+
+.join-panel > .btn-ghost {
+  align-self: flex-start;
+}
+
+.join-closed {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  max-width: 40rem;
+  margin: var(--space-5) auto 0;
+}

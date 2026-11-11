@@ -59,3 +59,37 @@ The organiser chooses how names appear to other guests: full names, first
 name and last initial ("Ana S."), or no names at all ("Guest"). You can always
 choose to appear as "Guest", whatever the event setting. Other guests never see
 your email, your dietary note or whether you need an accessible seat.
+
+## 7. If you were sent the event's shared link
+
+Some organisers post one link for everyone, for example
+`https://.../j/XyZ...`. It is not personal: anyone with it may look.
+
+- **Looking is free.** The page shows the event, how many places are left and
+  the live map, with names shown as the organiser chose. Picking a free seat
+  only tells you it is free; you cannot hold a seat without an account.
+- **To choose a seat, create an account.** Press "Create an account to
+  choose a seat" and fill in your name, email and a password of at least 10
+  characters, and tick the box that lets SeatPlan store your details. We
+  email you a 6-digit code; type it on the same page within 15 minutes. Never
+  give this code to anyone. Then you land on your seat page and choose a seat
+  as in sections 2 to 5.
+- **Your seat by email.** When you confirm a seat, or the organiser moves
+  you, you get an email with the event, the date and place, your table and
+  seat, a picture of the room from above with your seat marked "YOU", and a
+  calendar invite. The picture shows no other guest's name. If your email app
+  hides pictures, the email says your seat in words.
+- **Coming back.** Open `/my/sign-in` (the "See my seat" button in the email
+  takes you there) and sign in with your email and password. "My events"
+  lists every event you joined.
+- **Already invited?** If the organiser invited you with the same email
+  address, your account finds that invitation after you type the code. Use
+  the address the invitation went to. On a full event, the page offers "I was
+  invited: create my account".
+- **Forgot your password?** "Forgot your password?" on the sign-in page
+  emails a code to set a new one.
+- **Deleting your account.** "My account", then "Delete my account" and your
+  password. We free your seats and wipe the emails we keep. If an organiser
+  invited you, they keep their own record of that invitation.
+- **"The organiser removed you from this event"** means just that: ask them
+  if you think it is a mistake.

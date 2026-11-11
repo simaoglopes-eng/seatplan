@@ -21,9 +21,10 @@ A real diner never meets either. Staff bookings and walk-ins do not count:
 they are written by staff routes, never through this one, and only
 source="diner" rows are counted. Like the hold caps these are soft limits:
 two requests at the very same moment may both pass.
-"""
 
-import ipaddress
+mailbox() and network_of() live in security.py, because guest accounts count
+the same way; they are imported from there.
+"""
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -31,7 +32,7 @@ from sqlalchemy.orm import Session
 from app.core.errors import ApiError
 from app.models import Booking, Venue, utc_now
 from app.restaurant_service.occupancy import ACTIVE_STATUSES
-from app.security import rate_limit
+from app.security import mailbox, network_of, rate_limit
 
 MAX_UPCOMING_PER_EMAIL = 4
 # A busy household books a few nights; 10 a day only matters to a script.
@@ -39,12 +40,6 @@ MAX_UPCOMING_PER_EMAIL = 4
 # than 10 diners on one network will see the 429 (see docs/security.md, S8).
 MAX_BOOKINGS_PER_ADDRESS_PER_DAY = 10
 DAY_SECONDS = 24 * 60 * 60
-
-
-def mailbox(email: str) -> str:
-    """One key per inbox: lower case, and "name+tag@domain" read as "name@domain"."""
-    local, _, domain = email.strip().lower().rpartition("@")
-    return f"{local.split('+', 1)[0]}@{domain}"
 
 
 def _upcoming_for_email(session: Session, venue: Venue, email: str) -> int:
@@ -61,17 +56,6 @@ def _upcoming_for_email(session: Session, venue: Venue, email: str) -> int:
         & func.lower(Booking.email).endswith(f"@{domain}", autoescape=True)
     )
     return sum(1 for stored_email in session.scalars(query) if mailbox(stored_email) == key)
-
-
-def network_of(address: str) -> str:
-    """The client address as the daily cap counts it: IPv6 by its /64 network."""
-    try:
-        ip = ipaddress.ip_address(address)
-    except ValueError:
-        return address  # "unknown", or a test client's made-up name
-    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is None:
-        return str(ipaddress.IPv6Network((ip, 64), strict=False))
-    return address
 
 
 def check_booking_caps(session: Session, venue: Venue, email: str, address: str) -> None:

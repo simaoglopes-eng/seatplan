@@ -29,6 +29,7 @@ stop two people taking the same place, and help to fill the gaps sensibly.
 | User | Vertical | Device we design for | Main screen (route, file) |
 |---|---|---|---|
 | Attendee (invited guest) | Events | Phone | `/e/:token`, `frontend/src/pages/events/AttendeePage.tsx` |
+| Visitor with the shared link, then guest account holder | Events | Phone | `/j/:token`, `frontend/src/pages/join/`; `/my/...`, `frontend/src/pages/account/` |
 | Organiser | Events | Laptop | `/organiser/:eventId`, `frontend/src/pages/events/OrganiserPage.tsx` |
 | Diner | Restaurants | Phone | `/r/:venueId`, `frontend/src/pages/restaurant/BookingPage.tsx`, and `/b/:token`, `ManageBookingPage.tsx` |
 | Staff (host, manager) | Restaurants | Laptop or tablet | `/staff/:venueId`, `frontend/src/pages/restaurant/StaffPage.tsx` |
@@ -59,6 +60,13 @@ Guests get a personal link. They reply, optionally say who they know, see who
 sits where (names shortened or hidden according to the event's privacy mode)
 and pick a seat. The organiser sees everything, places people, auto-fills the
 rest, compares plans and prints place cards.
+
+The organiser can also switch on one **shared link** per event. Anyone who
+opens it is a visitor: they see the event and the live map, but cannot hold
+or confirm. To choose a seat they create a **guest account** (name, email,
+password, consent), proven by a 6-digit emailed code. An account holder gets
+their seat by email with a picture of the room and their seat marked, and can
+delete the account at any time. Design: `docs/guest-accounts.md`.
 
 ### 3.3 Restaurant vertical
 
@@ -126,6 +134,38 @@ need an account.**
 - After the change deadline, hold, confirm and release are refused (409
   `deadline_passed`); privacy and "who I know" stay open.
 - Where: `pages/events/DoneStep.tsx`, `events_service/`.
+
+**A8. As someone who was sent the shared link, I want to see the event and
+the map before I commit, so that I know where I could sit.** (built
+2026-11-10)
+- `/j/:token` shows the event, places left and the live map; names follow
+  the privacy mode, as for attendees; seats reserved for a tag show as not
+  available.
+- Picking a free seat opens a panel that explains an account is needed; no
+  request ever holds a seat (Playwright `guest-account.spec.ts`, step 1).
+- A switched-off link says "This link is closed for now" with no map; a
+  replaced link says "This link does not work".
+- Where: `pages/join/JoinPage.tsx`, `routers/visitor.py`, `events_service/share.py`.
+
+**A9. As a visitor, I want an account so that I can choose a seat and get it
+by email with a picture of the room.** (built 2026-11-10)
+- The form asks for name, email, password (at least 10 characters) and
+  consent; the account exists only after the emailed code is typed, in the
+  same browser; the guest then lands on their seat page.
+- Places left never go below 0: never more guests than seats (also when
+  someone says "yes" again after "no"), and never more than the organiser's
+  cap.
+- Confirming a seat, a single organiser move or an applied plan queues one
+  email with the event, date, place, table and seat, the picture (inline PNG
+  with alt text, no other guest's name), the calendar invite and a link to
+  `/my/<event>` (Playwright step 4: one `seat_confirmed` row with
+  `has_picture`).
+- An address the organiser already invited is linked to that invitation only
+  after its code is typed; it is never taken over by typing the address.
+- Signing out and in brings the seat back; deleting the account frees the
+  seat and wipes the emails we keep.
+- Where: `pages/join/RegisterPage.tsx`, `pages/account/`,
+  `events_service/accounts.py`, `mail/seat_picture.py`.
 
 **A7. As a guest, I want to hide my name from other guests.**
 - The anonymous switch shows "Guest" to others; the organiser still sees the
@@ -196,6 +236,18 @@ plans, and undo.**
   removed; an empty "Deleted guest" row stays so old plans still make sense.
 - "New link" asks first and stops the old link at once.
 - Where: `GuestRow.tsx`, decisions log, events vertical API, item 11.
+
+**O11. As an organiser, I want one link I can post anywhere, so that people
+I did not invite one by one can join.** (built 2026-11-10)
+- Settings tab, "Shared link": "Allow people to join with the shared link"
+  (off for existing events, on for the demo events), "Copy link", "Make a new
+  link" (asks first; the old link stops at once), an optional limit, and the
+  line "{joined} joined with the link. {places left} ({guests} guests for
+  {capacity} seats)."
+- The guest list marks people who joined with the link ("Joined with link")
+  and people with an account ("Has an account"); removing one also stops that
+  account from joining again with the link.
+- Where: `ShareLinkCard.tsx`, `GuestRow.tsx`, `GET|PATCH /events/{eid}/share`.
 
 ### 4.3 Diner (restaurants)
 

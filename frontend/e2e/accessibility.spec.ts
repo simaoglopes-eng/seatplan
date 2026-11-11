@@ -58,3 +58,23 @@ test("staff floor", async ({ page, request }) => {
   await expect(page.getByRole("button", { name: "New walk-in" })).toBeVisible();
   await expectNoViolations(page, "the staff floor");
 });
+
+test("visitor page of a shared link", async ({ page, request }) => {
+  const links = await demoLinks(request);
+  await page.goto(links.wedding_share);
+  await expect(page.getByText(/\d+ places? left\./)).toBeVisible();
+  await expectNoViolations(page, "the visitor page");
+});
+
+test("create-account form of a shared link", async ({ page, request }) => {
+  const links = await demoLinks(request);
+  await page.goto(`${links.wedding_share}/register`);
+  await expect(page.getByRole("button", { name: "Send my code" })).toBeVisible();
+  await expectNoViolations(page, "the create-account form");
+});
+
+test("guest sign-in page", async ({ page }) => {
+  await page.goto("/my/sign-in");
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expectNoViolations(page, "the guest sign-in page");
+});

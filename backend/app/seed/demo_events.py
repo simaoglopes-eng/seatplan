@@ -17,6 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.layout import rebuild_neighbours
+from app.events_service import share
 from app.events_service.access import attendee_link
 from app.events_service.problem import build_problem, event_guests, venue_seats
 from app.models import (
@@ -309,8 +310,19 @@ def _wedding(session: Session, organiser: Organiser, rng: random.Random) -> dict
     _seat_some(session, event, 0.6, rng)
     return {
         "wedding_organiser": f"/organiser/{event.public_id}",
+        "wedding_share": _open_shared_link(event),
         **_demo_attendees(session, event, "wedding", tokens),
     }
+
+
+def _open_shared_link(event: Event) -> str:
+    """Switch the demo event's shared link on and return its path, /j/<token>.
+
+    Real events start with the link off; the demo opens it so a visitor can
+    try joining (docs/guest-accounts.md, section 12).
+    """
+    share.switch_on(event)
+    return share.share_path(event) or ""
 
 
 def _demo_attendees(
@@ -427,6 +439,7 @@ def _conference(session: Session, organiser: Organiser, rng: random.Random) -> d
     _seat_some(session, event, 0.5, rng)
     return {
         "conference_organiser": f"/organiser/{event.public_id}",
+        "conference_share": _open_shared_link(event),
         **_demo_attendees(session, event, "conference", tokens),
     }
 

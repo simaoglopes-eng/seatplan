@@ -84,7 +84,15 @@ Content-Security-Policy.
 | diner books and cancels | Date and party, a free time, "Choose for me", details, confirmation, the manage link, cancel, and the server says `cancelled` |
 | staff walk-in | Sign in, move the floor to 20:00, find a table for 2, seat them, and the "Seated" count goes up by one |
 | phone (390 x 844, touch) | The attendee flow by tapping the map; no sideways scrolling |
-| accessibility (6 pages) | axe-core finds no WCAG 2.1 A or AA problem on the home, sign-in, attendee, booking, organiser and staff pages |
+| accessibility (9 pages) | axe-core finds no WCAG 2.1 A or AA problem on the home, sign-in, attendee, booking, organiser and staff pages, and (since guest accounts) the visitor page of a shared link, its create-account form and the guest sign-in page |
+| shared link: visitor (`guest-account.spec.ts`) | The visitor sees the map and places left; picking a free seat opens the join panel; no hold or confirm request is ever sent, and the API has no hold route for visitors |
+| shared link: create an account | Form, demo code, "Create my account", lands on `/my/<event>` signed in |
+| shared link: choose a seat | Sign in, hold, confirm; the Done step promises the email with the picture |
+| shared link: the email | The organiser's email log has exactly one `seat_confirmed` row for the visitor, with `has_picture: true`; the guest list shows `source: self_registered` |
+| shared link: sign out and in | "Sign out", then `/my/<event>` sends to sign-in with `next`, and signing in brings the confirmed seat back |
+| shared link: second visitor | The seat shows as taken and cannot be picked; a second account's hold through the API gets 409 `seat_taken` |
+| shared link: switched off | The organiser unticks "Allow people to join with the shared link"; the visitor page says "This link is closed for now" and shows no map (switched on again afterwards) |
+| phone: shared link sign-up (390 x 844, touch) | The visitor page and the form have no sideways scrolling; the account is made and the seat page opens |
 
 ```bash
 cd frontend
@@ -168,6 +176,57 @@ To check that the browser tests can really fail, we changed the expected
 answer of the second attendee's hold from 409 to 200 once: the test failed
 with `Expected: 200, Received: 409`, and we changed it back.
 
+## Results for guest accounts and the shared link (2026-11-10 to 11)
+
+After the feature was built and reviewed (security and correctness), the
+review fixes were made and everything was run again. The runs straddled
+midnight; each line says which day.
+
+| Check | Command | Result line |
+|---|---|---|
+| Backend, before the review fixes (10 Nov) | `cd backend && ../.venv/bin/python -m pytest -p no:cacheprovider` | `571 passed in 38.28s` |
+| Backend, all tests (11 Nov, 00:01) | the same | `598 passed, 3 warnings in 66.38s (0:01:06)` |
+| Backend on Postgres 16.2 (10 Nov) | the same with `SEATPLAN_TEST_POSTGRES` on a throwaway cluster, stopped and deleted afterwards | `597 passed, 1 skipped in 144.30s (0:02:24)` |
+| Review-fix tests | `... pytest tests/test_guest_review_fixes.py` | `27 passed in 4.44s` |
+| Migration from the old schema, Postgres | `python -m app.seed.migrate` twice on a database loaded from `tests/fixtures/schema_2026_11_10.postgres.sql` | first run: 7 `Added column ...` lines, 3 `Index ... is ready`, `Tables are ready.`; second run: no `Added` line, `Tables are ready.` |
+| Backend lint and format (11 Nov) | `ruff check .`; `ruff format --check .` | `All checks passed!`; `159 files already formatted` |
+| Frontend types | `cd frontend && npm run typecheck` | no errors (exit code 0) |
+| Frontend unit tests | `cd frontend && npx vitest run` | `Test Files  23 passed (23)`, `Tests  209 passed (209)` |
+| Colour contrast | `npm run contrast` | `86 checks, 0 failures.` |
+| Build | `npx vite build --outDir "$TMPDIR/seatplan-dist"` | `✓ built in 100ms` |
+| Browser tests, 3 runs | `PLAYWRIGHT_BROWSERS_PATH=... npx playwright test` | `23 passed (13.6s)`, `23 passed (13.6s)`, `23 passed (13.8s)` |
+| npm audit | `npm audit` | `found 0 vulnerabilities` |
+| Python audit | `.venv/bin/pip-audit -r requirements.txt` | `No known vulnerabilities found` |
+
+**Can the new tests fail?** Each review fix was undone on its own, the
+matching tests were run, and the fix was put back (a throwaway script outside
+the repository). All 22 backend runs were caught, for example:
+
+| Fix undone | Result |
+|---|---|
+| S30: code shown for any address | `tests/test_guest_review_fixes.py:49: AssertionError` |
+| S31: no sign-up id check | `tests/test_guest_review_fixes.py:111: AssertionError` |
+| S33: limits counted before the link check | `tests/test_guest_review_fixes.py:150: AssertionError` |
+| S35: removed guest may rejoin | `IntegrityError` (the unique index refused the row; the test needs a clean 403) |
+| S36: no `AUTOINCREMENT` | `tests/test_guest_review_fixes.py:240: AssertionError` |
+| S40: compare before counting | `tests/test_guest_review_fixes.py:308: AssertionError` |
+| R3: no room check on "yes" again | `tests/test_guest_review_fixes.py:363: AssertionError` |
+| R6: plan sends no account email | `tests/test_account_emails.py:119: AssertionError` |
+| delete with a wrong password answers 401 | `tests/test_guest_delete.py:69: AssertionError` |
+
+The first version of the S34 test was **not** caught: it read the outbox,
+whose code emails are blanked once sent. It was rewritten to read what the
+(fake) provider received, and then failed as it should
+(`tests/test_guest_review_fixes.py:210: AssertionError`). Five frontend
+changes were undone the same way (sign-up id not sent, no "I was invited"
+link, `forbidden` not read as `removed`, "1 places left", the raw delete
+message): each made at least one vitest test fail.
+
+The first Postgres run found one test bug: `test_upgraded_database_enforces_one_row_per_account_and_event`
+inserted guests without an id after the fixture had written id 1 by hand, and
+Postgres does not move its id counter past such rows (`duplicate key value
+violates unique constraint "guests_pkey"`). The test now gives explicit ids.
+
 ## What CI runs
 
 `.github/workflows/ci.yml`, on every pull request and every push to `main`:
@@ -189,7 +248,9 @@ The `e2e` job and the gitleaks scan have not run on GitHub yet: not done yet.
 - **Postgres in CI:** CI uses SQLite. The full backend suite ran once on a
   local Postgres 16.2 in the final verification (table above); it is not
   repeated automatically.
-- **Real email delivery through Resend:** not done yet. Tests fake the provider.
+- **Real email delivery through Resend:** not done yet. Tests fake the provider,
+  so the inline seat picture (`content_id`) has not been seen in Gmail,
+  Outlook or Apple Mail.
 - **Live updates in the browser:** no browser test waits for a change made by
   someone else to appear through the event stream or the polling fallback.
 - **Hold expiry in the browser:** the 5-minute timeout is tested in the

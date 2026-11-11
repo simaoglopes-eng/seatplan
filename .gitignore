@@ -22,6 +22,8 @@ htmlcov/
 # Node
 node_modules/
 frontend/dist/
+# TypeScript's incremental build cache (made by tsc -b), never source.
+*.tsbuildinfo
 
 # Tooling and OS
 .vercel/

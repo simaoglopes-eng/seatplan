@@ -34,6 +34,8 @@ class OutgoingEmail:
     body_html: str
     ics: str | None
     idempotency_key: str
+    # Base64 PNG shown inline as cid:seatmap (account holders' seat emails).
+    image_png: str | None = None
 
 
 class ProviderError(Exception):
@@ -57,10 +59,11 @@ class ConsoleProvider:
 
     def send(self, message: OutgoingEmail) -> str:
         logger.info(
-            "EMAIL (console, not sent) to=%s subject=%r has_invite=%s",
+            "EMAIL (console, not sent) to=%s subject=%r has_invite=%s has_image=%s",
             mask_email(message.to_email),
             message.subject,
             message.ics is not None,
+            message.image_png is not None,
         )
         return f"console-{uuid.uuid4().hex}"
 
@@ -91,11 +94,20 @@ class ResendProvider:
             "html": message.body_html,
             "text": message.body_text,
         }
+        attachments: list[dict[str, str]] = []
         if message.ics is not None:
             # Resend takes attachment content as Base64; the file type is
             # worked out from the filename.
             encoded = base64.b64encode(message.ics.encode("utf-8")).decode("ascii")
-            payload["attachments"] = [{"filename": "invite.ics", "content": encoded}]
+            attachments.append({"filename": "invite.ics", "content": encoded})
+        if message.image_png is not None:
+            # content_id makes it an inline image: the HTML shows it with
+            # <img src="cid:seatmap"> (Resend docs, "Embed inline images").
+            attachments.append(
+                {"filename": "seat-map.png", "content": message.image_png, "content_id": "seatmap"}
+            )
+        if attachments:
+            payload["attachments"] = attachments
         return payload
 
     def send(self, message: OutgoingEmail) -> str:

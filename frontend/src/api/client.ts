@@ -17,6 +17,17 @@ import type {
 /** Every backend path starts here; the CSV helpers in events.ts use it too. */
 export const API_BASE = "/api";
 const SESSION_KEY = "seatplan.session";
+// The guest account session lives under its own key, never with the organiser's
+// (docs/guest-accounts.md section 5.2), so one tab can never mix the two up.
+const GUEST_KEY = "seatplan.guest-session";
+
+/**
+ * Which session a request carries:
+ * - "organiser": the organiser or staff session (the default, so older calls are unchanged);
+ * - "guest": the guest account session;
+ * - "none": no Authorization header at all (visitor pages on a shared link).
+ */
+export type Auth = "organiser" | "guest" | "none";
 
 /** Thrown for every failed request, so callers only ever catch one type. */
 export class ApiError extends Error {
@@ -60,6 +71,40 @@ export function clearSessionToken(): void {
   }
 }
 
+// ---------- Guest account token ----------
+// Same rules as the organiser token above: sessionStorage, wrapped in try/catch.
+
+export function getGuestToken(): string | null {
+  try {
+    return window.sessionStorage.getItem(GUEST_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setGuestToken(token: string): void {
+  try {
+    window.sessionStorage.setItem(GUEST_KEY, token);
+  } catch {
+    // Storage blocked: the guest stays signed in for this page view only.
+  }
+}
+
+export function clearGuestToken(): void {
+  try {
+    window.sessionStorage.removeItem(GUEST_KEY);
+  } catch {
+    // Nothing stored, nothing to clear.
+  }
+}
+
+/** The token to send for one kind of caller, or null for none. */
+function tokenFor(auth: Auth): string | null {
+  if (auth === "guest") return getGuestToken();
+  if (auth === "organiser") return getSessionToken();
+  return null;
+}
+
 // ---------- Core request ----------
 
 type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -70,10 +115,10 @@ function isApiErrorBody(value: unknown): value is ApiErrorBody {
   return typeof error === "object" && error !== null && "code" in error && "message" in error;
 }
 
-function buildHeaders(hasBody: boolean): Headers {
+function buildHeaders(hasBody: boolean, auth: Auth): Headers {
   const headers = new Headers({ Accept: "application/json" });
   if (hasBody) headers.set("Content-Type", "application/json");
-  const token = getSessionToken();
+  const token = tokenFor(auth);
   if (token) headers.set("Authorization", `Bearer ${token}`);
   return headers;
 }
@@ -89,12 +134,12 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
-export async function request<T>(method: Method, path: string, body?: unknown): Promise<T> {
+export async function request<T>(method: Method, path: string, body?: unknown, auth: Auth = "organiser"): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
       method,
-      headers: buildHeaders(body !== undefined),
+      headers: buildHeaders(body !== undefined, auth),
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
@@ -102,6 +147,8 @@ export async function request<T>(method: Method, path: string, body?: unknown): 
   }
   const data = await readJson(response);
   if (response.ok) return data as T;
+  // A guest session the server refuses is over: forget it, so pages send the person to sign in.
+  if (response.status === 401 && auth === "guest") clearGuestToken();
   if (isApiErrorBody(data)) {
     throw new ApiError(response.status, data.error.code, data.error.message);
   }
@@ -112,12 +159,13 @@ export async function request<T>(method: Method, path: string, body?: unknown): 
 }
 
 // Small helpers so feature code reads like the contract: api.get("/events").
+// The last argument picks the session; leaving it out sends the organiser's.
 export const api = {
-  get: <T>(path: string) => request<T>("GET", path),
-  post: <T>(path: string, body?: unknown) => request<T>("POST", path, body ?? {}),
-  put: <T>(path: string, body: unknown) => request<T>("PUT", path, body),
-  patch: <T>(path: string, body: unknown) => request<T>("PATCH", path, body),
-  delete: <T>(path: string) => request<T>("DELETE", path),
+  get: <T>(path: string, auth?: Auth) => request<T>("GET", path, undefined, auth),
+  post: <T>(path: string, body?: unknown, auth?: Auth) => request<T>("POST", path, body ?? {}, auth),
+  put: <T>(path: string, body: unknown, auth?: Auth) => request<T>("PUT", path, body, auth),
+  patch: <T>(path: string, body: unknown, auth?: Auth) => request<T>("PATCH", path, body, auth),
+  delete: <T>(path: string, auth?: Auth) => request<T>("DELETE", path, undefined, auth),
 };
 
 // ---------- Core endpoints (contract section 5, "Core") ----------

@@ -113,7 +113,8 @@ cd backend
 DATABASE_URL='PASTE THE NEON URL HERE' SECRET_KEY='PASTE THE SAME SECRET_KEY AS ON VERCEL' ../.venv/bin/python -m app.seed.migrate
 ```
 
-Expected output: `Tables are ready.` Safe to run again.
+Expected output: one `Added column ...` or `Index ... is ready` line per step,
+then `Tables are ready.` Safe to run again.
 
 Then, for the demo only:
 
@@ -126,6 +127,55 @@ It prints the demo links (`/e/...`, `/organiser/...`, `/r/...`, `/staff/...`).
 They contain secret tokens: share them only with the people who need them.
 Type the values in your own terminal; do not paste them into chats or files
 that get committed.
+
+### Upgrading an existing database (guest accounts, 2026-11-10)
+
+Status: **to do by the operator** on every database made before guest
+accounts (the production database included). Tested on 2026-11-10 on a
+throwaway Postgres 16.2 loaded with the old schema
+(`backend/tests/fixtures/schema_2026_11_10.postgres.sql`), not on Neon.
+
+The new code reads 7 columns that an older database does not have
+(`events.share_enabled`, `share_version`, `share_token_hash`, `share_cap`,
+`guests.account_id`, `guests.source`, `email_outbox.image_png`), plus two new
+tables. Run the migrate command **before** the new code goes live:
+
+1. In Vercel, copy the production `DATABASE_URL` and `SECRET_KEY`, and in your
+   own terminal (never in a chat or a committed file) run
+   `export DATABASE_URL=...` and `export SECRET_KEY=...` with them.
+2. From the repository root:
+
+   ```bash
+   cd backend && DATABASE_URL="$DATABASE_URL" SECRET_KEY="$SECRET_KEY" ../.venv/bin/python -m app.seed.migrate
+   ```
+
+3. Expected on the first run (real output from the test database):
+
+   ```
+   Added column events.share_enabled
+   Added column events.share_version
+   Added column events.share_token_hash
+   Added column events.share_cap
+   Added column guests.account_id
+   Added column guests.source
+   Added column email_outbox.image_png
+   Index uq_events_share_token is ready
+   Index uq_guests_event_account is ready
+   Index ix_guests_account_id is ready
+   Tables are ready.
+   ```
+
+   A second run prints only the three `Index ... is ready` lines and `Tables
+   are ready.` No row is rewritten: existing events get `share_enabled =
+   false` (their link stays off until the organiser switches it on), existing
+   guests get `source = 'invited'`.
+4. Then deploy the new code.
+
+Why this order is safe: the old code never names the new columns, and every
+new column is either nullable or has a default, so the old deployment keeps
+working on the upgraded database. To undo: deploy the old code again; the
+extra columns and the two new tables can stay. Removing them would need a
+hand-written `ALTER TABLE ... DROP COLUMN` and is not needed.
 
 ## Step 5. Deploy and check
 
@@ -205,7 +255,8 @@ Status: **not done yet** (never needed so far)
 
 - **Code:** in Vercel, promote the previous working deployment back to
   Production, or revert the commit on `main` and let it deploy again.
-- **Database:** tables are only ever added, never changed by the app, so an
+- **Database:** the migrate command only ever adds tables, nullable or
+  defaulted columns and indexes, never changes or drops anything, so an
   older deployment still works with a newer database. There is no automatic
   backup set up by this project; check what the Neon plan offers before the
   demo.

@@ -6,7 +6,11 @@ one core:
 - **Events:** an attendee opens a personal link, says who they know, sees who
   sits where (names follow the event's privacy rules) and picks a seat. The
   organiser sees the full map, auto-fills the people who did not choose, and
-  re-plans with as few moves as possible.
+  re-plans with as few moves as possible. The organiser can also switch on
+  one **shared link** per event: anyone who opens it sees the live map as a
+  visitor, and makes a **guest account** (checked by an emailed code) to
+  choose a seat and get it by email with a picture of the room
+  ([`docs/guest-accounts.md`](docs/guest-accounts.md)).
 - **Restaurants:** a diner picks a date, party size, time and table. Staff see a
   live floor, seat walk-ins, ask "what if" questions and read a dashboard.
 
@@ -159,9 +163,13 @@ with a status line per step, is [`docs/deployment.md`](docs/deployment.md).
    The app never creates tables on Postgres: several serverless instances
    starting at the same moment would race on `CREATE TABLE`. The command is
    safe to run twice or in parallel (it takes a Postgres advisory lock). It
-   only adds missing tables; a new column or constraint on an existing table
-   is not applied, because there is no migration tool. Such a change needs a
-   hand-written `ALTER TABLE` or a fresh database.
+   creates missing tables, then adds the columns and indexes listed in
+   `NEW_COLUMNS` and `NEW_INDEXES` in `backend/app/seed/migrate.py` (today:
+   the shared link and guest account columns), and nothing else: any other
+   change to an existing table needs a hand-written `ALTER TABLE` or a fresh
+   database. **A database made before guest accounts must run it once before
+   the new code goes live** (`docs/deployment.md`, "Upgrading an existing
+   database").
 3. Optionally seed the demo with `python -m app.seed.run` (same variables,
    plus `DEMO_MODE=1` and the two demo passwords).
 4. Push to `main`; Vercel builds the frontend and serves `api/index.py`.
@@ -227,7 +235,7 @@ questions. On the frontend there is one in `frontend/` and one in each of
 | [`docs/product-spec.md`](docs/product-spec.md) | The problem, the users, scope and user stories with acceptance criteria |
 | [`docs/personas.md`](docs/personas.md) | Four assumption personas (not research) tied to real screens |
 | [`docs/architecture.md`](docs/architecture.md) | Diagrams: components, hold and confirm, live updates, email outbox |
-| [`docs/data-model.md`](docs/data-model.md) | The 24 tables and the constraints that stop double booking |
+| [`docs/data-model.md`](docs/data-model.md) | The 26 tables and the constraints that stop double booking |
 | [`docs/api.md`](docs/api.md), [`docs/openapi.json`](docs/openapi.json) | The HTTP API, short and in full (exported from the app) |
 | [`docs/optimiser-events.md`](docs/optimiser-events.md), [`docs/optimiser-restaurant.md`](docs/optimiser-restaurant.md) | How the optimisers work and how close they get to the proven optimum |
 | [`docs/email.md`](docs/email.md) | The email outbox, templates, invites and providers |
@@ -235,6 +243,7 @@ questions. On the frontend there is one in `frontend/` and one in each of
 | [`docs/accessibility.md`](docs/accessibility.md) | Accessibility statement (no conformance claim), WCAG 2.2 A and AA review, heuristic review |
 | [`docs/usability/`](docs/usability/README.md) | Usability test kit; no session has been run yet |
 | User guides: [attendee](docs/user-guide-attendee.md), [organiser](docs/user-guide-organiser.md), [diner](docs/user-guide-diner.md), [staff](docs/user-guide-staff.md) | How to use each screen |
+| [`docs/guest-accounts.md`](docs/guest-accounts.md) | The shared event link and guest accounts: decisions, API, emails with the seat picture, GDPR, review fixes |
 | [`docs/security.md`](docs/security.md) | Threat model, findings (fixed and open), who may call each route |
 | [`docs/test-report.md`](docs/test-report.md) | Every test layer, how to run it and today's results |
 | [`docs/runbook.md`](docs/runbook.md) | Running locally, environment variables, common failures |
@@ -245,6 +254,22 @@ questions. On the frontend there is one in `frontend/` and one in each of
 | [`docs/team/`](docs/team/tasks.md) | Who owns what, issues to open, walkthrough questions, demo script, revision plan, self-assessment, AI use |
 
 ## Test report
+
+**Guest accounts and the shared link** (run 2026-11-10 to 11, after the
+review fixes; details in [`docs/test-report.md`](docs/test-report.md)):
+
+| Check | Result |
+|---|---|
+| `pytest` (backend, SQLite) | `598 passed, 3 warnings in 66.38s (0:01:06)` |
+| `pytest` with `SEATPLAN_TEST_POSTGRES` (throwaway Postgres 16.2, deleted afterwards) | `597 passed, 1 skipped in 144.30s (0:02:24)` |
+| `ruff check .`; `ruff format --check .` | `All checks passed!`; `159 files already formatted` |
+| `npm run typecheck`; `npx vitest run` | no errors; `Test Files  23 passed (23)`, `Tests  209 passed (209)` |
+| `npm run contrast`; build to a temporary folder | `86 checks, 0 failures.`; `✓ built in 100ms` |
+| Playwright, three runs | `23 passed (13.6s)`, `23 passed (13.6s)`, `23 passed (13.8s)` |
+| `npm audit`; `pip-audit -r requirements.txt` | `found 0 vulnerabilities`; `No known vulnerabilities found` |
+| `python -m app.seed.migrate` twice on a Postgres database with the old schema | 7 columns and 3 indexes added, then nothing more the second time |
+
+The earlier final verification, before guest accounts:
 
 Real output observed on 2026-11-10 in the final verification (macOS, Python
 3.12.13, Node 24.17.0). More detail in [`docs/test-report.md`](docs/test-report.md).

@@ -95,3 +95,57 @@ class KnowsIn(Strict):
 
 class PrivacyIn(Strict):
     wants_anonymous: bool
+
+
+# ---------------------------------------------------------------- shared link and guest accounts
+#
+# Password lengths are checked in events_service/accounts.py rather than with
+# min_length, so the 422 message can name the field in plain words
+# ("password: Use at least 10 characters.").
+
+Code = Field(pattern=r"^[0-9]{6}$")
+Password = Field(min_length=1, max_length=200)
+
+
+class EmptyIn(Strict):
+    """A body of {} for actions that need nothing more."""
+
+
+class SharePatch(Strict):
+    enabled: bool | None = None
+    cap: int | None = Field(default=None, ge=1, le=5000)  # null: no cap beyond the seats
+
+
+class RegisterIn(Strict):
+    name: PlainText = Field(min_length=1, max_length=120)
+    email: EmailStr = Field(max_length=254)
+    password: str = Password
+    needs_accessible: bool = False
+    # Literal[True]: the box must be ticked; false or missing is a 422.
+    consent: Literal[True]
+
+
+class VerifyIn(Strict):
+    email: EmailStr = Field(max_length=254)
+    code: str = Code
+    # The id the register answer gave this browser (accounts.start_sign_up).
+    signup_id: str = Field(min_length=1, max_length=128)
+
+
+class GuestLoginIn(Strict):
+    email: EmailStr = Field(max_length=254)
+    password: str = Password
+
+
+class ForgotIn(Strict):
+    email: EmailStr = Field(max_length=254)
+
+
+class ResetIn(Strict):
+    email: EmailStr = Field(max_length=254)
+    code: str = Code
+    new_password: str = Password
+
+
+class DeleteAccountIn(Strict):
+    password: str = Password

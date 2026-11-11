@@ -176,6 +176,60 @@ instance would reject the others' sessions and people would be logged out at
 random. So `config.py` requires it whenever the database is Postgres (decisions
 log, platform fixes, item 3).
 
+**S15. Guest accounts: what happens between "Send my code" and the seat page?**
+`POST /j/{token}/register` (`routers/visitor.py`, `register`, line 48) checks
+the form, the link and the deadline, then the code limits, then calls
+`start_sign_up` (`events_service/accounts.py` line 315). That stores only a
+pending row in `email_codes` (the password already scrypt-hashed, the code as
+an HMAC) and emails the code at once. Nothing counts yet: no account, no guest
+row. `POST /guest/verify` calls `finish_sign_up` (line 387): it checks the
+sign-up id, then the code, makes the account and calls `share.join` (line 353),
+which takes the event lock and either links an invitation or adds a
+`self_registered` guest row. Then the browser has a guest session and opens
+`/my/<event>`.
+
+**S16. Why does `/guest/verify` need a `signup_id` as well as the code?**
+Found by our review (S31): without it, a second sign-up for the same address
+replaced the first one, password included, and the victim then typed the
+attacker's code into their own browser. Now register gives a random id to the
+browser that asked (only its keyed hash is stored, `email_codes.signup_hash`),
+and the code works only with it. A wrong id is answered like an expired code
+and does not use up a try.
+
+**S17. The demo shows the code on screen. Is that not a back door?**
+It was (S30, High): on a demo deployment anyone could type an invited guest's
+address and take over the invitation. `may_show_code` (`accounts.py` line 239)
+now shows it only with demo mode and the console provider, only for
+`@example.com` addresses, and never for an address an organiser invited.
+Reset codes are never shown. An account made with a shown code has
+`email_proven = false` and is never linked to an invitation.
+
+**S18. How is the seat picture made, and why no library?**
+`mail/seat_picture.py` (`render_seat_picture`, line 343) draws into a
+bytearray of palette indexes: zones, tables (rotated rectangles are tested
+pixel by pixel in the table's own frame), small rings for seats, and a big
+black dot in a blue ring with ticks and a "YOU" tag for the guest's seat.
+`mail/png.py` (`encode_indexed`, line 31) writes the PNG with `zlib`,
+`struct` and `binascii.crc32`. No Pillow: a compiled package to install, pin
+and audit for circles and rectangles. Measured by the builder: the demo
+wedding picture takes about 10 ms and 3 744 bytes. Its types have no field for
+a person, so it cannot show a name; a test seats "ZEBRA" next to the guest and
+checks that no pixel changes.
+
+**S19. How does the picture reach the inbox?**
+The outbox row stores it as Base64 in `email_outbox.image_png`. The Resend
+provider sends it as an attachment with `content_id: "seatmap"`, and the HTML
+shows `<img src="cid:seatmap" width="...">` with alt text and the seat in
+words underneath, so a mail app that hides pictures still says where to sit.
+Not verified yet: a real Resend send and how Gmail and Outlook show it.
+
+**S20. What does "delete my account" delete?**
+`delete_account` (`accounts.py` line 566), one transaction. Rows the account
+made are erased like an organiser erasure; rows the organiser made are
+unlinked, the seat freed with no "seat released" email, and their emails
+wiped; pending codes deleted; code emails blanked; then the account row. The
+organiser keeps their own record of an invitation (GDPR: it is theirs).
+
 ---
 
 ## Federico (events: organiser side, events optimiser)
@@ -282,6 +336,47 @@ the same number.
 If any row is wrong, nothing is saved and the answer lists `{line, message}`
 for each bad row. Limits: 200 KB and 1000 rows (lines 25 to 26). The CSV is
 the raw request body because form uploads would need an extra library.
+
+**F15. How does the shared link work, and why is the token not random?**
+`share.derive_token` (line 51): HMAC-SHA256 of `SECRET_KEY`, the event's
+public id and `share_version`; only its SHA-256 is stored, to find the event
+(`load_shared_event`, line 86). So the organiser can copy the link again at any
+time and it never sits in the database. "Make a new link" adds 1 to the
+version. The review accepted the trade-off (S41): switching off and on keeps
+the same link, so a leaked copy needs "Make a new link".
+
+**F16. How can you be sure self-registration never makes more guests than
+seats?**
+Three places. `share.join` (line 353) takes the event lock first and only then
+counts `places_left` (line 143), so two people racing for the last place wait
+for each other (tested with 10 threads for 3 places, on SQLite and Postgres).
+`places_left` leaves out seats reserved for a tag (`_seats_for_newcomers`,
+line 127), because a newcomer has no tag. And `set_rsvp`
+(`attendee_view.py` line 127) asks `room_to_come_back` (`share.py` line 157)
+before a "no" becomes "yes": our review found that "no", someone joins, "yes"
+again made 9 guests for 8 seats.
+
+**F17. A guest you removed comes back with the link. What stops them?**
+Since the review (S35), `erase_guest` keeps the account number on the erased
+row (nothing personal is left on it). `share._was_removed` (line 277) sees it
+and `join` answers `removed`, HTTP 403. Deleting the account clears it.
+
+**F18. Does an applied plan email the people it moves?**
+Only guest account holders: `plans._sync_reminders` (line 219) calls
+`_email_account_holder` (line 202) for each account holder whose seat changed,
+with "The organiser moved you to a new seat." and the picture. Guests with only
+a personal link still get no email from a plan (a plan can move dozens of them
+at once), only their reminder is moved.
+
+**F19. Production already has tables. How do the new columns get there?**
+`python -m app.seed.migrate` (`seed/migrate.py`): after the advisory lock it
+runs `create_all` for the two new tables, then `_add_missing_columns` (line 62)
+adds each column of `NEW_COLUMNS` the table lacks (`ADD COLUMN IF NOT EXISTS`
+on Postgres), and `upgrade_schema` (line 78) creates the three indexes with
+`IF NOT EXISTS`. The test starts from the old schema frozen before
+`models.py` changed, runs migrate twice, and compares the result with a fresh
+database. We ran it on a throwaway Postgres too: 7 columns and 3 indexes the
+first time, nothing the second.
 
 ---
 

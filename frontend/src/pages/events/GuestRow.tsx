@@ -47,6 +47,8 @@ export function GuestRow(props: GuestRowProps) {
         <span className="ev-guest-name">{guest.name}</span>
         <Badge tone={badge.tone}>{badge.text}</Badge>
         {guest.needs_accessible && <Badge tone="info">Needs accessible seat</Badge>}
+        {guest.source === "self_registered" && <Badge tone="info">Joined with link</Badge>}
+        {guest.has_account && <Badge tone="neutral">Has an account</Badge>}
       </div>
       <div className="ev-guest-actions">
         <Button

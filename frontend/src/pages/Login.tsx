@@ -2,7 +2,7 @@
 // api/client.ts and we go back to where the person came from (?next=...).
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ApiError, login } from "../api/client";
 import { Button, Field, PageShell, useToast } from "../design/components";
 import "./login.css";
@@ -52,7 +52,10 @@ export default function Login() {
     <PageShell title="Sign in">
       <div className="login">
         <h1>Sign in</h1>
-        <p className="login-lede">For organisers and restaurant staff. Guests do not need an account: their personal link is enough.</p>
+        <p className="login-lede">
+          For organisers and restaurant staff. Invited guests only need their personal link. Guests who made an account on a shared link{" "}
+          <Link to="/my/sign-in">sign in on the guest page</Link>.
+        </p>
         <form onSubmit={onSubmit} noValidate>
           <Field label="Email" type="email" name="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           <Field

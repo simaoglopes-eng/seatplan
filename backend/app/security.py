@@ -6,18 +6,19 @@ step can be read and explained without a crypto package.
 
 import hashlib
 import hmac
+import ipaddress
 import secrets
 import time
 from typing import Annotated
 
 from fastapi import Depends, Header, Request
-from sqlalchemy import delete, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from app import db
 from app.config import get_settings
 from app.core.errors import ApiError
-from app.models import Organiser, RateLimit
+from app.models import GuestAccount, Organiser, RateLimit
 
 # scrypt cost settings. n=2**14 takes a few tens of milliseconds: slow enough
 # to make guessing passwords expensive, fast enough for a login request.
@@ -106,14 +107,27 @@ def verify_session_token(token: str, now: float | None = None) -> int | None:
     return int(user_id)
 
 
+def keyed_hash(message: str) -> str:
+    """HMAC-SHA256 of `message` with SECRET_KEY, as hex.
+
+    Used where a plain SHA-256 could be reversed by trying every value, for
+    example a 6-digit code (only a million of them) or an email address.
+    """
+    return _sign(message)
+
+
+def _bearer(authorization: str | None) -> str:
+    if authorization and authorization.startswith("Bearer "):
+        return authorization.removeprefix("Bearer ").strip()
+    return ""
+
+
 def require_user(
     session: db.SessionDep,
     authorization: Annotated[str | None, Header()] = None,
 ) -> Organiser:
     """FastAPI dependency: the logged-in organiser or staff member, or 401."""
-    token = ""
-    if authorization and authorization.startswith("Bearer "):
-        token = authorization.removeprefix("Bearer ").strip()
+    token = _bearer(authorization)
     user_id = verify_session_token(token) if token else None
     user = session.get(Organiser, user_id) if user_id is not None else None
     if user is None:
@@ -134,6 +148,66 @@ CurrentUser = Annotated[Organiser, Depends(require_user)]
 CurrentOrganiser = Annotated[Organiser, Depends(require_organiser)]
 
 
+# ---------------------------------------------------------------- guest sessions
+#
+# Guest accounts (docs/guest-accounts.md, section 5.2) get their own token
+# shape, kept apart from the organiser's on purpose:
+#   organiser: "<id>.<expiry>.<signature>"                 (3 parts)
+#   guest:     "g.<id>.<version>.<expiry>.<signature>"     (5 parts)
+# The guest signature is made over a message starting "guest-session.", so a
+# guest token can never pass as an organiser token or the other way round,
+# even when account 3 and organiser 3 share the number.
+
+GUEST_PREFIX = "g"
+
+
+def _guest_message(account_id: int, version: int, expires: int) -> str:
+    return f"guest-session.{account_id}.{version}.{expires}"
+
+
+def create_guest_session(account: GuestAccount, now: float | None = None) -> str:
+    issued = time.time() if now is None else now
+    expires = int(issued + SESSION_HOURS * 3600)
+    signature = _sign(_guest_message(account.id, account.session_version, expires))
+    return f"{GUEST_PREFIX}.{account.id}.{account.session_version}.{expires}.{signature}"
+
+
+def verify_guest_session(token: str, now: float | None = None) -> tuple[int, int] | None:
+    """Return (account id, session version), or None if malformed, forged or expired."""
+    parts = token.split(".")
+    if len(parts) != 5 or parts[0] != GUEST_PREFIX:
+        return None
+    _, account_id, version, expires, signature = parts
+    if not (account_id.isdigit() and version.isdigit() and expires.isdigit()):
+        return None
+    expected = _sign(_guest_message(int(account_id), int(version), int(expires)))
+    if not tokens_match(signature, expected):
+        return None
+    current = time.time() if now is None else now
+    if int(expires) < current:
+        return None
+    return int(account_id), int(version)
+
+
+def require_guest_account(
+    session: db.SessionDep,
+    authorization: Annotated[str | None, Header()] = None,
+) -> GuestAccount:
+    """FastAPI dependency: the signed-in guest account, or 401.
+
+    The version check is what makes "sign out" and "new password" end every
+    older session: their tokens carry the old version number.
+    """
+    found = verify_guest_session(_bearer(authorization))
+    account = session.get(GuestAccount, found[0]) if found else None
+    if account is None or found is None or account.session_version != found[1]:
+        raise ApiError(401, "unauthorised", "Please sign in again.")
+    return account
+
+
+CurrentGuestAccount = Annotated[GuestAccount, Depends(require_guest_account)]
+
+
 # ---------------------------------------------------------------- rate limit
 
 
@@ -151,6 +225,27 @@ def client_ip(request: Request) -> str:
         if forwarded:
             return forwarded.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
+
+
+def network_of(address: str) -> str:
+    """The client address as caps count it: IPv6 by its /64 network.
+
+    One home connection gets a whole IPv6 /64 and could take a new address
+    for every request, so the /64 is what we count.
+    """
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return address  # "unknown", or a test client's made-up name
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is None:
+        return str(ipaddress.IPv6Network((ip, 64), strict=False))
+    return address
+
+
+def mailbox(email: str) -> str:
+    """One key per inbox: lower case, and "name+tag@domain" read as "name@domain"."""
+    local, _, domain = email.strip().lower().rpartition("@")
+    return f"{local.split('+', 1)[0]}@{domain}"
 
 
 def _stored_key(key: str) -> str:
@@ -199,3 +294,24 @@ def rate_limit(session: Session, key: str, limit: int, window_s: int) -> None:
     session.commit()
     if count is not None and count > limit:
         raise ApiError(429, "rate_limited", "Too many attempts. Please wait a moment.")
+
+
+def limit_reached(session: Session, key: str, limit: int, window_s: int) -> bool:
+    """True when `key` has already been counted `limit` times in this window.
+
+    Reads only, counts nothing. Used where a check must happen before the
+    real work: a login must be refused before the password is checked, or a
+    right guess would still get through after the limit.
+    """
+    window_start = int(time.time()) // window_s * window_s
+    count = session.scalar(
+        select(RateLimit.count).where(
+            (RateLimit.key == _stored_key(key)) & (RateLimit.window_start == window_start)
+        )
+    )
+    return count is not None and count >= limit
+
+
+def clear_limit(session: Session, key: str) -> None:
+    """Forget every count for `key`. Does not commit."""
+    session.execute(delete(RateLimit).where(RateLimit.key == _stored_key(key)))

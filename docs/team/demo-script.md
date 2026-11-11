@@ -30,7 +30,9 @@ temporary database on 2026-11-10):
 Home page link names (from `frontend/src/pages/demoLinks.ts`): Wedding
 Organiser, Wedding Guest Choosing, Wedding Guest Seated, Wedding Guest
 Accessible, Conference Organiser, Conference Guest Choosing, Conference Guest
-Seated, Conference Speaker, Restaurant Booking, Restaurant Staff.
+Seated, Conference Speaker, Restaurant Booking, Restaurant Staff, and since
+guest accounts Wedding Share and Conference Share (the two shared links,
+switched on in the seed).
 
 ## Before you go on stage (10 minutes before)
 
@@ -95,6 +97,24 @@ Say: "the hold is a row in the database with a UNIQUE rule. Our test sends 30
 requests for one seat at the same moment: exactly one wins, 29 get 'seat
 taken'." (`backend/tests/test_holds.py`, line 209.)
 
+### Optional, 45 seconds: the shared link and a guest account (Simao)
+
+Use it instead of the "two people" step when that step is not needed, or in
+questions. Window 4 is a private window (so it has no session yet).
+
+1. Window 4: home page, **Wedding Share**. Say: "anyone with this link sees
+   the map, names shortened as the organiser chose, but cannot hold a seat."
+   Click a free seat: the panel asks for an account.
+2. **Create an account to choose a seat**: name, an address ending in
+   `@example.com` that is not one of the demo guests, a password of 10 or more
+   characters, tick the box, **Send my code**. The demo shows "Demo only: your
+   code is ..." (only for made-up `example.com` addresses; real or invited
+   addresses never get it on screen). Type it, **Create my account**.
+3. On the seat page hold and confirm a seat. Say: "the email to this guest
+   carries a picture of the room with their seat marked, drawn on our server
+   with the Python standard library, and no other guest's name."
+4. Window 3 (organiser), **Guests** tab: the new row shows "Joined with link".
+
 ### 2:15 to 3:15, the organiser fills the rest (Federico)
 
 Window 3 (Wedding Organiser, signed in).
@@ -141,8 +161,8 @@ Window 5 (Restaurant Staff, signed in).
 
 ### 5:30 to 6:00, close (Federico)
 
-Say: "443 backend tests, 133 frontend unit tests and 12 browser tests passed
-when we ran them on 10 November (re-run before the presentation). What we have not done yet: a real
+Say: "598 backend tests, 209 frontend unit tests and 23 browser tests passed
+when we ran them on 10 and 11 November (re-run before the presentation). What we have not done yet: a real
 deployment, real email sending, screen reader and usability tests. They are
 in our issue list."
 
@@ -155,6 +175,8 @@ in our issue list."
 | No dinner time is Available tomorrow | Pick the day after, or a lunch time (Tuesday to Sunday) | Sergio |
 | Walk-in says no table is free | Use party size 2, or show the what-if answer instead | Martim |
 | Sign-in fails | Use the other prepared tab, or switch to the local backup | speaker |
+| No "Demo only" code after "Send my code" | The address is invited, or not on `example.com`, or the deployment does not use the console provider. Use a new made-up `@example.com` address | Simao |
+| "Too many tries" on the sign-up | Limits count per network (60 code emails an hour); use the backup laptop's own network | Simao |
 | The deployed site or the network fails | Switch to the backup laptop (below). Say what happened in one sentence, do not debug on stage | backup holder |
 
 ## Backup plan: run everything locally

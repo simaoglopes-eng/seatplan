@@ -142,6 +142,7 @@ def queue_change_email(
     old_seat_id: int | None,
     entry: AuditLog,
     token: str | None = None,
+    moved_by_organiser: bool = False,
 ) -> None:
     """Queue "seat confirmed" or "seat changed" after a seat write, and move the
     guest's reminder to the new seat. No commit.
@@ -166,6 +167,7 @@ def queue_change_email(
         seat=seat,
         old_seat=old_seat,
         token=token,
+        moved_by_organiser=moved_by_organiser,
     )
     sync_reminder(session, event, guest, seat, token)
 
@@ -179,12 +181,19 @@ def release_seat(session: Session, event: Event, guest: Guest, token: str | None
 
 
 def drop_assignment(
-    session: Session, event: Event, guest: Guest, actor: str, token: str | None = None
+    session: Session,
+    event: Event,
+    guest: Guest,
+    actor: str,
+    token: str | None = None,
+    notify: bool = True,
 ) -> bool:
     """Lock the event, delete the guest's seat and holds, audit, queue the emails. No commit.
 
     Returns False when the guest had no seat (holds are still dropped).
     `token` is the guest's own link token when the guest is the one acting.
+    `notify=False` sends no "seat released" email (a guest deleting their
+    account asked us to stop writing); the reminder is cancelled either way.
     """
     lock_event(session, event)
     session.execute(
@@ -206,7 +215,7 @@ def drop_assignment(
         detail={"seat_id": row.seat_id},
     )
     session.flush()  # gives the audit row its id, used in the email key below
-    if seat is not None:
+    if seat is not None and notify:
         key = f"seat-cancelled:{guest.id}:{seat.id}:{entry.id}"
         kind = "seat_cancelled"
         queue_seat_email(

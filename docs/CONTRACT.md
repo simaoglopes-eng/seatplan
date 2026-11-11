@@ -5,6 +5,11 @@ disagree, fix one of them in the same change and say so in `docs/decisions-log.m
 It is written for a team of four beginners: every choice below must stay
 explainable in a live code walkthrough.
 
+Note, 2026-11-10 to 11: the shared event link and guest accounts (sections 2
+to 5, 7 and 9) are **built** as described in `docs/guest-accounts.md`,
+including the fixes after the security and correctness reviews (its section
+2.1). The detailed shapes, limits and errors live there.
+
 ## 1. Product in one paragraph
 
 SeatPlan lets people choose their own seat on a live 2D map. Two verticals share
@@ -25,6 +30,7 @@ minimal change. Human choices and hard rules are never violated.
 | Real time | Server-sent events that end after about 25 s and reconnect, with polling of a change counter every 2 s when the stream fails or is refused | Works on serverless: no shared memory, no long-lived sockets. Only a version number travels; pages fetch the data again |
 | Hosting | One Vercel project: static frontend + `api/index.py` Python function | One URL, one deploy, continuous deployment from `main` |
 | Email | Outbox table + provider adapter (Resend over HTTPS with `httpx`; console provider locally) | Idempotent, retried, logged; no vendor SDK |
+| Seat picture in emails | Indexed-colour PNG drawn with the standard library (`zlib`, `struct`, `binascii`), sent inline with a content id | No new dependency; mail apps show PNG, not SVG (`docs/guest-accounts.md` section 9) |
 | Exact solver | OR-tools CP-SAT when importable, pure-Python branch and bound otherwise | Exact check must also run where OR-tools cannot be installed |
 | Tests | pytest, hypothesis, FastAPI TestClient; vitest for frontend units; end to end through the real HTTP API in `backend/tests/test_e2e_slice.py`; browser tests with Playwright and `@axe-core/playwright` in `frontend/e2e/` (headless Chromium) | Standard tools. The browser tests drive the real built app against a real backend on a temporary SQLite database |
 
@@ -58,8 +64,11 @@ seatplan/
         privacy.py             Display-name rules for attendees
       routers/
         health.py  auth.py  venues.py  demo.py
-        events.py              Organiser endpoints (events vertical)
+        events.py              Organiser endpoints (events vertical), shared-link settings
         attendee.py            Personal-link endpoints
+        visitor.py             Shared-link endpoints (/j/{token}) (docs/guest-accounts.md)
+        guest_accounts.py      Guest account sign-up code, login, logout, password, me, delete
+        guest_events.py        The account holder's event endpoints (/guest/events/{eid})
         restaurants.py         Public diner endpoints
         bookings.py            Manage-or-cancel links, waitlist
         staff.py               Staff floor, walk-ins, dashboard, schedule
@@ -77,9 +86,11 @@ seatplan/
         invites.py             The invite every seat and booking email carries (sender, SEQUENCE)
         reminders.py           sync_event_reminder(): the event guest's reminder, kept in step with the seat
         providers.py           Resend adapter, console adapter
+        png.py  pixel_font.py  seat_picture.py   The inline seat picture (standard library only)
       seed/
         demo_events.py  demo_restaurant.py  run.py
-        migrate.py             Creates missing tables (the only place DDL runs on Postgres)
+        migrate.py             Creates missing tables, then adds the listed missing columns
+                               and indexes (the only place DDL runs on Postgres)
     tests/                     Mirrors app/ (test_<module>.py)
   frontend/
     src/
@@ -122,15 +133,17 @@ Shared
 - `seat_neighbours` seat_id, neighbour_id (symmetric pairs; "next to" for events; built by the layout save)
 - `live_versions` scope (primary key, text), version (integer). Every write bumps the scope it touches.
 - `holds` id, scope, resource_kind (`seat` or `table`), resource_id, slot_key, holder_key, expires_at. **UNIQUE(scope, resource_kind, resource_id, slot_key)**
-- `email_outbox` id, idempotency_key (**unique**), to_email, kind, subject, body_text, body_html, ics (nullable), status (`queued`, `sending`, `sent`, `failed`, `skipped`; `sending` is a 10-minute claim by one processor), attempts, next_attempt_at, sent_at, provider_message_id, last_error. Only a `queued` or `sending` row may hold a raw personal link: once a row is `sent`, `skipped` or `failed`, every `/b/`, `/e/` and `/a/` link in body_text, body_html, ics and last_error is replaced by `[personal link removed]`, and 30 days after `sent_at` (or after `next_attempt_at` when never sent) its body_text, body_html and ics are emptied (`mail/outbox.py`)
+- `guest_accounts` id, public_id, email (**unique**, lower case), name, password_hash (scrypt), email_proven (false only when the code was shown on screen in the demo; such an account is never linked to an invitation), session_version, consent_at, consent_version, created_at, last_login_at. Made only after the emailed code is typed (`docs/guest-accounts.md`). `AUTOINCREMENT` on SQLite, so ids are never reused
+- `email_codes` id, email, purpose (`register` or `reset`), code_hash (HMAC with `SECRET_KEY`), attempts, expires_at (15 minutes), created_at, and for `register` only: event_id, name, password_hash, needs_accessible, signup_hash (HMAC of the sign-up id only the registering browser holds), share_version, code_shown. **UNIQUE(email, purpose)**
+- `email_outbox` id, idempotency_key (**unique**), to_email, kind, subject, body_text, body_html, ics (nullable), image_png (nullable, Base64 of the inline seat picture; emptied with the words), status (`queued`, `sending`, `sent`, `failed`, `skipped`; `sending` is a 10-minute claim by one processor), attempts, next_attempt_at, sent_at, provider_message_id, last_error. Only a `queued` or `sending` row may hold a raw personal link: once a row is `sent`, `skipped` or `failed`, every `/b/`, `/e/` and `/a/` link in body_text, body_html, ics and last_error is replaced by `[personal link removed]`, and 30 days after `sent_at` (or after `next_attempt_at` when never sent) its body_text, body_html and ics are emptied (`mail/outbox.py`)
 - `audit_log` id, at, actor, action, entity, entity_id, detail (JSON). Never tokens or links in `detail`.
 - `demo_links` name (primary key), path. The demo entry links, raw tokens included on purpose; wiped by every demo reset and read only while `DEMO_MODE=1`.
 - `rate_limits` key, window_start, count (primary key: key + window_start)
 
 Events
-- `events` id, public_id, venue_id, organiser_id, name, starts_at, ends_at, privacy_mode (`full_name`, `first_initial`, `anonymous`), change_deadline
+- `events` id, public_id, venue_id, organiser_id, name, starts_at, ends_at, privacy_mode (`full_name`, `first_initial`, `anonymous`), change_deadline, share_enabled (default false), share_version (default 0), share_token_hash (nullable, **unique**: the hash of the shared link, which is derived from `SECRET_KEY`, the public id and share_version), share_cap (nullable)
 - `guest_groups` id, event_id, name, keep_adjacent (bool)
-- `guests` id, event_id, name, email, token_hash (unique), token_revoked_at, group_id, wants_anonymous, needs_accessible, dietary_note, reserved_tag, rsvp (`pending`, `yes`, `no`)
+- `guests` id, event_id, name, email, token_hash (unique), token_revoked_at, group_id, wants_anonymous, needs_accessible, dietary_note, reserved_tag, rsvp (`pending`, `yes`, `no`), account_id (nullable FK `guest_accounts`), source (`invited` or `self_registered`, default `invited`). **UNIQUE(event_id, account_id)**
 - `acquaintances` guest_id, knows_guest_id (directed; primary key both)
 - `seat_assignments` id, event_id, seat_id, guest_id, source (`self`, `organiser`, `optimiser`), created_at. **UNIQUE(event_id, seat_id)** and **UNIQUE(event_id, guest_id)**
 - `plan_snapshots` id, event_id, seq, label, assignments (JSON), score (JSON), is_current. Used for scenarios, undo and redo. **UNIQUE(event_id, seq)**
@@ -157,12 +170,19 @@ constraint behind it.
 JSON everywhere. Errors use `{"error": {"code": "seat_taken", "message": "..."}}`.
 Codes in use: `not_found`, `validation`, `unauthorised`, `forbidden`, `seat_taken`,
 `hold_expired`, `deadline_passed`, `rate_limited`, `conflict`, `method_not_allowed`
-(HTTP 405) and `internal` (HTTP 500, or any status the API never plans to send).
+(HTTP 405), `event_full` (HTTP 409: no place left for one more guest),
+`link_closed` (HTTP 403: the event's shared link is switched off; a guest
+account the organiser removed gets `forbidden` from the join route) and
+`internal` (HTTP 500, or any status the API never plans to send).
 HTTP 400 and 413 use `validation`. The frontend adds two codes of its own that
 never come from the server: `network` (no answer) and `unknown` (an answer
 without this error shape).
 Organiser and staff endpoints need `Authorization: Bearer <session>`; the session
-is an HMAC-signed, expiring value from `/auth/login`.
+is an HMAC-signed, expiring value from `/auth/login`. Guest account endpoints
+need `Authorization: Bearer <guest session>`, a different format
+(`g.<id>.<session_version>.<expiry>.<signature>`, signed over a message that
+starts with `guest-session.`), so neither kind of session is ever accepted
+where the other is expected.
 
 Core
 - `GET /health` -> `{status, database, version, time}`
@@ -192,6 +212,14 @@ Events, attendee (`/a/{token}`)
 - `POST /a/{token}/rsvp`, `POST /a/{token}/knows` `{guest_ids}`, `POST /a/{token}/privacy` `{wants_anonymous}`
 - `GET /a/{token}/recommendations` -> top seats, each with `rank` (1 = best), `match` (`strong`, `some` or `none`) and plain-language reasons. No raw score: it counts only the guest's own list, so it cannot reveal who listed this guest
 - `POST /a/{token}/hold` `{seat_id}` -> `{expires_at}` or 409; `POST /a/{token}/confirm` `{seat_id}`; `DELETE /a/{token}/seat`
+
+Events, shared link and guest accounts (full shapes, errors and limits in `docs/guest-accounts.md` section 6)
+- Organiser: `GET|PATCH /events/{eid}/share` `{enabled?, cap?}` -> `{enabled, link, needs_new_link, cap, joined, capacity, guests, places_left}`; `POST /events/{eid}/share/regenerate` (the old link stops at once). Guest rows gain `source` and `has_account`
+- Visitor: `GET /j/{token}` -> event, venue name, seat map (states `free`, `held`, `taken`, `blocked`; names per `core/privacy.py`), `join {open, places_left, reason}`. A visitor can never hold or confirm. `POST /j/{token}/register` `{name, email, password, needs_accessible, consent}` -> 202 `{status, sent_to, expires_in_seconds, signup_id, demo_code?}` (the same answer whether or not an account exists; never refused because the event is full). `POST /j/{token}/join` (guest session) -> `{status, event_id}`
+- Account: `POST /guest/verify` `{email, code, signup_id}` -> 201 `{token, account, join}`; `POST /guest/login`, `POST /guest/logout`, `POST /guest/password/forgot`, `POST /guest/password/reset`, `GET /guest/me`, `POST /guest/me/delete` `{password}`
+- The account holder's event: `/guest/events/{eid}` plus `/people`, `/rsvp`, `/knows`, `/privacy`, `/recommendations`, `/hold`, `/confirm`, `/seat`, with the same bodies and answers as the `/a/{token}` routes
+- An existing guest row is linked to an account only when its email equals the account's proven address (ignoring case, `email_proven` true); typing an address alone never links
+- `POST /guest/me/delete` with a wrong password is 422 `validation` (`password: That password is not correct.`), never 401
 
 Seat states returned to the map: `free`, `held`, `taken`, `mine`, `friend`, `blocked`, plus the flag `accessible`.
 
@@ -295,7 +323,9 @@ store the result. The optimiser never imports the database.
 - Every request body is a Pydantic model with length limits. Unknown fields are rejected.
 - Public endpoints are rate limited through `security.rate_limit(key, limit, window_s)` (database-backed, so it works across serverless instances).
 - Token lookups compare hashes; a wrong token and a revoked token return the same 404.
-- Other attendees never receive email, dietary or accessibility data. Names pass through `core/privacy.py`.
+- Other attendees never receive email, dietary or accessibility data. Names pass through `core/privacy.py`. Visitors on a shared link get the same filtered names and no people list.
+- Secrets in emails: account emails carry no secret link (the seat page needs a sign-in); emailed codes are stored only as keyed hashes and are blanked from outbox rows once those are finished.
+- The seat picture is drawn from zones, tables and seats only; its inputs have no field for a person, so it can never show a name.
 - CORS allows only the configured frontend origin. React escapes output; never use `dangerouslySetInnerHTML`.
 - Fake people only: names are invented, emails end in `@example.com`.
 
@@ -320,4 +350,9 @@ at least 32 characters.
 The seed command is `cd backend && python -m app.seed.run` (the backend
 package is imported as `app` everywhere: tests, seed and `api/index.py`).
 Tables on Postgres come only from `cd backend && python -m app.seed.migrate`;
-the app never runs DDL there.
+the app never runs DDL there. Migrate creates missing tables, then adds the
+missing columns and indexes named in its own fixed lists (`NEW_COLUMNS`,
+`NEW_INDEXES`), checking the database first so it can run again safely on
+SQLite and Postgres. No new environment variable is needed for guest
+accounts; `EMAIL_ALLOWLIST` still decides who really receives email,
+including sign-up codes (`docs/guest-accounts.md`, D7).

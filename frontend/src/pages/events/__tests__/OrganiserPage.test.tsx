@@ -32,6 +32,8 @@ function guest(id: number, name: string, seatId: number | null, anonymous = fals
     reserved_tag: null,
     needs_accessible: false,
     seat_id: seatId,
+    source: "invited",
+    has_account: false,
   };
 }
 

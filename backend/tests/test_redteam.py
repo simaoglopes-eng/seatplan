@@ -160,3 +160,17 @@ def test_s7_rate_limit_rows_hold_no_ip_address(client: TestClient, session: Sess
     # TestClient's address is "testclient"; on Vercel it would be the visitor's IP.
     assert all("testclient" not in key for key in keys)
     assert all(key.startswith("login:") for key in keys)
+
+
+def test_a_guest_session_is_not_an_organiser_session(
+    client: TestClient, organiser: Organiser, session: Session
+) -> None:
+    """Guest account 1 and organiser 1 share the number; the tokens must not cross."""
+    from guest_helpers import account_headers, make_account
+
+    account = make_account(session, "same.id@example.com")
+    assert account.id == organiser.id
+    guest = account_headers(account)
+    assert client.get("/api/auth/me", headers=guest).status_code == 401
+    assert client.get("/api/events", headers=guest).status_code == 401
+    assert client.get("/api/guest/me", headers=auth_header(organiser)).status_code == 401

@@ -14,11 +14,13 @@ interface DoneStepProps {
   state: AttendeeState;
   view: AttendeeView;
   moved: boolean;
+  /** Replaces the email sentence, for example on a guest account's seat page. */
+  emailNote?: string;
 }
 
 const NOTHING_SELECTABLE = (): boolean => false;
 
-export function DoneStep({ state, view, moved }: DoneStepProps) {
+export function DoneStep({ state, view, moved, emailNote }: DoneStepProps) {
   const [askRelease, setAskRelease] = useState(false);
   const { map, me, event } = view;
   const seatId = me.seat_id ?? -1;
@@ -31,7 +33,7 @@ export function DoneStep({ state, view, moved }: DoneStepProps) {
         You are all set
       </StepTitle>
       <p className="ev-seat-big">{label}</p>
-      <p>A confirmation email with a calendar invite is on its way to you. You can close this page.</p>
+      <p>{emailNote ?? "A confirmation email with a calendar invite is on its way to you."} You can close this page.</p>
       <div className="ev-map">
         <SeatMap label={`Your seat on the map, ${label}`} zones={map.zones} tables={map.tables} seats={map.seats} selectedId={seatId} selectable={NOTHING_SELECTABLE} />
       </div>

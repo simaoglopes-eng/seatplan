@@ -39,6 +39,8 @@ npm run contrast   # WCAG contrast check of every colour pair in tokens.css
 | `src/pages/Home.tsx`, `Login.tsx` | Landing page with demo links; organiser sign-in |
 | `src/pages/editor/` | Floor-plan editor: pure layout functions, undo history, canvas, side panel, unsaved-changes guard. See `src/pages/editor/READ_ME_FIRST.md` |
 | `src/pages/events/` | Attendee flow (`/e/:token`) and organiser screens (`/organiser/:eventId`). Start with `pages/events/READ_ME_FIRST.md` |
+| `src/pages/join/` | The event's shared link (`/j/:token`): the visitor's map, creating a guest account with an emailed code, signing in to join. Start with `pages/join/READ_ME_FIRST.md` |
+| `src/pages/account/` | The guest account area (`/my`, `/my/:eventId`, sign-in, password reset, delete account). Start with `pages/account/READ_ME_FIRST.md` |
 | `src/pages/restaurant/` | Diner booking (`/r/:venueId`), manage-booking link (`/b/:token`) and the staff page (`/staff/:venueId`) with four tabs: Floor, Dashboard, Schedule and Optimise. Start with `pages/restaurant/READ_ME_FIRST.md` |
 
 ## Data flow

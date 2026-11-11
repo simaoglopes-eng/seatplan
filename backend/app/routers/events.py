@@ -14,7 +14,7 @@ from app import db
 from app.core import audit, live
 from app.core.errors import ApiError
 from app.core.holds import commit_or_seat_taken
-from app.events_service import chart, csv_io, exact_check, guests, optimise, plans
+from app.events_service import chart, csv_io, exact_check, guests, optimise, plans, share
 from app.events_service.access import (
     attendee_link,
     deadline_passed,
@@ -25,6 +25,7 @@ from app.events_service.access import (
 )
 from app.events_service.problem import active_guests, current_rows
 from app.events_service.schemas import (
+    EmptyIn,
     EventIn,
     EventPatch,
     ExactCheckIn,
@@ -32,6 +33,7 @@ from app.events_service.schemas import (
     GuestPatch,
     OptimiseIn,
     SeatChoice,
+    SharePatch,
     WhatIfIn,
 )
 from app.events_service.seating import (
@@ -189,7 +191,7 @@ def delete_guest(
     """GDPR erasure: personal data overwritten, seat freed, link revoked."""
     event = load_event(session, eid, user)
     guest = load_event_guest(session, event, gid)
-    guests.erase_guest(session, event, guest, user)
+    guests.erase_guest(session, event, guest, user.email)
     session.commit()
     return {"erased": True, "guest_id": gid}
 
@@ -247,6 +249,44 @@ def get_chart(eid: str, user: CurrentOrganiser, session: db.SessionDep) -> dict[
     return chart.chart(session, load_event(session, eid, user))
 
 
+# ---------------------------------------------------------------- shared link
+
+
+@router.get("/events/{eid}/share")
+def get_share(eid: str, user: CurrentOrganiser, session: db.SessionDep) -> dict[str, Any]:
+    return share.share_settings(session, load_event(session, eid, user))
+
+
+@router.patch("/events/{eid}/share")
+def patch_share(
+    eid: str, body: SharePatch, user: CurrentOrganiser, session: db.SessionDep
+) -> dict[str, Any]:
+    """Switch the shared link on or off, or set the most people who may join with it."""
+    event = load_event(session, eid, user)
+    changes = body.model_dump(exclude_unset=True)
+    if changes.get("enabled") is True:
+        share.switch_on(event)
+    elif changes.get("enabled") is False:
+        event.share_enabled = False
+    if "cap" in changes:
+        event.share_cap = changes["cap"]
+    _changed(session, event, user, "share.update", event.public_id, {"fields": sorted(changes)})
+    session.commit()
+    return share.share_settings(session, event)
+
+
+@router.post("/events/{eid}/share/regenerate")
+def regenerate_share(
+    eid: str, user: CurrentOrganiser, session: db.SessionDep, body: EmptyIn | None = None
+) -> dict[str, Any]:
+    """A new link; the old one answers 404 at once. People who joined keep their places."""
+    event = load_event(session, eid, user)
+    share.regenerate(event)
+    _changed(session, event, user, "share.regenerate", event.public_id)
+    session.commit()
+    return share.share_settings(session, event)
+
+
 # ---------------------------------------------------------------- organiser moves
 
 
@@ -281,7 +321,7 @@ def assign_seat(
     detail = {"seat_id": seat.id, "old_seat_id": old_seat_id}
     entry = _changed(session, event, user, "seat.assign", str(guest.id), detail)
     plans.push_history(session, event, f"Moved guest {guest.id}")
-    queue_change_email(session, event, guest, seat, old_seat_id, entry)
+    queue_change_email(session, event, guest, seat, old_seat_id, entry, moved_by_organiser=True)
     commit_or_seat_taken(session)
     return {"guest_id": guest.id, "seat_id": seat.id, "source": "organiser"}
 

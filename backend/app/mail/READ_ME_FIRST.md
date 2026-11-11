@@ -12,13 +12,18 @@ later. Longer design notes, RFC references and the provider comparison are in
 | File | Function | Job |
 |---|---|---|
 | `templates.py` | `booking_confirmation(...)` and 8 others | Return `EmailParts(subject, body_text, body_html)` from plain values |
+| `templates.py` | `account_seat_email(AccountSeat)`, `account_code`, `password_code`, `account_exists` | Guest account emails: the seat email with the picture (`cid:seatmap`) and the three code emails. None carries a secret link |
+| `seat_picture.py` | `render_seat_picture(room, my_seat_id, seat_label, table_label)` | PNG of the room from above with the guest's seat marked. Pure; its inputs have no field for a person |
+| `png.py` | `encode_indexed(width, height, pixels, palette)`, `png_width(png)` | A tiny PNG writer (zlib, struct, binascii); no new dependency. `png_width` reads the width back, so the email's `<img width>` is never wider than the picture |
+| `pixel_font.py` | `can_write`, `text_width`, `inked_pixels` | A 5 x 7 pixel font for the picture's labels |
 | `templates.py` | `format_when(moment, timezone)` | UTC datetime to "Sat 14 Mar 2027, 19:30" in the venue's time |
 | `ics.py` | `build_invite(...)`, `make_uid(kind, public_id)` | The `.ics` calendar invite text |
 | `invites.py` | `calendar_invite(...)` | The invite every seat and booking email carries: sender from `EMAIL_FROM`, SEQUENCE that always grows |
 | `outbox.py` | `enqueue(session, ...)` | Queue one email (does not commit) |
 | `outbox.py` | `process_due(session, provider, now, batch=20)` | Send what is due; allowlist, retries, give-up; a finished row loses its personal links |
-| `outbox.py` | `redact_links(text)` | Replace every `/b/`, `/e/` and `/a/` personal link with `[personal link removed]` (S9) |
-| `outbox.py` | `scrub_expired(session, now)` | Retention: blank words and invite of finished rows older than `RETENTION_DAYS` (30) |
+| `outbox.py` | `redact_links(text)` | Replace every `/b/`, `/e/`, `/a/` and `/j/` link with `[personal link removed]` (S9) |
+| `outbox.py` | `send_now(session, provider, key, now)` | Send one row at once (code emails), with the same claim as the cron, so it never goes twice |
+| `outbox.py` | `scrub_expired(session, now)` | Retention: blank words, invite and picture of finished rows older than `RETENTION_DAYS` (30) |
 | `reminders.py` | `sync_event_reminder(session, event=, guest=, seat_label=, link=)` | The event guest's reminder: queued with a seat, rewritten when the seat changes, cancelled (`skipped`) when it goes |
 | `providers.py` | `ConsoleProvider`, `ResendProvider`, `provider_from_settings` | Hand one email to the log or to Resend |
 
@@ -105,6 +110,16 @@ the other, and only the first still matches the WHERE clause.
 error is kept in `last_error`. The booking itself was already saved, and the
 confirmation page shows the manage link, so the guest is never stuck.
 
+**How is the seat picture made without an image library?**
+`seat_picture.py` keeps one byte per pixel (an index into 8 colours) and fills
+shapes one pixel row at a time; `png.py` packs the rows into a PNG with
+`zlib`. Measured on 2026-11-10 (best of 5, a developer laptop): the demo
+wedding took 10.3 ms and 3740 bytes, the demo conference 6.8 ms and 2635
+bytes. `tests/test_seat_picture.py` allows 150 ms and 60 KB. PNG, not SVG,
+because Gmail and Outlook do not show SVG in emails.
+
 **Could the demo email a real stranger by accident?**
 No. Only addresses listed in `EMAIL_ALLOWLIST` are ever handed to a provider;
 every other row is marked `skipped`. An empty allowlist means nobody gets email.
+That includes the sign-up codes of guest accounts (docs/guest-accounts.md, D7).
+Once a code email is finished its words become `[code removed]`.

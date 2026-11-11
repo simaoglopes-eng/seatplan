@@ -13,8 +13,46 @@ Security. "Not released" means it has not been deployed anywhere.
 
 ## [Unreleased]
 
-Nothing yet. Things planned but not done yet: the first Vercel deployment,
-real email through Resend, usability sessions with real users.
+Things planned but not done yet: the first Vercel deployment, real email
+through Resend, usability sessions with real users.
+
+### Added (2026-11-10 to 11)
+
+- Shared event link: one link per event (`/j/<token>`), switched on and off,
+  copied and replaced from the organiser's Settings tab, with an optional cap
+  ("guest accounts", D1 to D7).
+- Visitors: anyone with the link sees the event and the live map, names
+  filtered as for attendees, and cannot hold or confirm a seat.
+- Guest accounts: sign-up checked by an emailed 6-digit code, sign-in and
+  sign-out, forgotten password, "My events", the attendee steps under
+  `/my/<event>`, and deleting the account (GDPR) ("guest accounts").
+- Seat emails for account holders with a picture of the room drawn on the
+  server (PNG inline with a content id, alt text, `.ics`), with no new
+  dependency ("guest accounts", D5 and section 9).
+- `python -m app.seed.migrate` now also adds the listed new columns and
+  indexes to an existing database, safely and repeatably, tested from the
+  old schema on SQLite and Postgres ("guest accounts", migration).
+- Playwright: `guest-account.spec.ts` (7 steps), a phone sign-up and three
+  more axe scans.
+
+### Security (2026-11-10 to 11)
+
+- Fixed S30 to S40 from the reviews of guest accounts: demo codes only for
+  uninvited `@example.com` addresses, a sign-up id that ties the code to the
+  browser, constant-time sign-up, limits that strangers cannot use up, no
+  typed name in code emails, removed guests cannot rejoin, no id reuse on
+  SQLite, no join after "Make a new link", fairer limits for one Wi-Fi and for
+  failed logins, and code tries counted before the compare. S41 is open and
+  accepted (`security.md`, section 9).
+
+### Fixed (2026-11-10 to 11)
+
+- Saying "no" and then "yes" again could make more guests than seats; places
+  left counted seats reserved for a tag; a full event refused invited
+  guests' sign-ups; an applied plan sent no email to account holders; tall
+  rooms' pictures were stretched; several texts ("1 places left", the
+  privacy text, the delete dialog) said more than was true ("guest
+  accounts", review fixes).
 
 ## [0.1.0] - 2026-11-10 (not released: no deployment has been done)
 

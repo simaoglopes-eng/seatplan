@@ -3,7 +3,8 @@
 **Course:** Introduction to Programming, Nova SBE, 2026
 **Team:** Sergio and Martim (restaurants), Simao and Federico (events)
 **Version of the app described:** 0.1.0 (from `backend/app/config.py`)
-**Date of this report:** 10 November 2026
+**Date of this report:** 10 November 2026, updated 11 November 2026 for
+guest accounts and the shared event link (section 4, DR-23)
 
 This report describes what SeatPlan is, why it is built the way it is, and how
 well it works. Every number about the app comes from the code or from a
@@ -19,7 +20,7 @@ it.
 1. Summary
 2. The problem and the users
 3. Requirements
-4. Design decisions (decision records DR-01 to DR-22)
+4. Design decisions (decision records DR-01 to DR-23)
 5. Architecture and data model
 6. How double booking is made impossible
 7. The optimisers
@@ -101,9 +102,37 @@ change of the day; the same numbers as `README.md` and `docs/test-report.md`):
 | Restaurant optimiser gap | 19 of 20 small services fully optimal; 4 of 8 demo-sized services reached the optimal covers, the other 4 were 1.3 % to 3.6 % below |
 | Browser tests (`npm run e2e`) | `12 passed (10.8s)`, `12 passed (10.4s)`, `12 passed (9.5s)` |
 
+**Added on 10 and 11 November: the shared link and guest accounts.** The
+product owner asked for "a guest profile for when the link is shared", with an
+account needed to receive the seat by email "with the view of the venue and
+their seat". Each event can now have one shared link: anyone who opens it
+sees the live map as a visitor, and makes a guest account, proven by an
+emailed code, to choose a seat. The account holder's seat email carries a
+picture of the room with their seat marked, drawn on the server with the
+Python standard library (DR-23). Two reviews found 1 High and several Medium
+problems in the first build; all but one accepted Low finding are fixed, each
+with a test that failed first. Results after those fixes:
+
+| Check | Result (real output, 10 to 11 November 2026) |
+|---|---|
+| Backend tests (SQLite, 11 Nov 00:01) | `598 passed, 3 warnings in 66.38s (0:01:06)` |
+| Backend tests on Postgres 16.2 | `597 passed, 1 skipped in 144.30s (0:02:24)` |
+| Lint and format | `All checks passed!` and `159 files already formatted` |
+| Frontend unit tests | `Test Files  23 passed (23)`, `Tests  209 passed (209)` |
+| Browser tests, three runs | `23 passed (13.6s)`, `23 passed (13.6s)`, `23 passed (13.8s)` |
+| Migration of an old-schema Postgres database, run twice | 7 columns and 3 indexes added, nothing the second time |
+
+Size after guest accounts (counted on 11 November with `find` and `wc -l`):
+93 Python files with 14,774 lines in `backend/app`; 56 backend test files with
+10,109 lines; 145 TypeScript and TSX files with 14,279 lines in
+`frontend/src` (`*.test.*` not counted); 3,468 lines of CSS. The API has 77
+paths and 87 operations, the database 26 tables.
+
 **What is not done yet:** a real Vercel deployment, real email delivery, any
 usability session with real people, screen-reader and real-device testing,
-and the presentation. Section 14 lists every known limit.
+and the presentation. For guest accounts also: a decision on the email
+allowlist (DR-23), without which real guests outside the list never receive
+their code. Section 14 lists every known limit.
 
 ---
 
@@ -555,6 +584,41 @@ shaped the system most.
   run on GitHub (not done yet).
 
 ---
+
+### DR-23. Guest accounts behind a shared link, proven by an emailed code
+
+**Context.** The product owner wanted anyone with a shared link to see the
+event, and an account to be needed for the seat email with a picture of the
+room. Production already has tables; Vercel limits the size of the Python
+function; GDPR applies to the new personal data.
+
+**Decision.** One shared link per event, derived from `SECRET_KEY`, the
+event's public id and a version (only its hash is stored), switched off by
+default for existing events. A visitor can look but never hold. An account
+(and its guest row) exists only after the person types the 6-digit code we
+emailed them, in the same browser that started the sign-up (a random
+`signup_id`). An invited guest with the same proven address is linked, not
+duplicated. Capacity is counted after the event lock, never more guests than
+seats a newcomer can use, plus an optional organiser cap. The seat email's
+picture is an indexed PNG drawn with `zlib`, `struct` and `binascii`; the
+picture's types have no field for a person. `app.seed.migrate` adds the 7 new
+columns and 3 indexes to an existing database, tested from the frozen old
+schema on SQLite and Postgres. Full design: `docs/guest-accounts.md`.
+
+**Alternatives.** A guest row at sign-up time, before the address is proven
+(rejected: made-up addresses could fill an event and take over invitations).
+A random token shown once (rejected: an organiser who lost it would break
+every copy already shared). Pillow or SVG for the picture (rejected: a
+compiled dependency for circles and rectangles; mail apps do not show SVG).
+
+**Consequences.** No new dependency, so the deployed function stays the same
+size: the 7 runtime packages and their dependencies are 21 distributions and
+40.5 MB installed (measured from the wheels' file lists on 11 November); the
+picture code is 21,706 bytes of source. The reviews' findings S30 to S41 and
+their fixes are in `docs/security.md` section 9. Open: with today's
+`EMAIL_ALLOWLIST`, real guests outside the list never get their code (a
+product decision, D7), and a real Resend send with the inline picture has not
+been tried.
 
 ## 5. Architecture and data model
 
@@ -1281,6 +1345,10 @@ simplification (decisions log, "fixes after the adversarial review
 
 ### 10.2 Outcome of today's review
 
+(Guest accounts, added later, had their own two reviews: 1 High, 6 Medium and
+5 Low security findings, S30 to S41, all fixed except S41, accepted; and a
+High capacity bug, fixed. Details in `docs/security.md` section 9.)
+
 From `docs/security.md`: no Critical or High findings; 23 findings in total;
 9 fixed today (3 Medium, 6 Low), 14 still open (12 Low, 2 for information).
 Each fix came with a test that failed before the fix (`backend/tests/test_redteam.py`,
@@ -1563,6 +1631,7 @@ risk log (`docs/risk-log.md`) gives likelihood, impact and an owner role for
 
 | Item | Status | Where it is prepared |
 |---|---|---|
+| Guest accounts on a real deployment: the email allowlist decision (D7), the migrate step on the production database, a real Resend send with the inline picture | Not done yet | `docs/guest-accounts.md` section 15, `docs/deployment.md` "Upgrading an existing database" |
 | Deployment on Vercel with Postgres | Not done yet | `docs/deployment.md`, `vercel.json`, `api/index.py` |
 | Real email through Resend | Not done yet; needs a verified sending domain | `docs/email.md` |
 | Usability sessions with real people | Not done yet | `docs/usability/` |
@@ -1883,3 +1952,19 @@ temporary folder and deleted; nothing was left in the repository.
 | 16 | Count of paths and operations in `docs/openapi.json` | `paths 56 ops 65` |
 | 17 | After the S8 and S9 work: `docs/openapi.json` exported again (docs/api.md), then counted | `3.1.0 SeatPlan API 0.1.0 paths 56 ops 65 schemas 38` |
 | 18 | After the S8 and S9 work: `find backend/app backend/tests -name '*.py'` (no `__pycache__`), files and `wc -l` | `backend/app` 84 files, 12,107 lines; `backend/tests` 44 files, 7,475 lines |
+
+Added on 10 and 11 November 2026 for guest accounts (from `backend/` unless
+said):
+
+| # | Command | Real output (key lines) |
+|---|---|---|
+| 19 | `../.venv/bin/python -m pytest -p no:cacheprovider` before the review fixes | `571 passed in 38.28s` |
+| 20 | the same after the review fixes (11 Nov, 00:01) | `598 passed, 3 warnings in 66.38s (0:01:06)` |
+| 21 | the same with `SEATPLAN_TEST_POSTGRES` on a throwaway Postgres 16.2 cluster, stopped and deleted afterwards | `597 passed, 1 skipped in 144.30s (0:02:24)` |
+| 22 | `python -m app.seed.migrate` twice on a Postgres database loaded from `tests/fixtures/schema_2026_11_10.postgres.sql` | run 1: `Added column events.share_enabled` ... `Added column email_outbox.image_png` (7 lines), 3 `Index ... is ready`, `Tables are ready.`; run 2: only the 3 index lines and `Tables are ready.` |
+| 23 | `cd frontend && npx vitest run` | `Test Files  23 passed (23)`; `Tests  209 passed (209)` |
+| 24 | `cd frontend && npx playwright test`, three runs | `23 passed (13.6s)`, `23 passed (13.6s)`, `23 passed (13.8s)` |
+| 25 | `docs/openapi.json` exported again and counted | `3.1.0 SeatPlan API 0.1.0 77 paths 87 operations 46 schemas` |
+| 26 | Installed size of the runtime requirements and their dependencies (sum of the wheels' RECORD sizes in `.venv`) | `21 distributions 40.5 MB installed`; picture modules `21706 bytes` |
+| 27 | `find` and `wc -l` over `backend/app`, `backend/tests`, `frontend/src` | 93 files, 14,774 lines; 56 test files, 10,109 lines; 145 files, 14,279 lines; CSS 3,468 lines |
+

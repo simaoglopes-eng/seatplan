@@ -68,17 +68,28 @@ def get_engine() -> Engine:
 _SCHEMA_LOCK_ID = 73102026
 
 
-def create_all() -> None:
-    """Create any missing tables. Existing tables and rows are left alone.
+def create_all() -> list[str]:
+    """Create missing tables, then add the listed new columns and indexes.
 
-    On Postgres two runs at once would both try CREATE TABLE and one would
-    crash, so each run first takes a lock that Postgres releases at the end of
-    the transaction; the second run waits, then finds the tables already there.
+    Existing rows are left alone. Returns one line per column or index step
+    (seed/migrate.py prints them).
+
+    Two runs at once would both try CREATE TABLE and one would crash, so each
+    run first takes a lock that lasts until the end of its transaction; the
+    second run waits, then finds the tables already there. On Postgres that
+    is an advisory lock. On SQLite it is "BEGIN IMMEDIATE", which takes the
+    file's write lock at once (a writer waits up to 30 s, see make_engine).
     """
+    # Imported here, not at the top: seed/migrate.py imports this module.
+    from app.seed.migrate import upgrade_schema
+
     with get_engine().begin() as connection:
         if connection.dialect.name == "postgresql":
             connection.execute(text("SELECT pg_advisory_xact_lock(:id)"), {"id": _SCHEMA_LOCK_ID})
+        else:
+            connection.exec_driver_sql("BEGIN IMMEDIATE")
         Base.metadata.create_all(connection)
+        return upgrade_schema(connection)
 
 
 def new_session() -> Session:

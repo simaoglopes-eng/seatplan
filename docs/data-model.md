@@ -1,14 +1,15 @@
 # Data model
 
 All tables live in one file, `backend/app/models.py` (SQLAlchemy 2, typed
-style). There are 24 tables (counted with `len(Base.metadata.tables)` on
-2026-11-10): 12 shared, 6 for events and 6 for restaurants. The same code runs
+style). There are 26 tables (counted with `len(Base.metadata.tables)` on
+2026-11-10, after guest accounts): 12 shared, 8 for events and 6 for
+restaurants. The same code runs
 on SQLite (laptop and tests) and Postgres (deployment).
 
 | Group | Tables |
 |---|---|
 | Shared | `organisers`, `venues`, `zones`, `tables`, `seats`, `seat_neighbours`, `live_versions`, `holds`, `email_outbox`, `audit_log`, `rate_limits`, `demo_links` |
-| Events | `events`, `guest_groups`, `guests`, `acquaintances`, `seat_assignments`, `plan_snapshots` |
+| Events | `events`, `guest_groups`, `guests`, `acquaintances`, `seat_assignments`, `plan_snapshots`, `guest_accounts`, `email_codes` |
 | Restaurants | `service_periods`, `turn_times`, `blackout_dates`, `bookings`, `table_slots`, `waitlist_entries` |
 
 ## How the diagram was made
@@ -66,6 +67,7 @@ erDiagram
         datetime sent_at
         string provider_message_id
         text last_error
+        text image_png
     }
     holds {
         int id PK
@@ -138,6 +140,39 @@ erDiagram
         datetime ends_at
         string privacy_mode
         datetime change_deadline
+        bool share_enabled
+        int share_version
+        string share_token_hash UK
+        int share_cap
+    }
+    guest_accounts {
+        int id PK
+        string public_id
+        string email UK
+        string name
+        string password_hash
+        bool email_proven
+        int session_version
+        datetime consent_at
+        string consent_version
+        datetime created_at
+        datetime last_login_at
+    }
+    email_codes {
+        int id PK
+        string email UK
+        string purpose UK
+        string code_hash
+        int attempts
+        datetime expires_at
+        datetime created_at
+        int event_id FK
+        string name
+        string password_hash
+        bool needs_accessible
+        string signup_hash
+        int share_version
+        bool code_shown
     }
     service_periods {
         int id PK
@@ -221,6 +256,8 @@ erDiagram
         string dietary_note
         string reserved_tag
         string rsvp
+        int account_id FK
+        string source
     }
     seats {
         int id PK
@@ -281,6 +318,8 @@ erDiagram
     seats ||--o{ seat_assignments : "seat_id"
     seats ||--o{ seat_neighbours : "neighbour_id"
     seats ||--o{ seat_neighbours : "seat_id"
+    guest_accounts o|--o{ guests : "account_id"
+    events o|--o{ email_codes : "event_id"
 ```
 
 Things the diagram cannot show:
@@ -289,6 +328,15 @@ Things the diagram cannot show:
   table depending on `resource_kind`, and `scope` says which event or which
   restaurant day it belongs to.
 - `seat_neighbours` stores both directions (A next to B and B next to A).
+- Guest accounts (`docs/guest-accounts.md`, section 3): `guests.account_id` is
+  set when a guest account owns the row; `guests.source` is `invited` or
+  `self_registered`. An organiser-erased row keeps its `account_id` (no
+  personal data) so that account cannot join that event again; deleting the
+  account clears it. `email_codes` holds pending sign-ups and reset codes,
+  one per address and purpose, only as keyed hashes; rows expire after 15
+  minutes and the email cron deletes them. `email_outbox.image_png` is the
+  Base64 seat picture of an account holder's seat email. On SQLite,
+  `guest_accounts` is made with `AUTOINCREMENT` so ids are never reused.
 - `acquaintances` is directed: "Ana knows Bruno" does not mean "Bruno knows Ana".
 - `plan_snapshots.assignments` and `.score` are JSON. The format is in
   decisions log, "events vertical API", item 3.
@@ -336,6 +384,10 @@ These do not stop double booking of a seat, but they stop other duplicates.
 | `email_outbox` | UNIQUE | `idempotency_key` | The same email being queued twice (insert uses `ON CONFLICT DO NOTHING`) |
 | `plan_snapshots` | `uq_snapshot_seq` (UNIQUE) | `event_id, seq` | Two scenarios with the same number in one event |
 | `guests` | UNIQUE | `token_hash` | Two guests sharing one personal link |
+| `guests` | `uq_guests_event_account` (UNIQUE index) | `event_id, account_id` | One account with two rows on one event (NULLs never clash, so invited guests without an account are not limited) |
+| `events` | `uq_events_share_token` (UNIQUE index) | `share_token_hash` | Two events answering the same shared link |
+| `guest_accounts` | UNIQUE | `email` | Two accounts for one address (two verifies at once: one gets 409 "Please try again.") |
+| `email_codes` | `uq_email_codes_email_purpose` | `email, purpose` | Two live codes for one address and purpose |
 | `organisers` | UNIQUE | `email` | Two accounts with the same email |
 | `live_versions` | Primary key | `scope` | Two counters for one event or one restaurant day |
 | `rate_limits` | Primary key | `key, window_start` | Two counters for the same client in the same minute |
@@ -360,8 +412,16 @@ Every other table has a plain integer `id` primary key.
 
 ## Changing the schema
 
-There is no migration tool. On SQLite the app creates missing tables when it
-starts. On Postgres only `cd backend && python -m app.seed.migrate` creates
-tables, and it only adds tables that are missing. A new column or a new
-constraint on a table that already exists needs a hand-written `ALTER TABLE`
-or a fresh database. See [`runbook.md`](runbook.md).
+There is no general migration tool. On SQLite the app creates missing tables
+when it starts. On Postgres only `cd backend && python -m app.seed.migrate`
+changes the schema. In one transaction (after a Postgres advisory lock, or
+`BEGIN IMMEDIATE` on SQLite) it creates missing tables, then adds each column
+of `NEW_COLUMNS` that is missing (`ALTER TABLE ... ADD COLUMN`, with `IF NOT
+EXISTS` on Postgres) and each index of `NEW_INDEXES` (`CREATE ... INDEX IF NOT
+EXISTS`). Today those lists hold the 7 columns and 3 indexes of guest
+accounts. Running it again changes nothing. Any other change to an existing
+table still needs a hand-written `ALTER TABLE` or a fresh database. The test
+`backend/tests/test_migrate_guest_accounts.py` starts from the frozen old
+schema (`backend/tests/fixtures/schema_2026_11_10.*.sql`) on SQLite and, with
+`SEATPLAN_TEST_POSTGRES`, on Postgres. See [`runbook.md`](runbook.md) and
+[`deployment.md`](deployment.md).

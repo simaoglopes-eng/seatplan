@@ -4,7 +4,16 @@ import { Route, Routes } from "react-router-dom";
 import EditorPage from "./pages/editor/EditorPage";
 import AttendeePage from "./pages/events/AttendeePage";
 import OrganiserPage from "./pages/events/OrganiserPage";
+import AccountPage from "./pages/account/AccountPage";
+import ForgotPage from "./pages/account/ForgotPage";
+import GuestSignInPage from "./pages/account/GuestSignInPage";
+import MyEventsPage from "./pages/account/MyEventsPage";
+import MySeatPage from "./pages/account/MySeatPage";
+import ResetPage from "./pages/account/ResetPage";
 import Home from "./pages/Home";
+import JoinPage from "./pages/join/JoinPage";
+import JoinSignInPage from "./pages/join/JoinSignInPage";
+import RegisterPage from "./pages/join/RegisterPage";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import BookingPage from "./pages/restaurant/BookingPage";
@@ -19,6 +28,17 @@ export default function App() {
       {/* Events: personal attendee link, organiser workspace */}
       <Route path="/e/:token" element={<AttendeePage />} />
       <Route path="/organiser/:eventId" element={<OrganiserPage />} />
+      {/* Events: the shared link (visitors) and guest accounts (docs/guest-accounts.md 10.3) */}
+      <Route path="/j/:token" element={<JoinPage />} />
+      <Route path="/j/:token/register" element={<RegisterPage />} />
+      <Route path="/j/:token/sign-in" element={<JoinSignInPage />} />
+      <Route path="/my" element={<MyEventsPage />} />
+      {/* The fixed /my pages come before /my/:eventId, so "account" is never read as an event id. */}
+      <Route path="/my/account" element={<AccountPage />} />
+      <Route path="/my/sign-in" element={<GuestSignInPage />} />
+      <Route path="/my/forgot" element={<ForgotPage />} />
+      <Route path="/my/reset" element={<ResetPage />} />
+      <Route path="/my/:eventId" element={<MySeatPage />} />
       {/* Restaurants: public booking, manage-or-cancel link, staff floor */}
       <Route path="/r/:venueId" element={<BookingPage />} />
       <Route path="/b/:token" element={<ManageBookingPage />} />

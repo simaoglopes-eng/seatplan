@@ -10,7 +10,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Header, Query, Request
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app import db
 from app.config import get_settings
@@ -18,7 +18,7 @@ from app.core.errors import ApiError
 from app.core.privacy import mask_email
 from app.mail.outbox import process_due, redact_links, scrub_expired
 from app.mail.providers import provider_from_settings
-from app.models import EmailOutbox, utc_now
+from app.models import EmailCode, EmailOutbox, utc_now
 from app.security import CurrentOrganiser, client_ip, rate_limit, tokens_match
 
 router = APIRouter(tags=["emails"])
@@ -41,6 +41,9 @@ class EmailLogItem(BaseModel):
     next_attempt_at: datetime
     sent_at: datetime | None
     last_error: str | None
+    # True when the email carries the seat picture; the picture itself is
+    # never returned by any route.
+    has_picture: bool
 
 
 def _check_cron_secret(given: str | None) -> None:
@@ -67,6 +70,9 @@ def process_outbox(
     report = process_due(session, provider, now)
     # Retention (S9): old finished rows lose their words and invite.
     scrub_expired(session, now)
+    # Codes nobody typed in time (guest accounts) are of no more use.
+    session.execute(delete(EmailCode).where(EmailCode.expires_at <= now))
+    session.commit()
     return ProcessResult(
         sent=report.sent, skipped=report.skipped, retrying=report.retrying, failed=report.failed
     )
@@ -102,6 +108,7 @@ def email_log(
             next_attempt_at=row.next_attempt_at,
             sent_at=row.sent_at,
             last_error=redact_links(row.last_error) if row.last_error else None,
+            has_picture=row.image_png is not None,
         )
         for row in session.scalars(query)
     ]

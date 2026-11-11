@@ -16,12 +16,14 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
     Time,
     TypeDecorator,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.engine import Dialect
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -196,6 +198,9 @@ class EmailOutbox(Base):
     sent_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
     provider_message_id: Mapped[str | None] = mapped_column(String(200))
     last_error: Mapped[str | None] = mapped_column(Text)
+    # Base64 of the seat picture sent inline with an account holder's seat
+    # email (docs/guest-accounts.md, section 9). NULL for every other email.
+    image_png: Mapped[str | None] = mapped_column(Text)
 
 
 class AuditLog(Base):
@@ -239,6 +244,9 @@ class DemoLink(Base):
 
 class Event(Base):
     __tablename__ = "events"
+    # Two events never share a link hash. NULLs (link never switched on) count
+    # as all different, so any number of events may have none.
+    __table_args__ = (Index("uq_events_share_token", "share_token_hash", unique=True),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     public_id: Mapped[str] = mapped_column(String(32), index=True, default=new_public_id)
@@ -249,6 +257,15 @@ class Event(Base):
     ends_at: Mapped[datetime] = mapped_column(UtcDateTime)
     privacy_mode: Mapped[str] = mapped_column(String(20), default="first_initial")
     change_deadline: Mapped[datetime | None] = mapped_column(UtcDateTime)
+    # The shared link /j/<token> (events_service/share.py). The server_default
+    # values match the ALTER TABLE in seed/migrate.py word for word, so a new
+    # database and an upgraded one end up the same.
+    share_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("FALSE")
+    )
+    share_version: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    share_token_hash: Mapped[str | None] = mapped_column(String(64))
+    share_cap: Mapped[int | None] = mapped_column(Integer)
 
 
 class GuestGroup(Base):
@@ -262,6 +279,12 @@ class GuestGroup(Base):
 
 class Guest(Base):
     __tablename__ = "guests"
+    # One guest row per account per event. Invited guests have no account
+    # (NULL), and NULLs never clash, so they are not limited by this index.
+    __table_args__ = (
+        Index("uq_guests_event_account", "event_id", "account_id", unique=True),
+        Index("ix_guests_account_id", "account_id"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
@@ -276,6 +299,11 @@ class Guest(Base):
     dietary_note: Mapped[str | None] = mapped_column(String(200))
     reserved_tag: Mapped[str | None] = mapped_column(String(20))
     rsvp: Mapped[str] = mapped_column(String(10), default="pending")
+    # Set when a guest account owns this row (docs/guest-accounts.md).
+    account_id: Mapped[int | None] = mapped_column(ForeignKey("guest_accounts.id"))
+    # "invited" (typed by the organiser) or "self_registered" (joined with
+    # the shared link).
+    source: Mapped[str] = mapped_column(String(20), default="invited", server_default="invited")
 
 
 class Acquaintance(Base):
@@ -316,6 +344,70 @@ class PlanSnapshot(Base):
     assignments: Mapped[dict[str, Any]] = mapped_column(JSON)
     score: Mapped[dict[str, Any]] = mapped_column(JSON)
     is_current: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class GuestAccount(Base):
+    """A person who signed up through an event's shared link.
+
+    There is no "verified" column: the row is only written after the person
+    typed the code we emailed them, so every account's address is proven.
+    """
+
+    __tablename__ = "guest_accounts"
+    # On SQLite, never give a deleted account's id to a new account: an old
+    # sign-in token names the id, and must not open someone else's account.
+    # (Postgres never reuses ids anyway.)
+    __table_args__ = ({"sqlite_autoincrement": True},)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    public_id: Mapped[str] = mapped_column(String(32), index=True, default=new_public_id)
+    # Lower case and trimmed. The UNIQUE constraint means one account per address.
+    email: Mapped[str] = mapped_column(String(254), unique=True)
+    name: Mapped[str] = mapped_column(String(120))
+    password_hash: Mapped[str] = mapped_column(String(255))
+    # False only when the sign-up code was shown on screen (the demo, see
+    # accounts.code_sent) instead of going to the inbox. Such an account
+    # never takes over an invited guest with the same address.
+    email_proven: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("TRUE"))
+    # Part of every guest session token; adding 1 ends all of them at once.
+    session_version: Mapped[int] = mapped_column(Integer, default=0)
+    consent_at: Mapped[datetime] = mapped_column(UtcDateTime)
+    consent_version: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
+    last_login_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+
+
+class EmailCode(Base):
+    """A 6-digit code we emailed, waiting to be typed back. Only its keyed hash is kept.
+
+    A "register" row also carries the pending sign-up (name, scrypt hash of
+    the password, event), because the account is made only when the code is
+    right.
+    """
+
+    __tablename__ = "email_codes"
+    __table_args__ = (UniqueConstraint("email", "purpose", name="uq_email_codes_email_purpose"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(254))
+    purpose: Mapped[str] = mapped_column(String(10))
+    code_hash: Mapped[str] = mapped_column(String(64))
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    expires_at: Mapped[datetime] = mapped_column(UtcDateTime)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
+    event_id: Mapped[int | None] = mapped_column(ForeignKey("events.id"))
+    name: Mapped[str | None] = mapped_column(String(120))
+    password_hash: Mapped[str | None] = mapped_column(String(255))
+    needs_accessible: Mapped[bool] = mapped_column(Boolean, default=False)
+    # "register" only. A keyed hash of the sign-up id that only the browser
+    # which asked for this code was given: the code works only together with
+    # it, so a code read out by someone else cannot finish this sign-up.
+    signup_hash: Mapped[str | None] = mapped_column(String(64))
+    # "register" only: the link version used. "Make a new link" changes it,
+    # and an older sign-up then no longer joins the event.
+    share_version: Mapped[int | None] = mapped_column(Integer)
+    # True when the code was also shown on screen (demo only).
+    code_shown: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 # ---------------------------------------------------------------- restaurants

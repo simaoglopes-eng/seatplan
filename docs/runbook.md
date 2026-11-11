@@ -101,10 +101,14 @@ cd backend
 DATABASE_URL='postgresql://USER:PASSWORD@HOST/DB' SECRET_KEY='same key as the app' ../.venv/bin/python -m app.seed.migrate
 ```
 
-It prints `Tables are ready.` It is safe to run twice or at the same time
-(it takes Postgres advisory lock `73102026`). **It only adds missing tables.**
-A new column or constraint on an existing table needs a hand-written
-`ALTER TABLE` or a fresh database, because there is no migration tool.
+It creates missing tables, then adds the columns of `NEW_COLUMNS` and the
+indexes of `NEW_INDEXES` (`backend/app/seed/migrate.py`) that are missing, and
+nothing else. It prints one line per step (`Added column events.share_enabled`,
+`Index uq_guests_event_account is ready`), then `Tables are ready.` It is safe
+to run twice or at the same time (it takes Postgres advisory lock `73102026`;
+on SQLite `BEGIN IMMEDIATE`); a second run prints no `Added column` line. Any
+other change to an existing table (a changed column, a new constraint not in
+those lists) still needs a hand-written `ALTER TABLE` or a fresh database.
 
 ## 5. Environment variables
 
@@ -173,7 +177,8 @@ reproduced on 2026-11-10.
 | `RuntimeError: DATABASE_URL is missing. Set it to the Postgres URL on Vercel.` | `VERCEL=1` is set and `DATABASE_URL` is empty | Connect the database or add the variable in the Vercel project |
 | `RuntimeError: DEMO_ORGANISER_PASSWORD must be set on Postgres or when DEMO_MODE is off.` | Seeding Postgres, or seeding with demo mode off, without the demo passwords | Set both demo password variables |
 | Errors about a missing table on Postgres (`relation ... does not exist`) | Tables are never created by the app on Postgres | Run `python -m app.seed.migrate` with the production URL |
-| A new column is missing after migrate | Migrate only adds whole tables | Write the `ALTER TABLE` by hand, or use a fresh database |
+| A new column is missing after migrate | Migrate adds only the columns listed in `NEW_COLUMNS` | Add the column to `NEW_COLUMNS` (with the same default as `models.py`) and a test from the old schema, or write the `ALTER TABLE` by hand |
+| `column events.share_enabled does not exist` (or `guests.account_id`, `guests.source`, `email_outbox.image_png`) | The new code runs on a database made before guest accounts | Run `python -m app.seed.migrate` against that database (`docs/deployment.md`, "Upgrading an existing database") |
 | `/demo/links` gives 404 and the home page says the demo is off | `DEMO_MODE` is not `1` | `export DEMO_MODE=1` and restart the backend |
 | `POST /api/demo/reset` gives 404 | `DEMO_MODE` is off | Turn demo mode on (only on a demo deployment) |
 | `POST /api/demo/reset` gives 401 | `DEMO_KEY` empty, or the header differs | Set `DEMO_KEY` before starting, send the same value in `X-Demo-Key` |

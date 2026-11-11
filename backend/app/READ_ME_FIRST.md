@@ -11,7 +11,7 @@ All commands run from the `backend/` folder, with the shared virtualenv:
 
 ```
 cd backend
-../.venv/bin/python -m app.seed.migrate                   # tables only (Postgres: the only way)
+../.venv/bin/python -m app.seed.migrate                   # tables, new columns, indexes (Postgres: the only way)
 ../.venv/bin/python -m app.seed.run                       # tables + demo data
 ../.venv/bin/uvicorn app.main:create_app --factory --reload
 ../.venv/bin/python -m pytest                             # tests
@@ -25,12 +25,12 @@ cd backend
 | `config.py` | Every environment variable is read here and only here |
 | `db.py` | Engine (SQLite locally, Postgres with NullPool in production), `SessionDep`, `insert_ignoring_duplicates` |
 | `models.py` | Every table. The UNIQUE constraints are what make double booking impossible |
-| `security.py` | scrypt passwords, token hashes, signed sessions, `CurrentUser`, `CurrentOrganiser`, `rate_limit` |
+| `security.py` | scrypt passwords, token hashes, signed sessions (organiser and guest account, kept apart), `CurrentUser`, `CurrentOrganiser`, `CurrentGuestAccount`, `rate_limit`, `mailbox`, `network_of` |
 | `core/` | Shared building blocks: holds, live updates, audit, privacy, layout (see its own read-me) |
 | `routers/` | One file per area of the API |
 | `mail/outbox.py` | `enqueue()`: emails are written to a table first and sent later |
 | `seed/run.py` | Demo users plus both verticals' demo data |
-| `seed/migrate.py` | Creates missing tables; on Postgres the app never does it itself |
+| `seed/migrate.py` | Creates missing tables, then adds the columns and indexes in its fixed lists `NEW_COLUMNS` and `NEW_INDEXES`; on Postgres the app never does it itself |
 
 ## Data flow of one request
 
@@ -62,3 +62,10 @@ as UTC and hands back timezone-aware datetimes, so both databases behave the sam
 We never "check, then insert". We insert, and a UNIQUE constraint in the
 database refuses the second row. The error is caught and returned as HTTP 409
 `seat_taken`. `tests/test_holds.py` fires 30 threads at one seat to prove it.
+
+**How does an existing production database get the guest account columns?**
+`python -m app.seed.migrate` creates the two new tables, then reads each
+table's columns and runs `ALTER TABLE ... ADD COLUMN` only for the ones in
+`NEW_COLUMNS` that are missing, then `CREATE INDEX IF NOT EXISTS`. Running it
+twice changes nothing the second time. `tests/test_migrate_guest_accounts.py`
+starts from the frozen old schema in `tests/fixtures/` to prove it.

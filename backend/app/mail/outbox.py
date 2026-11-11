@@ -15,11 +15,17 @@ Life of one row (the "status" column):
 Personal links (security finding S9): a queued row must keep the diner's or
 guest's raw link, or the email could not be sent. Once a row is finished
 (sent, skipped or failed for good) the link has no more use, so the stored
-words and invite are rewritten without it. RETENTION_DAYS later the words and
-invite are blanked altogether; subject, recipient, status and times stay, so
+words and invite are rewritten without it. RETENTION_DAYS later the words, invite and
+picture are blanked altogether; subject, recipient, status and times stay, so
 the log can still show that the email existed.
+
+Emailed codes (guest accounts) are secrets too: once a code email is
+finished its words become CODE_REMOVED. Code emails must arrive while the
+person waits, so send_now() sends one row at once instead of waiting for the
+cron; the claim below still makes sure it goes out only once.
 """
 
+import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -32,6 +38,8 @@ from app.config import get_settings
 from app.mail.providers import OutgoingEmail, Provider
 from app.models import EmailOutbox, utc_now
 
+logger = logging.getLogger("seatplan.mail")
+
 MAX_ATTEMPTS = 5
 FIRST_RETRY_DELAY = timedelta(minutes=5)
 # How long a claimed row belongs to one processor. If that processor crashes
@@ -43,9 +51,13 @@ FINISHED = ("sent", "skipped", "failed")
 # How long a finished row keeps its (link-free) words and invite.
 RETENTION_DAYS = 30
 # A personal link: optional "https://host" then /b/<token> (booking), /e/<token>
-# (attendee page) or /a/<token> (attendee API). Tokens are url-safe base64.
-_PERSONAL_LINK = re.compile(r"(?:https?://[^\s\"'<>]*?)?/[abe]/[A-Za-z0-9_-]+")
+# (attendee page), /a/<token> (attendee API) or /j/<token> (an event's shared
+# link). Tokens are url-safe base64.
+_PERSONAL_LINK = re.compile(r"(?:https?://[^\s\"'<>]*?)?/[abej]/[A-Za-z0-9_-]+")
 LINK_REMOVED = "[personal link removed]"
+# Emails whose words hold a 6-digit code (events_service/accounts.py).
+CODE_KINDS = ("account_code", "password_code")
+CODE_REMOVED = "[code removed]"
 
 
 def redact_links(text: str) -> str:
@@ -54,7 +66,10 @@ def redact_links(text: str) -> str:
 
 
 def _forget_links(row: EmailOutbox) -> None:
-    """Drop the raw links from a finished row; it will never be sent again."""
+    """Drop the raw links (and any code) from a finished row; it will never be sent again."""
+    if row.kind in CODE_KINDS:
+        row.body_text = CODE_REMOVED
+        row.body_html = CODE_REMOVED
     row.body_text = redact_links(row.body_text)
     row.body_html = redact_links(row.body_html)
     if row.ics is not None:
@@ -77,6 +92,7 @@ def enqueue(
     body_html: str,
     ics: str | None = None,
     send_after: datetime | None = None,
+    image_png: str | None = None,
 ) -> None:
     """Queue one email, or do nothing if this idempotency_key is already queued.
 
@@ -91,6 +107,7 @@ def enqueue(
         "body_text": body_text,
         "body_html": body_html,
         "ics": ics,
+        "image_png": image_png,
         "status": "queued",
         "attempts": 0,
         "next_attempt_at": send_after or utc_now(),
@@ -161,6 +178,7 @@ def _to_message(row: EmailOutbox) -> OutgoingEmail:
         body_html=row.body_html,
         ics=row.ics,
         idempotency_key=row.idempotency_key,
+        image_png=row.image_png,
     )
 
 
@@ -234,8 +252,34 @@ def process_due(
     return report
 
 
+def send_now(session: Session, provider: Provider, idempotency_key: str, now: datetime) -> str:
+    """Send one queued row at once (code emails). Commits. Returns its new status.
+
+    The row is claimed exactly as process_due() claims it, so if the cron
+    runs at the same moment only one of the two sends it. Never raises: any
+    error is logged and the row stays queued for the cron to try again.
+    """
+    try:
+        row_id = session.scalar(
+            select(EmailOutbox.id).where(EmailOutbox.idempotency_key == idempotency_key)
+        )
+        session.commit()
+        if row_id is None or not _claim(session, row_id, now):
+            return "not_claimed"
+        row = session.get(EmailOutbox, row_id, populate_existing=True)
+        if row is None:
+            return "not_claimed"
+        status = _process_one(row, provider, get_settings().email_allowlist, now)
+        session.commit()
+        return status
+    except Exception:  # any error: the person's request must still succeed
+        session.rollback()
+        logger.exception("send_now failed; the cron will retry the email")
+        return "error"
+
+
 def scrub_expired(session: Session, now: datetime) -> int:
-    """Retention: blank words and invite of finished rows older than RETENTION_DAYS.
+    """Retention: blank words, invite and picture of finished rows older than RETENTION_DAYS.
 
     Called by the cron endpoint after process_due(). A row's age is its
     sent_at, or next_attempt_at when it was never sent (skipped or failed);
@@ -245,11 +289,16 @@ def scrub_expired(session: Session, now: datetime) -> int:
     cutoff = now - timedelta(days=RETENTION_DAYS)
     sent_at, waited = EmailOutbox.sent_at, EmailOutbox.next_attempt_at
     old = (sent_at < cutoff) | (sent_at.is_(None) & (waited < cutoff))
-    not_blank = (EmailOutbox.body_text != "") | (EmailOutbox.body_html != "")
+    not_blank = (
+        (EmailOutbox.body_text != "")
+        | (EmailOutbox.body_html != "")
+        | EmailOutbox.ics.is_not(None)
+        | EmailOutbox.image_png.is_not(None)
+    )
     result = session.execute(
         update(EmailOutbox)
-        .where(EmailOutbox.status.in_(FINISHED) & old & (not_blank | EmailOutbox.ics.is_not(None)))
-        .values(body_text="", body_html="", ics=None)
+        .where(EmailOutbox.status.in_(FINISHED) & old & not_blank)
+        .values(body_text="", body_html="", ics=None, image_png=None)
     )
     session.commit()
     return result.rowcount

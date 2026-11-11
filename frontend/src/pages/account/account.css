@@ -1,0 +1,201 @@
+/* Guest account screens (/my/...) and the account forms used by the shared
+   link (/j/:token/register, /j/:token/sign-in). Mobile first: one column,
+   full-width buttons, and every target at least var(--touch-target) tall.
+   Every colour, space and size comes from tokens.css. */
+
+.acc-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--layout-narrow);
+  margin: var(--space-5) auto 0;
+}
+
+/* Lists and the account page need more room than a form. */
+.acc-wide {
+  max-width: 44rem;
+}
+
+.acc-title {
+  margin: 0;
+}
+
+.acc-lede {
+  margin: 0;
+  color: var(--c-text-muted);
+}
+
+.acc-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--c-surface);
+  border: var(--border-width) solid var(--c-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.acc-submit {
+  width: 100%;
+}
+
+.acc-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  align-items: center;
+}
+
+/* Text links get a full-size tap area without looking like buttons. */
+.acc-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+}
+
+/* The problem summary: a thick edge and a title, so it is not shown by colour alone. */
+.acc-problem {
+  padding: var(--space-3) var(--space-4);
+  background: var(--c-danger-soft);
+  border-left: calc(var(--border-width) * 4) solid var(--c-danger);
+  border-radius: var(--radius-sm);
+  color: var(--c-text);
+}
+
+.acc-problem-title {
+  margin: 0 0 var(--space-1);
+  font-weight: var(--fw-bold);
+}
+
+.acc-problem ul {
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.acc-password {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.acc-toggle {
+  align-self: flex-start;
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: var(--border-width) solid var(--c-border-strong);
+  border-radius: var(--radius-pill);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.acc-toggle[aria-pressed="true"] {
+  background: var(--c-primary-soft);
+  color: var(--c-primary);
+}
+
+.acc-consent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.acc-details summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  cursor: pointer;
+  color: var(--c-primary);
+  font-weight: var(--fw-medium);
+}
+
+.acc-privacy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+}
+
+.acc-privacy p {
+  margin: 0;
+}
+
+/* The account bar: who is signed in, the two account pages, Sign out. */
+.acc-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: var(--c-surface);
+  border: var(--border-width) solid var(--c-border);
+  border-radius: var(--radius-md);
+}
+
+.acc-bar-who {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.acc-bar-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+}
+
+.acc-bar-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+}
+
+.acc-bar .ev-muted {
+  flex-basis: 100%;
+}
+
+.acc-notice {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--c-accent-soft);
+  border-left: calc(var(--border-width) * 4) solid var(--c-accent);
+  border-radius: var(--radius-sm);
+}
+
+.acc-events {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.acc-event .btn {
+  align-self: flex-start;
+}
+
+.acc-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+}
+
+.acc-facts dt {
+  font-weight: var(--fw-medium);
+}
+
+.acc-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Danger zone: a brick edge plus the words "Delete your account". */
+.acc-danger {
+  border-left: calc(var(--border-width) * 4) solid var(--c-danger);
+}

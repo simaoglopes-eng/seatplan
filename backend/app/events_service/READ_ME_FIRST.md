@@ -2,9 +2,11 @@
 
 ## Purpose
 
-Everything behind the two events routers: `routers/events.py` (the organiser,
-logged in) and `routers/attendee.py` (an attendee with a personal link). The
-routers check the request and call one function from here.
+Everything behind the events routers: `routers/events.py` (the organiser,
+logged in), `routers/attendee.py` (an attendee with a personal link),
+`routers/visitor.py` (anyone with an event's shared link) and
+`routers/guest_accounts.py` / `guest_events.py` (a signed-in guest account).
+The routers check the request and call one function from here.
 
 ## Files, in reading order
 
@@ -14,9 +16,12 @@ routers check the request and call one function from here.
 | `access.py` | Find the event (organiser) or the guest (token hash); deadline rule |
 | `problem.py` | Database rows to optimiser dataclasses (`EventProblem`); the current plan |
 | `seatmap.py` | The map payload: attendee view (privacy-filtered) and organiser view |
-| `seating.py` | Attendee hold, confirm, change and release; the shared seat rules; `lock_event` (one lock order) |
-| `mailer.py` | Queue confirmation, change and cancellation emails (outbox) |
-| `guests.py` | Organiser guest list: add, change, GDPR erase, new link |
+| `seating.py` | Attendee hold, confirm, change and release; the shared seat rules; `lock_event` (one lock order); `drop_assignment(notify=False)` frees a seat without an email |
+| `attendee_view.py` | The attendee page, people list, own details, RSVP, "I know them" and privacy: one copy used by the personal link and by guest accounts |
+| `mailer.py` | Queue confirmation, change and cancellation emails (outbox). Account holders get the email with the seat picture (`picture_room`, `account_link`) |
+| `guests.py` | Organiser guest list: add, change, GDPR erase (`actor` is the organiser's email or `account:<id>`; an erased row keeps its `account_id` so that account cannot rejoin), new link. `guest_dict` adds `source` and `has_account` |
+| `share.py` | The shared link: derived token (`derive_token`), `places_left` (seats reserved for a tag are not for newcomers), `room_to_come_back` (a "no" turning "yes"), the visitor map (four states, filtered names), and `join()`, the one step that puts an account on a guest list (answers `removed` for an account the organiser removed) |
+| `accounts.py` | Guest accounts: emailed 6-digit codes (stored as keyed hashes, tries counted before the compare), the sign-up id that ties a code to one browser, `may_show_code` (the demo rule), sign-up, sign-in (failed logins per address and network), password reset, my events, account deletion |
 | `csv_io.py` | CSV import (validated, all or nothing) and safe CSV export |
 | `plans.py` | Plan snapshots: scenarios, `apply_plan`, undo and redo |
 | `optimise.py` | Auto-fill, re-plan, compare, what-if (calls the optimiser) |
@@ -32,6 +37,25 @@ POST /a/{token}/hold      seat rules -> lock_event -> take_hold (UNIQUE on holds
 POST /a/{token}/confirm   lock_event -> confirm_hold -> insert or update seat_assignments
                           -> flush (UNIQUE) -> 409 ; audit + outbox email -> one commit
 ```
+
+## Data flow: someone joins with the shared link
+
+```
+GET  /j/{token}            rate_limit -> hash lookup + derive check -> visitor_map (no people list)
+POST /j/{token}/register   link + deadline -> code limits -> pending row in email_codes
+                           (password already scrypt, keyed hash of a new signup_id)
+                           -> outbox "account_code" -> send_now (same claim as the cron)
+                           -> 202 with signup_id (and demo_code only per may_show_code)
+POST /guest/verify         signup_id matches? -> count the try, then compare the code
+                           -> share-join limit -> account row
+                           -> join(): lock_event, re-check, places_left, guest row -> one commit
+```
+
+Nothing that counts against the event is written before the code is typed,
+so made-up addresses cannot fill an event, and linking to an invited guest
+with the same address is safe: the inbox was proven, the code works only in
+the browser that started the sign-up, and an account whose code was shown on
+screen (demo) is never linked.
 
 ## Data flow: the organiser auto-fills
 
@@ -65,6 +89,12 @@ writes and the loser gets 409, so a seat is never given twice.
 `access.load_guest` looks the token up by its SHA-256 hash and answers the same
 404 with the same message for a wrong token, an old token replaced by a new
 link, and a revoked one. Attempts are also rate limited per address.
+
+**Two people join for the last place at the same moment. Who gets it?**
+`share.join` takes `lock_event` first, then reads the event again and counts
+the places left. The second request waits at the lock until the first commits,
+then counts the new guest and answers `event_full`.
+`test_two_visitors_race_for_the_last_place` runs two threads to prove it.
 
 **Why does every seat write start with `lock_event`?**
 It bumps the event's row in `live_versions` before touching anything else.

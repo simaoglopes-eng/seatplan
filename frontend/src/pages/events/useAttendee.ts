@@ -5,9 +5,9 @@
 //
 // The page component only draws; every API call starts here.
 import { useEffect, useRef, useState } from "react";
-import * as eventsApi from "../../api/events";
 import type { SeatRecommendation } from "../../api/events";
 import { useToast } from "../../design/components";
+import type { AttendeeApi } from "./attendeeApi";
 import { knowsSavedMessage, lostSeat, nextBest } from "./attendeeRules";
 import type { ActiveHold } from "./attendeeRules";
 import { seatName } from "./format";
@@ -21,7 +21,8 @@ export type Notice =
   | { kind: "deadline" }
   | { kind: "problem"; message: string };
 
-export function useAttendee(token: string) {
+/** `attendeeApi` must stay the same object between renders (pages build it with useMemo). */
+export function useAttendee(attendeeApi: AttendeeApi) {
   const toast = useToast();
   const [hold, setHold] = useState<ActiveHold | null>(null);
   const [lookingAt, setLookingAt] = useState<number | null>(null);
@@ -48,7 +49,7 @@ export function useAttendee(token: string) {
     setNotice({ kind: "conflict", seatId: lost, suggestion: nextBest(recs, view.map.seats, lost) });
   };
 
-  const { load, setLoad, recs, recsFailed, fetchAll, firstLoad } = useAttendeeData(token, checkForLoss);
+  const { load, setLoad, recs, recsFailed, fetchAll, firstLoad } = useAttendeeData(attendeeApi, checkForLoss);
 
   useEffect(() => {
     void firstLoad().then((view) => {
@@ -132,13 +133,13 @@ export function useAttendee(token: string) {
     },
     rsvp: (answer: "yes" | "no") =>
       run("rsvp", null, async () => {
-        await eventsApi.sendRsvp(token, answer);
+        await attendeeApi.rsvp(answer);
         setMessage(answer === "yes" ? "Thank you, we have noted that you are coming." : "Thank you, we have noted that you cannot come.");
         await fetchAll();
       }),
     saveKnows: (ids: number[], onDone: () => void) =>
       run("knows", null, async () => {
-        if (ids.length > 0) await eventsApi.sendKnows(token, ids);
+        if (ids.length > 0) await attendeeApi.knows(ids);
         onDone();
         // Read the fresh list first: the message depends on whether these people have seats.
         const fresh = await fetchAll();
@@ -146,7 +147,7 @@ export function useAttendee(token: string) {
       }),
     hold: (seatId: number) =>
       run("hold", seatId, async () => {
-        const answer = await eventsApi.holdSeat(token, seatId);
+        const answer = await attendeeApi.hold(seatId);
         setHold({ seat_id: seatId, expires_at: answer.expires_at });
         setLookingAt(seatId);
         setNotice(null);
@@ -157,7 +158,7 @@ export function useAttendee(token: string) {
       const seatId = holdRef.current?.seat_id ?? null;
       if (seatId === null) return Promise.resolve();
       return run("confirm", seatId, async () => {
-        await eventsApi.confirmSeat(token, seatId);
+        await attendeeApi.confirm(seatId);
         setHold(null);
         setChangingSeat(false);
         setLookingAt(null);
@@ -168,14 +169,14 @@ export function useAttendee(token: string) {
     },
     release: () =>
       run("release", null, async () => {
-        await eventsApi.releaseSeat(token);
+        await attendeeApi.release();
         setChangingSeat(false);
         setMessage("Your seat is free again. You can choose a new one at any time before the deadline.");
         await fetchAll();
       }),
     setAnonymous: (value: boolean) =>
       run("privacy", null, async () => {
-        await eventsApi.sendPrivacy(token, value);
+        await attendeeApi.privacy(value);
         setMessage(value ? "Other guests now see you as Guest." : "Other guests can see your name again.");
         await fetchAll();
       }),

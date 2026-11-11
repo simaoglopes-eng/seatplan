@@ -763,3 +763,18 @@
     break-inside: avoid;
   }
 }
+
+/* ---------- Organiser: shared link (ShareLinkCard.tsx) ---------- */
+
+.ev-share-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* The long link must wrap inside its field on a phone, never widen the page. */
+.ev-share-box .field-input {
+  width: 100%;
+  min-width: 0;
+  text-overflow: ellipsis;
+}

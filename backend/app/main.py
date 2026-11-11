@@ -30,10 +30,13 @@ from app.routers import (
     demo,
     emails,
     events,
+    guest_accounts,
+    guest_events,
     health,
     restaurants,
     staff,
     venues,
+    visitor,
 )
 
 # Standard HTTP statuses mapped to the error codes of contract section 5.
@@ -133,6 +136,9 @@ def _register_routers(app: FastAPI) -> None:
         demo,
         events,
         attendee,
+        visitor,
+        guest_accounts,
+        guest_events,
         restaurants,
         bookings,
         staff,

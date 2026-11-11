@@ -21,10 +21,11 @@ temporary folder, never into the repository.
 | File | What it checks |
 |---|---|
 | `attendee.spec.ts` | Pick, hold and confirm a seat; a second attendee cannot take it |
-| `mobile.spec.ts` | The attendee flow at 390 x 844 with touch (the `mobile` project) |
+| `mobile.spec.ts` | The attendee flow, and a visitor's sign-up through the shared link, at 390 x 844 with touch (the `mobile` project); no sideways scrolling |
+| `guest-account.spec.ts` | The shared link, in order: a visitor sees the map but cannot hold; creates an account with the demo code; holds and confirms a seat; the outbox has one seat email with the picture; signs out and back in; a second visitor cannot take the seat; the organiser switches the link off (and on again for the files after it) |
 | `organiser.spec.ts` | Auto-fill preview, apply, undo |
 | `restaurant.spec.ts` | Diner books and cancels through the manage link; staff seat a walk-in |
-| `accessibility.spec.ts` | axe-core scan (WCAG 2.1 A and AA) of six main pages |
+| `accessibility.spec.ts` | axe-core scan (WCAG 2.1 A and AA) of nine pages, including the visitor page, the create-account form and the guest sign-in page |
 | `fixtures.ts` | Demo links, sign-in, and the rule that fails a test on a page error or a CSP violation |
 | `attendee-steps.ts` | Attendee steps shared by the desktop and phone tests |
 

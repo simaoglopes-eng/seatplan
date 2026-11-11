@@ -83,7 +83,7 @@ def known_ids(session: Session, guest: Guest) -> set[int]:
     return set(session.scalars(query))
 
 
-def _seat_base(seat: Seat) -> dict[str, Any]:
+def seat_base(seat: Seat) -> dict[str, Any]:
     return {
         "id": seat.id,
         "table_id": seat.table_id,
@@ -127,7 +127,7 @@ def attendee_map(session: Session, event: Event, venue: Venue, me: Guest) -> dic
         elif owner is not None:
             other = guests[owner.guest_id]
             occupant = display_name(other.name, event.privacy_mode, other.wants_anonymous)
-        seats.append({**_seat_base(seat), "state": state, "occupant": occupant})
+        seats.append({**seat_base(seat), "state": state, "occupant": occupant})
     return {**map_frame(session, venue), "seats": seats}
 
 
@@ -150,7 +150,7 @@ def organiser_map(session: Session, event: Event, venue: Venue) -> dict[str, Any
         owner = owner_of.get(seat.id)
         seats.append(
             {
-                **_seat_base(seat),
+                **seat_base(seat),
                 "state": _organiser_state(seat, owner, holds.get(seat.id)),
                 "occupant": guests[owner.guest_id].name if owner else None,
                 "guest_id": owner.guest_id if owner else None,

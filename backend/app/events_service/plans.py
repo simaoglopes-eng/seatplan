@@ -15,11 +15,12 @@ from typing import Any
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
+from app.core import audit
 from app.core.errors import ApiError
 from app.events_service.access import is_active
 from app.events_service.mailer import sync_reminder
 from app.events_service.problem import current_rows, plan_of, score_plan
-from app.events_service.seating import lock_event, seat_for_guest
+from app.events_service.seating import lock_event, queue_change_email, seat_for_guest
 from app.models import Event, Guest, PlanSnapshot, Seat, SeatAssignment
 
 SCENARIO = "scenario"
@@ -198,11 +199,30 @@ def apply_plan(
     return {"applied": len(wanted), "conflicts": conflicts}
 
 
-def _sync_reminders(session: Session, event: Event, seat_before: dict[int, int]) -> None:
-    """Move each moved guest's reminder to their new seat, or cancel it.
+def _email_account_holder(
+    session: Session, event: Event, guest: Guest, seat: Seat, old_seat_id: int | None
+) -> None:
+    """The organiser's plan gave an account holder a new seat: email them
+    their seat and the picture, as a single organiser move does. No commit."""
+    entry = audit.record(
+        session,
+        actor="plan",
+        action="seat.plan_move",
+        entity="guest",
+        entity_id=str(guest.id),
+        detail={"seat_id": seat.id},
+    )
+    # Also moves their reminder to the new seat.
+    queue_change_email(session, event, guest, seat, old_seat_id, entry, moved_by_organiser=True)
 
-    A plan sends no seat emails (it can move dozens of people at once), but
-    the reminder must never name a seat the guest no longer has.
+
+def _sync_reminders(session: Session, event: Event, seat_before: dict[int, int]) -> None:
+    """Tell each moved guest what changed: move their reminder, or cancel it.
+
+    A guest with only a personal link gets no seat email from a plan (it can
+    move dozens of people at once), but the reminder must never name a seat
+    they no longer have. A guest account holder was promised an email with
+    the picture whenever the organiser moves them, so they get one.
     """
     seat_after = {guest_id: row.seat_id for guest_id, row in current_rows(session, event).items()}
     for guest_id in sorted(set(seat_before) | set(seat_after)):
@@ -211,7 +231,10 @@ def _sync_reminders(session: Session, event: Event, seat_before: dict[int, int])
         if guest is None or seat_before.get(guest_id) == seat_id:
             continue
         seat = session.get(Seat, seat_id) if seat_id is not None else None
-        sync_reminder(session, event, guest, seat)
+        if guest.account_id is not None and seat is not None:
+            _email_account_holder(session, event, guest, seat, seat_before.get(guest_id))
+        else:
+            sync_reminder(session, event, guest, seat)
 
 
 # ---------------------------------------------------------------- undo / redo
