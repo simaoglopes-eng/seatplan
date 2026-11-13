@@ -266,3 +266,19 @@ The `e2e` job and the gitleaks scan have not run on GitHub yet: not done yet.
 | Usability session | Date | Who (role) | Task | What went wrong | Change made |
 |---|---|---|---|---|---|
 | | | | | | |
+
+## Restaurant platform (2026-11-13, branch claude/ambiente, Windows, Python 3.13)
+
+Run after the last commit of the plan's tasks 17 to 38:
+
+- Backend: `pytest -q` 857 passed before the performance tests, 4 more after (the whole suite is green); `ruff check` and
+  `ruff format --check` clean.
+- Frontend: `npm run typecheck` clean, `npm test` 392 passed, `npm run build` ok, `npm run contrast` 86 checks, 0 failures.
+- Playwright: 64 passed (desktop and phone), including the new `restaurant-ambience`, `discovery` and `owner` specs and axe scans of the
+  discovery page (with real cards), the public restaurant page, the editor and the owner pages.
+- Performance (local, best of five): the diner map with ambience for 60 tables under 300 ms; the discovery search over 100 restaurants
+  under 500 ms, also with free times for the 20 on the page (`test_restaurant_performance.py`, `test_discovery_performance.py`).
+- `scripts/check_forbidden_paths.py --base main`: "Protected event paths unchanged."
+
+Known flaky tests that are not from this work: `test_guest_register::test_two_verifies_at_once_make_one_account` (concurrency) and
+`test_redteam::test_s1_forged_forwarded_for_cannot_dodge_the_login_limit` (the limiter counts per calendar minute). Both pass alone.

@@ -717,3 +717,31 @@ chair is selected, Delete asks the owner to use the chair-count controls rather
 than unexpectedly deleting its table. Geometry edits use one history step per
 gesture. Table bodies take hit priority over expanded chair hit areas inside the
 body, avoiding invisible chair targets stealing a phone's hold on the table.
+
+## 2026-11-13: ambience, discovery and emails (branch claude/ambiente)
+
+Decisions taken while finishing tasks 17 to 38 of the restaurant plan. More detail, task by task, is in
+`docs/claude-ambiente-notas.md`.
+
+17. **Optimiser ranking.** Spec 8.2 asked for a four-part `key()`. An existing test requires `key() == (6, -2, 1)`, and the exact
+    check, the service plan and the gap report compare three-part keys, so `key()` stays as it was. A new `ranking_key()` adds the
+    wishes met and is used only by the heuristic to break ties. Wishes never change what counts as optimal.
+18. **Drafts take no bookings.** `load_restaurant` used to answer for a draft. Diner routes (`/api/r/{vid}...`) now use `load_published`:
+    a draft or unpublished restaurant is a 404, while existing bookings keep working through their manage links.
+19. **Features on the card** (`venues.features`: sun, view, accessible, terrace) are computed when rooms are saved and on publish. They only
+    claim what the rooms support (no north: no sun).
+20. **The chair is a wish.** The booking is for the whole table. The chair is stored on the booking, checked to be a usable chair at the
+    booking's tables, shown in the emails and to the staff, and dropped when a change moves the booking to other tables. A chair change
+    (`PATCH /b/{token} {seat_id}`) is sent on its own; with a time change it is a 422, so a failed table move never half-changes the chair.
+21. **Search runs in Python** over published restaurants with a slug (accents and capitals ignored on name and cuisines, haversine distance).
+    Only the 20 on the page get their cover and free times, unless "Available" must look at all. `search_text` is not used because old and
+    demo rows have it empty.
+22. **`/r/:id` forwards to `/restaurants/:slug`** only when the restaurant has a slug, keeping the query. A link with `?date=&time=&party=`
+    checks once that the time is still free and goes straight to the tables, or lands on the times with a message.
+23. **Emails.** `mail/restaurant_templates.py` (new, pure) builds the confirmed, changed and reminder emails; `restaurant_service/email_facts.py`
+    gathers the facts. The cover photo is a remote image, the mini-map the single inline image (`cid:seatmap`), also on the reminder. The old
+    templates stay. One old assertion changed from "table T1" to "Table T1".
+24. **Demo data.** Four invented restaurants in real Lisbon neighbourhoods plus Casa Lumen with a public profile. The photos are drawn by
+    `seed/demo_photos.py`, which is their recorded source (no third-party images). The demo organiser now owns five restaurants.
+25. **A tap on a table still holds it at once** (the old flow); spec 9.3 would show the card first. Left as it was to keep holds and live
+    updates untouched. Optimiser service plan and what-if still ignore wishes (they need per-party features). Both are open.

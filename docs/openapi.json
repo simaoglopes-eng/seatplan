@@ -25,6 +25,65 @@
       }
     },
     "/api/owner/restaurants": {
+      "post": {
+        "tags": [
+          "owners"
+        ],
+        "summary": "Create Restaurant",
+        "operationId": "create_restaurant_api_owner_restaurants_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestaurantIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Restaurant Api Owner Restaurants Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "get": {
         "tags": [
           "owners"
@@ -61,6 +120,194 @@
                     "additionalProperties": true
                   },
                   "title": "Response Restaurants Api Owner Restaurants Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owner/restaurants/{vid}": {
+      "get": {
+        "tags": [
+          "owners"
+        ],
+        "summary": "Get Profile",
+        "operationId": "get_profile_api_owner_restaurants__vid__get",
+        "parameters": [
+          {
+            "name": "vid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vid"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Profile Api Owner Restaurants  Vid  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owner/restaurants/{vid}/profile": {
+      "get": {
+        "tags": [
+          "owners"
+        ],
+        "summary": "Get Profile",
+        "operationId": "get_profile_api_owner_restaurants__vid__profile_get",
+        "parameters": [
+          {
+            "name": "vid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vid"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Profile Api Owner Restaurants  Vid  Profile Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "owners"
+        ],
+        "summary": "Patch Profile",
+        "operationId": "patch_profile_api_owner_restaurants__vid__profile_patch",
+        "parameters": [
+          {
+            "name": "vid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vid"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfilePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Patch Profile Api Owner Restaurants  Vid  Profile Patch"
                 }
               }
             }
@@ -148,6 +395,824 @@
                   "type": "object",
                   "title": "Response Verify Api Owner Verify Post"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owner/restaurants/{vid}/publish": {
+      "post": {
+        "tags": [
+          "owners"
+        ],
+        "summary": "Publish Restaurant",
+        "description": "Publish after the server checks everything again (spec 5.3 step 6).\n\n422 carries the problems twice: as `problems` (the spec) and inside `error`\n(what the client's error handling reads), each with a link to fix it.",
+        "operationId": "publish_restaurant_api_owner_restaurants__vid__publish_post",
+        "parameters": [
+          {
+            "name": "vid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vid"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owner/restaurants/{vid}/unpublish": {
+      "post": {
+        "tags": [
+          "owners"
+        ],
+        "summary": "Unpublish Restaurant",
+        "description": "Back to a draft: off the search, no new bookings, existing bookings untouched.",
+        "operationId": "unpublish_restaurant_api_owner_restaurants__vid__unpublish_post",
+        "parameters": [
+          {
+            "name": "vid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vid"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Unpublish Restaurant Api Owner Restaurants  Vid  Unpublish Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owner/restaurants/{vid}/publish-check": {
+      "get": {
+        "tags": [
+          "owners"
+        ],
+        "summary": "Publish Check",
+        "description": "What the review step shows: the problems that block publishing and the tips that do not.",
+        "operationId": "publish_check_api_owner_restaurants__vid__publish_check_get",
+        "parameters": [
+          {
+            "name": "vid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vid"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Publish Check Api Owner Restaurants  Vid  Publish Check Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owner/restaurants/{vid}/rooms": {
+      "get": {
+        "tags": [
+          "owner rooms"
+        ],
+        "summary": "Get Rooms",
+        "operationId": "get_rooms_api_owner_restaurants__vid__rooms_get",
+        "parameters": [
+          {
+            "name": "vid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vid"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Rooms Api Owner Restaurants  Vid  Rooms Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "owner rooms"
+        ],
+        "summary": "Put Rooms",
+        "operationId": "put_rooms_api_owner_restaurants__vid__rooms_put",
+        "parameters": [
+          {
+            "name": "vid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vid"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__routers__owner_rooms__LayoutIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owner/restaurants/{vid}/ambience-preview": {
+      "get": {
+        "tags": [
+          "owner rooms"
+        ],
+        "summary": "Ambience Preview",
+        "description": "The light of the SAVED rooms for the editor's Light tool (spec 7.6, 7.7).\n\nSame answer as the diner's route, with the numbers behind each sentence. It\nworks for drafts, and only for the owner. `date` defaults to today.",
+        "operationId": "ambience_preview_api_owner_restaurants__vid__ambience_preview_get",
+        "parameters": [
+          {
+            "name": "vid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vid"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date"
+            }
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "time",
+              "default": "13:00:00",
+              "title": "Time"
+            }
+          },
+          {
+            "name": "moment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Moment"
+            }
+          },
+          {
+            "name": "party",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 30,
+              "minimum": 1,
+              "default": 2,
+              "title": "Party"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Ambience Preview Api Owner Restaurants  Vid  Ambience Preview Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owner/restaurants/{vid}/photos": {
+      "get": {
+        "tags": [
+          "photos"
+        ],
+        "summary": "Listing",
+        "operationId": "listing_api_owner_restaurants__vid__photos_get",
+        "parameters": [
+          {
+            "name": "vid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vid"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Listing Api Owner Restaurants  Vid  Photos Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "photos"
+        ],
+        "summary": "Upload",
+        "operationId": "upload_api_owner_restaurants__vid__photos_post",
+        "parameters": [
+          {
+            "name": "vid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vid"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Upload Api Owner Restaurants  Vid  Photos Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owner/restaurants/{vid}/photos/order": {
+      "put": {
+        "tags": [
+          "photos"
+        ],
+        "summary": "Order",
+        "operationId": "order_api_owner_restaurants__vid__photos_order_put",
+        "parameters": [
+          {
+            "name": "vid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vid"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Order Api Owner Restaurants  Vid  Photos Order Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owner/restaurants/{vid}/photos/{photo_id}": {
+      "patch": {
+        "tags": [
+          "photos"
+        ],
+        "summary": "Alt",
+        "operationId": "alt_api_owner_restaurants__vid__photos__photo_id__patch",
+        "parameters": [
+          {
+            "name": "vid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vid"
+            }
+          },
+          {
+            "name": "photo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Photo Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AltIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Alt Api Owner Restaurants  Vid  Photos  Photo Id  Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "photos"
+        ],
+        "summary": "Delete",
+        "operationId": "delete_api_owner_restaurants__vid__photos__photo_id__delete",
+        "parameters": [
+          {
+            "name": "vid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vid"
+            }
+          },
+          {
+            "name": "photo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Photo Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/photos/{photo_public_id}": {
+      "get": {
+        "tags": [
+          "photos"
+        ],
+        "summary": "Image",
+        "operationId": "image_api_photos__photo_public_id__get",
+        "parameters": [
+          {
+            "name": "photo_public_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Photo Public Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -466,7 +1531,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LayoutIn"
+                "$ref": "#/components/schemas/app__routers__venues__LayoutIn"
               }
             }
           }
@@ -4078,6 +5143,7 @@
           "restaurants"
         ],
         "summary": "Table Map",
+        "description": "`prefs` is a comma list of wishes, e.g. `sun,view` (spec 8.3).",
         "operationId": "table_map_api_r__venue_public_id__map_get",
         "parameters": [
           {
@@ -4166,6 +5232,17 @@
               ],
               "title": "Zone"
             }
+          },
+          {
+            "name": "prefs",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 80,
+              "default": "",
+              "title": "Prefs"
+            }
           }
         ],
         "responses": {
@@ -4177,6 +5254,153 @@
                   "type": "object",
                   "additionalProperties": true,
                   "title": "Response Table Map Api R  Venue Public Id  Map Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/r/{venue_public_id}/ambience": {
+      "get": {
+        "tags": [
+          "restaurants"
+        ],
+        "summary": "Ambience",
+        "description": "The light of every room and table, for the diner's time cursor (spec 7.6).\n\n`time` is when the stay starts (the sentences describe the whole stay);\n`moment` is where the cursor is and moves only the sun patches and the\nnight veil. Maths only: ids, polygons, light names and short sentences.",
+        "operationId": "ambience_api_r__venue_public_id__ambience_get",
+        "parameters": [
+          {
+            "name": "venue_public_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Venue Public Id"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Date"
+            }
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "time",
+              "title": "Time"
+            }
+          },
+          {
+            "name": "party",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 30,
+              "minimum": 1,
+              "title": "Party"
+            }
+          },
+          {
+            "name": "moment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Moment"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Ambience Api R  Venue Public Id  Ambience Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/r/{venue_public_id}/seats": {
+      "get": {
+        "tags": [
+          "restaurants"
+        ],
+        "summary": "Table Seats",
+        "description": "The chairs of up to three tables, for the optional \"where would you like\nto sit?\" step (spec 9.4). `table_ids` is a comma list of table ids.",
+        "operationId": "table_seats_api_r__venue_public_id__seats_get",
+        "parameters": [
+          {
+            "name": "venue_public_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Venue Public Id"
+            }
+          },
+          {
+            "name": "table_ids",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Table Ids"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Table Seats Api R  Venue Public Id  Seats Get"
                 }
               }
             }
@@ -4325,6 +5549,294 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/restaurants": {
+      "get": {
+        "tags": [
+          "discovery"
+        ],
+        "summary": "Search",
+        "operationId": "search_api_restaurants_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 80,
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "cuisine",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 24
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cuisine"
+            }
+          },
+          {
+            "name": "price",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "maxItems": 4
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Price"
+            }
+          },
+          {
+            "name": "features",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 4
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Features"
+            }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 90,
+                  "minimum": -90
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lat"
+            }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 180,
+                  "minimum": -180
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lng"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date"
+            }
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Time"
+            }
+          },
+          {
+            "name": "party",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 30,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Party"
+            }
+          },
+          {
+            "name": "available",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Available"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000,
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Search Api Restaurants Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/restaurants/{slug}": {
+      "get": {
+        "tags": [
+          "discovery"
+        ],
+        "summary": "Restaurant Page",
+        "operationId": "restaurant_page_api_restaurants__slug__get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Restaurant Page Api Restaurants  Slug  Get"
+                }
               }
             }
           },
@@ -5501,6 +7013,21 @@
   },
   "components": {
     "schemas": {
+      "AltIn": {
+        "properties": {
+          "alt_text": {
+            "type": "string",
+            "maxLength": 150,
+            "title": "Alt Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "alt_text"
+        ],
+        "title": "AltIn"
+      },
       "BlackoutIn": {
         "properties": {
           "date": {
@@ -5576,6 +7103,26 @@
             "minimum": 0.0,
             "title": "High Chairs",
             "default": 0
+          },
+          "prefs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Prefs"
+          },
+          "seat_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat Id"
           }
         },
         "additionalProperties": false,
@@ -5626,6 +7173,18 @@
               }
             ],
             "title": "Party Size"
+          },
+          "seat_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat Id"
           }
         },
         "additionalProperties": false,
@@ -5857,6 +7416,102 @@
         "additionalProperties": false,
         "type": "object",
         "title": "EventPatch"
+      },
+      "FixtureIn": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "x": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Y"
+          },
+          "w": {
+            "type": "number",
+            "maximum": 10000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "W"
+          },
+          "h": {
+            "type": "number",
+            "maximum": 10000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "H"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "bar",
+              "kitchen",
+              "wc",
+              "column",
+              "stairs",
+              "plant",
+              "stage",
+              "fireplace",
+              "tv",
+              "host_stand",
+              "awning"
+            ],
+            "title": "Kind"
+          },
+          "shape": {
+            "type": "string",
+            "enum": [
+              "rect",
+              "circle"
+            ],
+            "title": "Shape"
+          },
+          "rotation": {
+            "type": "number",
+            "maximum": 360.0,
+            "minimum": -360.0,
+            "title": "Rotation",
+            "default": 0
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Label",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "x",
+          "y",
+          "w",
+          "h",
+          "kind",
+          "shape"
+        ],
+        "title": "FixtureIn"
       },
       "ForgotIn": {
         "properties": {
@@ -6180,6 +7835,14 @@
               }
             ],
             "title": "Zone"
+          },
+          "prefs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Prefs"
           }
         },
         "additionalProperties": false,
@@ -6208,37 +7871,6 @@
           "guest_ids"
         ],
         "title": "KnowsIn"
-      },
-      "LayoutIn": {
-        "properties": {
-          "zones": {
-            "items": {
-              "$ref": "#/components/schemas/ZoneIn"
-            },
-            "type": "array",
-            "maxItems": 200,
-            "title": "Zones"
-          },
-          "tables": {
-            "items": {
-              "$ref": "#/components/schemas/TableIn"
-            },
-            "type": "array",
-            "maxItems": 1000,
-            "title": "Tables"
-          },
-          "seats": {
-            "items": {
-              "$ref": "#/components/schemas/SeatIn"
-            },
-            "type": "array",
-            "maxItems": 5000,
-            "title": "Seats"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "LayoutIn"
       },
       "LoginIn": {
         "properties": {
@@ -6279,6 +7911,129 @@
           "user"
         ],
         "title": "LoginOut"
+      },
+      "OpeningIn": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "side": {
+            "type": "integer",
+            "maximum": 59.0,
+            "minimum": 0.0,
+            "title": "Side"
+          },
+          "offset": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Offset"
+          },
+          "width": {
+            "type": "number",
+            "maximum": 32000.0,
+            "minimum": 40.0,
+            "title": "Width"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "window",
+              "door",
+              "glass_wall"
+            ],
+            "title": "Kind"
+          },
+          "top_height": {
+            "type": "number",
+            "maximum": 500.0,
+            "minimum": 100.0,
+            "title": "Top Height",
+            "default": 220
+          },
+          "is_main_entrance": {
+            "type": "boolean",
+            "title": "Is Main Entrance",
+            "default": false
+          },
+          "view_text": {
+            "type": "string",
+            "maxLength": 80,
+            "title": "View Text",
+            "default": ""
+          },
+          "view_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 3,
+            "title": "View Tags"
+          },
+          "night_view_text": {
+            "type": "string",
+            "maxLength": 80,
+            "title": "Night View Text",
+            "default": ""
+          },
+          "sun_rule": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "never",
+              "between"
+            ],
+            "title": "Sun Rule",
+            "default": "auto"
+          },
+          "sun_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sun From"
+          },
+          "sun_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sun Until"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "side",
+          "offset",
+          "width",
+          "kind"
+        ],
+        "title": "OpeningIn"
       },
       "OptimiseIn": {
         "properties": {
@@ -6348,6 +8103,54 @@
         ],
         "title": "OptimiseServiceIn"
       },
+      "OrderIn": {
+        "properties": {
+          "photo_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Photo Ids"
+          },
+          "cover_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "photo_ids",
+          "cover_id"
+        ],
+        "title": "OrderIn"
+      },
+      "OutlineIn": {
+        "properties": {
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/PointIn"
+            },
+            "type": "array",
+            "maxItems": 60,
+            "title": "Points"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "points"
+        ],
+        "title": "OutlineIn"
+      },
       "PeriodIn": {
         "properties": {
           "name": {
@@ -6397,6 +8200,89 @@
         ],
         "title": "PeriodIn"
       },
+      "PhotoIn": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "gallery",
+              "view"
+            ],
+            "title": "Kind"
+          },
+          "opening_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opening Key"
+          },
+          "content_type": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ],
+            "title": "Content Type"
+          },
+          "data_base64": {
+            "type": "string",
+            "maxLength": 1066668,
+            "minLength": 1,
+            "title": "Data Base64"
+          },
+          "alt_text": {
+            "type": "string",
+            "maxLength": 150,
+            "title": "Alt Text",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "content_type",
+          "data_base64"
+        ],
+        "title": "PhotoIn"
+      },
+      "PointIn": {
+        "properties": {
+          "x": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Y"
+          },
+          "curve": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Curve",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "PointIn"
+      },
       "PrivacyIn": {
         "properties": {
           "wants_anonymous": {
@@ -6439,6 +8325,181 @@
         ],
         "title": "ProcessResult"
       },
+      "ProfilePatch": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60,
+                "minLength": 1,
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "cuisines": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 3,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cuisines"
+          },
+          "price_level": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Level"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          },
+          "instagram": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 31
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instagram"
+          },
+          "google_maps_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Maps Url"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "lat": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 90.0,
+                "minimum": -90.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lng": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 180.0,
+                "minimum": -180.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lng"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProfilePatch"
+      },
       "ResetIn": {
         "properties": {
           "email": {
@@ -6467,6 +8528,118 @@
           "new_password"
         ],
         "title": "ResetIn"
+      },
+      "RestaurantIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "RestaurantIn"
+      },
+      "RoomIn": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "is_outdoor": {
+            "type": "boolean",
+            "title": "Is Outdoor",
+            "default": false
+          },
+          "north_deg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 359.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "North Deg"
+          },
+          "outline": {
+            "$ref": "#/components/schemas/OutlineIn"
+          },
+          "position": {
+            "type": "integer",
+            "maximum": 4.0,
+            "minimum": 0.0,
+            "title": "Position",
+            "default": 0
+          },
+          "openings": {
+            "items": {
+              "$ref": "#/components/schemas/OpeningIn"
+            },
+            "type": "array",
+            "maxItems": 60,
+            "title": "Openings"
+          },
+          "fixtures": {
+            "items": {
+              "$ref": "#/components/schemas/FixtureIn"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Fixtures"
+          },
+          "zones": {
+            "items": {
+              "$ref": "#/components/schemas/app__routers__owner_rooms__ZoneIn"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Zones"
+          },
+          "tables": {
+            "items": {
+              "$ref": "#/components/schemas/app__routers__owner_rooms__TableIn"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Tables"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "outline"
+        ],
+        "title": "RoomIn"
       },
       "RsvpIn": {
         "properties": {
@@ -6538,87 +8711,6 @@
         ],
         "title": "SeatChoice"
       },
-      "SeatIn": {
-        "properties": {
-          "id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Id"
-          },
-          "key": {
-            "type": "string",
-            "maxLength": 40,
-            "minLength": 1,
-            "title": "Key"
-          },
-          "table_key": {
-            "type": "string",
-            "maxLength": 40,
-            "minLength": 1,
-            "title": "Table Key"
-          },
-          "label": {
-            "type": "string",
-            "maxLength": 40,
-            "minLength": 1,
-            "title": "Label"
-          },
-          "x": {
-            "type": "number",
-            "maximum": 10000.0,
-            "minimum": -10000.0,
-            "title": "X"
-          },
-          "y": {
-            "type": "number",
-            "maximum": 10000.0,
-            "minimum": -10000.0,
-            "title": "Y"
-          },
-          "is_accessible": {
-            "type": "boolean",
-            "title": "Is Accessible",
-            "default": false
-          },
-          "is_blocked": {
-            "type": "boolean",
-            "title": "Is Blocked",
-            "default": false
-          },
-          "reserved_tag": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "vip",
-                  "family",
-                  "speaker"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reserved Tag"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "key",
-          "table_key",
-          "label",
-          "x",
-          "y"
-        ],
-        "title": "SeatIn"
-      },
       "SharePatch": {
         "properties": {
           "enabled": {
@@ -6671,133 +8763,6 @@
           "status"
         ],
         "title": "StatusIn"
-      },
-      "TableIn": {
-        "properties": {
-          "id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Id"
-          },
-          "key": {
-            "type": "string",
-            "maxLength": 40,
-            "minLength": 1,
-            "title": "Key"
-          },
-          "zone_key": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 40
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Zone Key"
-          },
-          "label": {
-            "type": "string",
-            "maxLength": 40,
-            "minLength": 1,
-            "title": "Label"
-          },
-          "shape": {
-            "type": "string",
-            "enum": [
-              "round",
-              "rect",
-              "row"
-            ],
-            "title": "Shape"
-          },
-          "x": {
-            "type": "number",
-            "maximum": 10000.0,
-            "minimum": -10000.0,
-            "title": "X"
-          },
-          "y": {
-            "type": "number",
-            "maximum": 10000.0,
-            "minimum": -10000.0,
-            "title": "Y"
-          },
-          "w": {
-            "type": "number",
-            "maximum": 10000.0,
-            "exclusiveMinimum": 0.0,
-            "title": "W"
-          },
-          "h": {
-            "type": "number",
-            "maximum": 10000.0,
-            "exclusiveMinimum": 0.0,
-            "title": "H"
-          },
-          "rotation": {
-            "type": "number",
-            "maximum": 360.0,
-            "minimum": -360.0,
-            "title": "Rotation",
-            "default": 0.0
-          },
-          "min_party": {
-            "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
-            "title": "Min Party",
-            "default": 1
-          },
-          "max_party": {
-            "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
-            "title": "Max Party"
-          },
-          "is_accessible": {
-            "type": "boolean",
-            "title": "Is Accessible",
-            "default": false
-          },
-          "high_chair_ok": {
-            "type": "boolean",
-            "title": "High Chair Ok",
-            "default": false
-          },
-          "combine_group": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 40
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Combine Group"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "key",
-          "label",
-          "shape",
-          "x",
-          "y",
-          "w",
-          "h",
-          "max_party"
-        ],
-        "title": "TableIn"
       },
       "TurnIn": {
         "properties": {
@@ -7047,83 +9012,6 @@
         ],
         "title": "WalkInIn"
       },
-      "ZoneIn": {
-        "properties": {
-          "id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Id"
-          },
-          "key": {
-            "type": "string",
-            "maxLength": 40,
-            "minLength": 1,
-            "title": "Key"
-          },
-          "name": {
-            "type": "string",
-            "maxLength": 80,
-            "minLength": 1,
-            "title": "Name"
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "general",
-              "window",
-              "terrace",
-              "bar",
-              "quiet",
-              "vip",
-              "accessible",
-              "stage"
-            ],
-            "title": "Kind"
-          },
-          "x": {
-            "type": "number",
-            "maximum": 10000.0,
-            "minimum": -10000.0,
-            "title": "X"
-          },
-          "y": {
-            "type": "number",
-            "maximum": 10000.0,
-            "minimum": -10000.0,
-            "title": "Y"
-          },
-          "w": {
-            "type": "number",
-            "maximum": 10000.0,
-            "exclusiveMinimum": 0.0,
-            "title": "W"
-          },
-          "h": {
-            "type": "number",
-            "maximum": 10000.0,
-            "exclusiveMinimum": 0.0,
-            "title": "H"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "key",
-          "name",
-          "kind",
-          "x",
-          "y",
-          "w",
-          "h"
-        ],
-        "title": "ZoneIn"
-      },
       "app__events_service__schemas__ExactCheckIn": {
         "properties": {
           "table_ids": {
@@ -7265,6 +9153,309 @@
           "moves"
         ],
         "title": "WhatIfIn"
+      },
+      "app__routers__owner_rooms__LayoutIn": {
+        "properties": {
+          "base_version": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Base Version"
+          },
+          "rooms": {
+            "items": {
+              "$ref": "#/components/schemas/RoomIn"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Rooms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "base_version",
+          "rooms"
+        ],
+        "title": "LayoutIn"
+      },
+      "app__routers__owner_rooms__SeatIn": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "x": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Y"
+          },
+          "is_accessible": {
+            "type": "boolean",
+            "title": "Is Accessible",
+            "default": false
+          },
+          "is_blocked": {
+            "type": "boolean",
+            "title": "Is Blocked",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "x",
+          "y"
+        ],
+        "title": "SeatIn"
+      },
+      "app__routers__owner_rooms__TableIn": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "x": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Y"
+          },
+          "w": {
+            "type": "number",
+            "maximum": 10000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "W"
+          },
+          "h": {
+            "type": "number",
+            "maximum": 10000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "H"
+          },
+          "zone_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone Key"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "shape": {
+            "type": "string",
+            "enum": [
+              "round",
+              "rect",
+              "row"
+            ],
+            "title": "Shape"
+          },
+          "rotation": {
+            "type": "number",
+            "maximum": 360.0,
+            "minimum": -360.0,
+            "title": "Rotation",
+            "default": 0
+          },
+          "min_party": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Min Party",
+            "default": 1
+          },
+          "max_party": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Max Party"
+          },
+          "is_accessible": {
+            "type": "boolean",
+            "title": "Is Accessible",
+            "default": false
+          },
+          "high_chair_ok": {
+            "type": "boolean",
+            "title": "High Chair Ok",
+            "default": false
+          },
+          "combine_group": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Combine Group"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "seats": {
+            "items": {
+              "$ref": "#/components/schemas/app__routers__owner_rooms__SeatIn"
+            },
+            "type": "array",
+            "maxItems": 1000,
+            "title": "Seats"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "x",
+          "y",
+          "w",
+          "h",
+          "label",
+          "shape",
+          "max_party"
+        ],
+        "title": "TableIn"
+      },
+      "app__routers__owner_rooms__ZoneIn": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "x": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Y"
+          },
+          "w": {
+            "type": "number",
+            "maximum": 10000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "W"
+          },
+          "h": {
+            "type": "number",
+            "maximum": 10000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "H"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "general",
+              "window",
+              "terrace",
+              "bar",
+              "quiet",
+              "vip",
+              "accessible",
+              "stage"
+            ],
+            "title": "Kind"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "x",
+          "y",
+          "w",
+          "h",
+          "name",
+          "kind"
+        ],
+        "title": "ZoneIn"
       },
       "app__routers__owners__RegisterIn": {
         "properties": {
@@ -7424,6 +9615,322 @@
           "time"
         ],
         "title": "WhatIfIn"
+      },
+      "app__routers__venues__LayoutIn": {
+        "properties": {
+          "zones": {
+            "items": {
+              "$ref": "#/components/schemas/app__routers__venues__ZoneIn"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Zones"
+          },
+          "tables": {
+            "items": {
+              "$ref": "#/components/schemas/app__routers__venues__TableIn"
+            },
+            "type": "array",
+            "maxItems": 1000,
+            "title": "Tables"
+          },
+          "seats": {
+            "items": {
+              "$ref": "#/components/schemas/app__routers__venues__SeatIn"
+            },
+            "type": "array",
+            "maxItems": 5000,
+            "title": "Seats"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "LayoutIn"
+      },
+      "app__routers__venues__SeatIn": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "table_key": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Table Key"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "x": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Y"
+          },
+          "is_accessible": {
+            "type": "boolean",
+            "title": "Is Accessible",
+            "default": false
+          },
+          "is_blocked": {
+            "type": "boolean",
+            "title": "Is Blocked",
+            "default": false
+          },
+          "reserved_tag": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "vip",
+                  "family",
+                  "speaker"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reserved Tag"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "table_key",
+          "label",
+          "x",
+          "y"
+        ],
+        "title": "SeatIn"
+      },
+      "app__routers__venues__TableIn": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "zone_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone Key"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "shape": {
+            "type": "string",
+            "enum": [
+              "round",
+              "rect",
+              "row"
+            ],
+            "title": "Shape"
+          },
+          "x": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Y"
+          },
+          "w": {
+            "type": "number",
+            "maximum": 10000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "W"
+          },
+          "h": {
+            "type": "number",
+            "maximum": 10000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "H"
+          },
+          "rotation": {
+            "type": "number",
+            "maximum": 360.0,
+            "minimum": -360.0,
+            "title": "Rotation",
+            "default": 0.0
+          },
+          "min_party": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Min Party",
+            "default": 1
+          },
+          "max_party": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Max Party"
+          },
+          "is_accessible": {
+            "type": "boolean",
+            "title": "Is Accessible",
+            "default": false
+          },
+          "high_chair_ok": {
+            "type": "boolean",
+            "title": "High Chair Ok",
+            "default": false
+          },
+          "combine_group": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Combine Group"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "shape",
+          "x",
+          "y",
+          "w",
+          "h",
+          "max_party"
+        ],
+        "title": "TableIn"
+      },
+      "app__routers__venues__ZoneIn": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "general",
+              "window",
+              "terrace",
+              "bar",
+              "quiet",
+              "vip",
+              "accessible",
+              "stage"
+            ],
+            "title": "Kind"
+          },
+          "x": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Y"
+          },
+          "w": {
+            "type": "number",
+            "maximum": 10000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "W"
+          },
+          "h": {
+            "type": "number",
+            "maximum": 10000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "H"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "kind",
+          "x",
+          "y",
+          "w",
+          "h"
+        ],
+        "title": "ZoneIn"
       }
     }
   }

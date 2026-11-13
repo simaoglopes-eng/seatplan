@@ -306,3 +306,9 @@ buffers the live stream), real email delivery through Resend (not done yet),
 usability sessions with real people (not done yet), the gitleaks scan and the
 new `e2e` CI job (they run only on GitHub and have not run yet), screen readers
 and real touch devices.
+
+**Restaurant platform** (2026-11-13): `/` is now a restaurant search (name or cuisine, near me or a city, filters, a free time, list and map);
+`/restaurants/:slug` is a restaurant's public page with the booking; the owner draws rooms in the room editor and publishes; the diner sees
+the sun, view and night per table, may pick a chair, and gets an email with a photo and a map of the room. The old home page with the demo
+links is at `/demo`. Details: [`docs/superpowers/specs/2026-11-13-restaurantes-plataforma-design.md`](docs/superpowers/specs/2026-11-13-restaurantes-plataforma-design.md)
+and [`docs/decisions-log.md`](docs/decisions-log.md).

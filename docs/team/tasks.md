@@ -213,3 +213,13 @@ Then `plans.py` `apply_plan` (lines 167 to 200) and `problem.py` `human_fixed`
 - [ ] Rehearse your part of `docs/team/demo-script.md` twice, once with the
       backup plan.
 - [ ] Read `docs/team/ai-use.md` and do the "own it" tasks for your list.
+
+## The restaurant platform (2026-11-13): who owns the new pieces
+
+Split from section 13 of the platform spec. Because the work was finished in one branch (`claude/ambiente`), Sergio's tasks (19, 25, 26, 29 and
+the parts of 34 and 36 about discovery and demo data) are in their own commits so they can be reviewed or swapped alone.
+
+| Person | New pieces |
+|---|---|
+| Martim | Room editor (`pages/room-editor/`), ambience engine (`backend/app/ambience/`), `ambience_view.py`, map with rooms (`map_view.py`, `seatmap/RoomLayers.tsx`), light cursor, optimiser wishes, chair choice and change (`chosen_seat.py`, `ChooseSeat.tsx`, `ChangeSeat.tsx`), mini-map (`mail/restaurant_picture.py`) |
+| Sergio | Owner accounts and list, wizard, profile, photos, hours and publish (`pages/owner/`, `publishing.py`), discovery (`discovery.py`, `pages/discover/`), public page (`pages/restaurant-public/`), restaurant emails (`mail/restaurant_templates.py`, `email_facts.py`), demo restaurants (`seed/demo_showcase.py`, `demo_photos.py`) |

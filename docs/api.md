@@ -1,5 +1,17 @@
 # API guide
 
+## Finding restaurants and the public page
+
+`GET /api/restaurants` is public (same read limit as the booking page). Query: `q` (name or cuisine, accents and capitals
+ignored), repeatable `cuisine`, `price` (1 to 4) and `features` (`sun`, `view`, `accessible`, `terrace`, all required), `lat` and `lng`
+(together; nearest first with `distance_m`), `date`, `time` and `party` (together; each card then has `next_times`, and
+`available=true` keeps only restaurants with a free table within an hour), `limit` (1 to 50) and `offset`. The answer is
+`{items, total}`. `GET /api/restaurants/{slug}` is the public page; a draft is a 404 for everyone but its own owner, who gets
+`preview: true`. `GET /api/r/{id}/map` now also carries `rooms` and, per table, `ambience`; `GET /api/r/{id}/ambience` gives the light
+at a moment; `GET /api/r/{id}/seats` lists the chairs of held tables; `PATCH /api/b/{token}` takes `seat_id`. The owner routes
+`PUT /api/owner/restaurants/{vid}/rooms`, `.../ambience-preview`, `.../publish-check`, `.../publish` and `.../unpublish` are in
+`CONTRACT.md` section 10.
+
 ## Restaurant owner accounts
 
 POST /api/owner/register accepts name, email, password and consent=true.
@@ -22,7 +34,7 @@ read. The design agreement is section 5 of [`CONTRACT.md`](CONTRACT.md).
 ## Where the OpenAPI file comes from
 
 `docs/openapi.json` is exported from the real FastAPI app, not written by
-hand. It was last made on 2026-11-11 (after guest accounts) with this command (run from `backend/`; the
+hand. It was last made on 2026-11-13 (after the ambience, discovery and email work) with this command (run from `backend/`; the
 temporary SQLite file goes in `$TMPDIR` so nothing is left in the repository):
 
 ```bash
@@ -91,12 +103,16 @@ Counted from `openapi.json` by tag:
 | `attendee` | 9 | Personal link: page, people search, RSVP, "knows", privacy, recommendations, hold, confirm, release | `routers/attendee.py` |
 | `visitor` | 3 | Shared link: the visitor's view, create an account (emails a code), join with an account | `routers/visitor.py` |
 | `guest accounts` | 16 | Verify the code, sign in and out, forgotten password, my events, delete my account (`routers/guest_accounts.py`), and the account holder's event routes under `/guest/events/{eid}`, the same 9 as `attendee` (`routers/guest_events.py`) | `routers/guest_accounts.py`, `routers/guest_events.py` |
-| `restaurants` | 6 | Diner: restaurant, slots, map, hold, give back a hold, book | `routers/restaurants.py` |
+| `restaurants` | 8 | Diner: restaurant, slots, map, ambience, chairs, hold, give back a hold, book | `routers/restaurants.py` |
+| `discovery` | 2 | Search restaurants, the public restaurant page | `routers/discovery.py` |
+| `owners` | 10 | Owner sign-up, profile, publish and unpublish | `routers/owners.py` |
+| `owner rooms` | 3 | The room layout and the light preview | `routers/owner_rooms.py` |
+| `photos` | 6 | Owner gallery and public photo bytes | `routers/photos.py` |
 | `bookings` | 4 | Manage or cancel a booking, join the waitlist | `routers/bookings.py` |
 | `staff` | 10 | Floor, walk-ins, status, move, what-if, service optimiser, exact check, dashboard, schedule | `routers/staff.py` |
 | `emails` | 2 | Process the outbox, read the email log | `routers/emails.py` |
 | `live` | 2 | Version number and the live stream | `core/live.py` |
-| **Total** | **87** | | |
+| **Total** | **110** | | |
 
 ## Errors
 
