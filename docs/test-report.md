@@ -7,16 +7,50 @@ it. The historical sections below describe runs on 2026-11-10 on macOS
 
 Run every command from the repository root unless it starts with `cd`.
 
-## Restaurant integration — Windows, 2026-11-13
+## Combined verification at 7e0f699 — 2026-11-13
+
+The clean main worktree was on `martim/restaurantes-impl` at 8549d49.
+`git merge --ff-only claude/ambiente` advanced it to 7e0f699 without conflicts.
+Claude implemented the discovery/public-slug pages, chair changes, restaurant
+email and demo integration and the additional task 38 coverage on her worktree.
+Task 38 is complete, including the publish, find and unpublish journey.
+
+| Check | Observed result |
+|---|---|
+| Ruff check and format | Passed, 213 files formatted |
+| Full pytest | 876 passed and the sole known guest-code race failed, 4 warnings in 165.33 s |
+| Authorized isolated guest-code test | 1 passed, 1 warning in 1.45 s |
+| Typecheck | Passed |
+| Vitest | 397 passed in 54 files, 15.89 s |
+| Build | Passed in 386 ms |
+| Contrast | 86 checks, 0 failures |
+| Playwright | 70 passed (1.4m) |
+| Protected event paths and diff check | Passed |
+
+All 877 backend tests are accepted under Martim's known-failure rule. The
+concurrent verification test produced [201, 422] in the full run and passed
+the single authorized isolated rerun. Redteam S1 passed in the full run.
+The commands used a fresh pytest basetemp, `-o addopts=` and
+`-p no:cacheprovider`. Backend and frontend ran sequentially. Playwright used
+ports 18765/14317 and per-process trace directories.
+
+The strict three-request 60-table HTTP benchmark measured
+220.15/184.58/128.85 ms, all below 300 ms. Claude's additional map/light and
+100-restaurant discovery performance checks also passed. The latter compare
+the best of five calls against 500 ms, including availability for 20 cards.
+The sections below retain their original snapshot dates and counts.
+
+## Restaurant integration — Windows, 2026-11-13, snapshot 8549d49
 
 Branch `martim/restaurantes-impl`, Claude integration `31cc829`; no push/PR or
 deployment. The merge baseline passed Ruff, 821 pytest, 350 Vitest, typecheck,
 build, 86 contrast checks and 54 Playwright tests. Task 37 added a strict
 60-table/120-chair/two-room HTTP benchmark and room/light/chair/concurrent-hold
-journeys. Task 38 added owner publication boundaries; its discovery portion
-remains blocked because discovery/public-slug pages are not implemented.
+journeys. At this snapshot, task 38 covered owner publication boundaries and
+the discovery portion was blocked. The integration at 7e0f699 completes that
+portion with discovery and public-slug pages implemented by Claude.
 
-Latest fully green pre-review point `4bb515a`: 822 pytest (3 warnings,
+The green pre-review point `4bb515a` had 822 pytest (3 warnings in
 144.58 s), 350 Vitest in 48 files, typecheck, build 333 ms, contrast 86/0,
 59 Playwright in 1.2 min. Cold/warm map response samples were
 229.75/218.65/141.83 ms, all below 300 ms.
@@ -42,8 +76,8 @@ A first full review run was **not accepted**: 836 pytest passed but the map
 budget failed under load (670/473/323 ms); Playwright had 53 passed and seven
 trace-file ENOENT failures in its globally shared output folder. The patch was
 preserved, branch verified, `git reset --hard 4bb515a` performed as authorized,
-and the report restored. Output is now per Playwright process; the next full
-verification runs backend and frontend sequentially with separate browser
+and the report restored. Output is now per Playwright process. The successful
+verification ran backend and frontend sequentially with separate browser
 ports. No assertions, tests or the 300 ms budget were relaxed.
 
 The benchmark uses a fresh API process against the real fixture database,
@@ -80,7 +114,8 @@ accept a full-suite result: concurrent guest verification and the redteam S1
 calendar-minute login limit. PostgreSQL, physical phone sensors, real tile
 delivery under production headers and actual new restaurant email delivery
 were not verified. See the [acceptance matrix](restaurant-final-review.md)
-for missing functionality; a green suite does not mean the whole spec is done.
+for the earlier review. Task 38 is completed by Claude's subsequent integration
+at 7e0f699, verified separately in the current results.
 
 ## The layers
 
@@ -315,7 +350,7 @@ violates unique constraint "guests_pkey"`). The test now gives explicit ids.
 
 The `e2e` job and the gitleaks scan have not run on GitHub yet: not done yet.
 
-## What is not tested
+## Historical coverage gaps (2026-11-11)
 
 - **A real Vercel deployment:** not done yet. Nothing here runs against the
   serverless function, its 30-second limit, or real Postgres on Vercel; we
@@ -342,17 +377,18 @@ The `e2e` job and the gitleaks scan have not run on GitHub yet: not done yet.
 |---|---|---|---|---|---|
 | | | | | | |
 
-## Restaurant platform (2026-11-13, branch claude/ambiente, Windows, Python 3.13)
+## Historical Claude verification before merge 7e0f699 (2026-11-13, Windows, Python 3.13)
 
 Run after the last commit of the plan's tasks 17 to 38:
 
-- Backend: `pytest -q` 857 passed before the performance tests, 4 more after (the whole suite is green); `ruff check` and
+- Backend historical runs reported 857 passing tests before the performance tests and 4 additional performance tests later. The combined merge is verified separately above. `ruff check` and
   `ruff format --check` clean.
 - Frontend: `npm run typecheck` clean, `npm test` 392 passed, `npm run build` ok, `npm run contrast` 86 checks, 0 failures.
 - Playwright: 64 passed (desktop and phone), including the new `restaurant-ambience`, `discovery` and `owner` specs and axe scans of the
   discovery page (with real cards), the public restaurant page, the editor and the owner pages.
-- Performance (local, best of five): the diner map with ambience for 60 tables under 300 ms; the discovery search over 100 restaurants
-  under 500 ms, also with free times for the 20 on the page (`test_restaurant_performance.py`, `test_discovery_performance.py`).
+- Performance (local, best of five) covered the diner map with ambience for 60 tables under 300 ms and discovery over 100 restaurants
+  under 500 ms, also with free times for the 20 on the page (`test_restaurant_map_performance.py`, `test_discovery_performance.py`).
+  Codex's separate `test_restaurant_performance.py` requires all three HTTP calls in a fresh API process to stay below 300 ms.
 - `scripts/check_forbidden_paths.py --base main`: "Protected event paths unchanged."
 
 Known flaky tests that are not from this work: `test_guest_register::test_two_verifies_at_once_make_one_account` (concurrency) and
