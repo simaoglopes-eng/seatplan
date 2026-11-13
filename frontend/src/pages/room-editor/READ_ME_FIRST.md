@@ -69,10 +69,27 @@ palettes, placement in the room and position/size/name fields. Palette drag
 uses a private MIME type; tap-then-place and the placement button also work.
 ObjectLayer draws neutral icons/names and allows one-step drag undo. Zone
 rectangles are behind fixtures and tables and are selectable in Zones mode.
-Tables are still read-only until their own editing tasks. Outline containment
-and overlap warnings are added by task 16; placement can currently be outside.
+Outline containment and overlap warnings are added by task 16; placement can
+currently be outside.
 All values use centimetres and clockwise screen rotation.
 
 Desktop properties scroll independently within the canvas height, so dragging
 from a long palette does not scroll the page out from under the pointer.
 Zone names retain the historical 80-character limit, including during moves.
+
+tableModel.ts creates round/square/long/counter tables with the specified sizes
+and chair counts. It imports the existing seatPositions helper without changing
+it. Counters use the first side of a rectangle with twice the requested count,
+so all chairs sit on one long side and span the counter width. Editing geometry
+keeps chair ids/labels/flags and rotates custom displacements relative to the
+generated chair positions. Changing chair count redistributes chairs explicitly,
+retaining the first existing ids/keys and custom labels/flags. Party sizes stay
+within the chair count. A room allows 200 tables/1000 chairs; each table 1–20.
+
+TableTools exposes labels, geometry, party bounds, zone, availability, accessibility,
+high chair and join group, plus individual chair coordinates/label/flags.
+TableLayer selects and drags tables or individual chairs with one history step.
+Chair drag uses centimetres, table drag the optional room grid. Inactive tables
+have dashed outlines and an (off) label. Accessible/blocked chairs have extra
+marks, not only colour. Task 15 adds transforms/multiple selection/shortcuts;
+task 17 enforces persisted booking references on the server before deletion.

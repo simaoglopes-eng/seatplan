@@ -14,7 +14,7 @@ confirmar que claude/ambiente está pronta. Só depois faz merge dessa branch
 na impl e corre a bateria completa antes de prosseguir. Sem push nem PR.
 
 Trabalho em curso na branch martim/restaurantes-impl. Último commit verde
-antes da tarefa 13, a97f0ac. Spec e plano aprovados por Martim, commit 880624b
+antes da tarefa 14, 3ddb8bb. Spec e plano aprovados por Martim, commit 880624b
 na branch martim/restaurantes-spec. Identidade Git configurada apenas neste
 repositório. Plano com 40 tarefas.
 
@@ -36,7 +36,8 @@ repositório. Plano com 40 tarefas.
 | 10 — Aberturas e norte | Feita | 2fc9ea5 | Janelas, portas, vidro, normais em arcos e bússola |
 | 11 — Elementos e zonas | Feita | 022fd28 | Paletas, colocação, arrasto, campos e desfazer |
 | 12 — Perfil e localização | Feita | a97f0ac | Slug, Identity/Location persistidos, Leaflet e geolocalização explícita |
-| 13 — Fotos | Feita | commit desta entrada | Galeria privada, resize, capa/ordem e foto de vista |
+| 13 — Fotos | Feita | 3ddb8bb | Galeria privada, resize, capa/ordem e foto de vista |
+| 14 — Mesas e cadeiras | Feita | commit desta entrada | Quatro formas, balcão unilateral, propriedades e cadeiras individuais |
 
 ## Verificações reais
 
@@ -355,3 +356,31 @@ ficheiros, build em 310 ms, contraste 86 checks e 0 failures; Playwright
 42 passed em 41,5 s. Guard e diff check passaram. Pytest com --basetemp novo,
 -o addopts= e -p no:cacheprovider. Commit identificado por
 feat: add private restaurant photo gallery and browser resizing.
+
+## Tarefa 14 — feita
+
+Quatro formas com dimensões/cadeiras do spec; balcão com cadeiras só num lado.
+Reutiliza seatPositions sem alterações. Modelo imutável, IDs preservados,
+etiquetas únicas por sala e flags/grupos/zonas. Mover/rodar/redimensionar a mesa
+transporta as cadeiras e mantém os desvios manuais. Alterar quantidade de
+cadeiras redistribui posições com aviso explícito; preserva IDs, etiquetas e
+flags das cadeiras mantidas. Remoção de mesas com reservas é tratada nas tarefas
+15/17, sem disponibilizar apagar nesta etapa.
+
+RED por módulo inexistente e depois pelas operações de edição ainda ausentes.
+Quatro testes puros passaram, incluindo limites, imutabilidade, IDs e balcão.
+Dois Playwright passaram em 8,9 s a 1440 e 390: mesa, quantidade, desfazer,
+flags/grupo e cadeira individual. Axe sem violações, sem scroll horizontal.
+Capturas desktop e telefone inspecionadas. Typecheck corrigiu a construção
+duplicada dos campos da cadeira, preservando só o objeto anterior quando existe.
+
+Terceiro Playwright confirmou arrasto de mesa com cadeiras e arrasto individual,
+cada um desfeito num passo; três dirigidos passaram em 9,7 s. Bateria final:
+Ruff check e formato verdes (176 ficheiros), typecheck verde, Vitest 240 passed
+em 35 ficheiros, build em 303 ms, contraste 86 checks/0 failures e Playwright
+45 passed em 43,3 s. Pytest: 658 passed e só a falha conhecida concorrente
+dos eventos com [201,422], 4 warnings em 114,49 s. Rerun isolado autorizado:
+1 passed, 1 warning em 1,07 s. Linha de base considerada verde pela regra de
+Martim; eventos intactos. Pytest com --basetemp novo, -o addopts= e
+-p no:cacheprovider. Guard e diff check passaram. Commit identificado por
+feat: add restaurant tables and individually editable chairs.
