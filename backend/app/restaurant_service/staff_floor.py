@@ -94,6 +94,10 @@ def floor(session: Session, venue: Venue, day: date, at: time) -> dict[str, Any]
     tables = [_floor_table(t, owners.get(t.id)) for t in venue_tables]
     # A seat looks taken while its table has a booking at this time.
     seat_states = {t.id: "taken" if t.id in owners else "free" for t in venue_tables}
+    # The chair each seated or due booking asked for, so staff lay the right place.
+    asked_chairs = frozenset(
+        b.chosen_seat_id for b in owners.values() if b.chosen_seat_id is not None
+    )
     bookings = [
         booking_rows.describe(session, venue, booking)
         for booking in occupancy.active_bookings(session, venue, day)
@@ -104,7 +108,7 @@ def floor(session: Session, venue: Venue, day: date, at: time) -> dict[str, Any]
         "width": venue.width,
         "height": venue.height,
         "zones": map_view.zones_payload(session, venue),
-        "seats": map_view.seats_payload(session, venue, seat_states),
+        "seats": map_view.seats_payload(session, venue, seat_states, asked_chairs),
         "services": _services(session, venue, day),
         "tables": tables,
         "bookings": bookings,

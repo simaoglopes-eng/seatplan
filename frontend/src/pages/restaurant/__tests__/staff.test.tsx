@@ -101,6 +101,21 @@ describe("Staff page", () => {
     expect(screen.getByRole("option", { name: "Table 1, 2 to 4 people, free" })).toBeTruthy();
   });
 
+  it("explains the marked chair in the key and keeps it apart from the table statuses", async () => {
+    const withSeats = { ...FLOOR, seats: [
+      { id: 21, table_id: 2, label: "2-1", x: 150, y: 30, state: "taken", accessible: false },
+      { id: 22, table_id: 2, label: "2-2", x: 190, y: 30, state: "mine", accessible: false },
+    ] };
+    mockApi({ [`GET ${API}/floor`]: () => withSeats });
+    renderStaff();
+    await screen.findByText("Rui Costa");
+    const key = screen.getByRole("list", { name: "Table status key" });
+    expect(within(key).getByText("Chair asked for")).toBeTruthy();
+    expect(within(key).getByText("The guest would like to sit here")).toBeTruthy();
+    // The four table statuses are still all there.
+    for (const status of ["Free", "Reserved", "Seated", "Finishing"]) expect(within(key).getByText(status)).toBeTruthy();
+  });
+
   it("moves focus to the suggestion after Find, so keyboard users hear it and stay in the dialog", async () => {
     mockApi({ [`GET ${API}/floor`]: () => FLOOR, [`POST ${API}/whatif`]: () => WHATIF_TABLE_3 });
     renderStaff();

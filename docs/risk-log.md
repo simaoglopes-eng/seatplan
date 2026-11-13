@@ -47,6 +47,6 @@ Looked at the discovery page, a public restaurant page and the booking table ste
   real deployment; with no network the lists still work and the map says tiles are unavailable.
 - **Demo photos are drawings** (`seed/demo_photos.py`), 400 x 225, so they look soft in the large cover. Replace them with licensed photos before showing real venues.
 - ~~Discovery filters were tall on desktop~~ Fixed: eight cuisines show first, the rest sit behind "More cuisines" (a chosen one always stays visible).
-- ~~Tap on a table held it at once~~ Fixed: a tap or Enter on the map now chooses the table and shows its card; "Hold this table" there reserves it (announced to screen readers). Service plan and what-if ignore ambience wishes. The staff map has no "marked chair" pattern.
+- ~~Tap on a table held it at once~~ Fixed: a tap or Enter on the map now chooses the table and shows its card; "Hold this table" there reserves it (announced to screen readers). Service plan and what-if ignore ambience wishes. ~~The staff map had no marked chair~~ Fixed: the chair a guest asked for is drawn with the "mine" mark on the staff map and explained in its key.
 - **Concurrency of two owner tabs** is covered (`room-editor.spec.ts`); two staff changing a booking's chair at once is not (last write wins, it is only a wish).
 - **Flaky tests not from this work:** see `docs/test-report.md`.

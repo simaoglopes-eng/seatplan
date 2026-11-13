@@ -21,7 +21,11 @@ export const FLOOR_LOOK: Record<FloorStatus, { glyph: SeatState; label: string; 
 
 export const FLOOR_ORDER: FloorStatus[] = ["free", "reserved", "seated", "finishing"];
 
-export const STAFF_KEY: KeyEntry[] = FLOOR_ORDER.map((status) => ({ state: FLOOR_LOOK[status].glyph, name: FLOOR_LOOK[status].label, hint: FLOOR_LOOK[status].hint }));
+export const STAFF_KEY: KeyEntry[] = [
+  ...FLOOR_ORDER.map((status) => ({ state: FLOOR_LOOK[status].glyph, name: FLOOR_LOOK[status].label, hint: FLOOR_LOOK[status].hint })),
+  // A chair a guest asked for (spec 9.4): marked on its table, so the place is laid for them.
+  { state: "mine" as SeatState, name: "Chair asked for", hint: "The guest would like to sit here" },
+];
 
 /** The floor tables with the glyph state the shared map understands. */
 export function staffMapTables(tables: StaffTable[]): MapTable[] {

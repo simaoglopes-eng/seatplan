@@ -101,8 +101,13 @@ def zones_payload(session: Session, venue: Venue) -> list[dict[str, Any]]:
     ]
 
 
-def seats_payload(session: Session, venue: Venue, states: dict[int, str]) -> list[dict[str, Any]]:
-    """Seats of the tables in `states` (so never those of a table switched off)."""
+def seats_payload(
+    session: Session, venue: Venue, states: dict[int, str], marked: frozenset[int] = frozenset()
+) -> list[dict[str, Any]]:
+    """Seats of the tables in `states` (so never those of a table switched off).
+
+    `marked` are chairs a guest asked for (staff floor only): they come out as "mine",
+    which the map draws with its own mark, never by colour alone."""
     rows = session.scalars(select(Seat).where(Seat.venue_id == venue.id).order_by(Seat.id))
     return [
         {
@@ -111,7 +116,9 @@ def seats_payload(session: Session, venue: Venue, states: dict[int, str]) -> lis
             "label": seat.label,
             "x": seat.x,
             "y": seat.y,
-            "state": _SEAT_STATE.get(states.get(seat.table_id, "blocked"), "blocked"),
+            "state": "mine"
+            if seat.id in marked
+            else _SEAT_STATE.get(states.get(seat.table_id, "blocked"), "blocked"),
             "accessible": seat.is_accessible,
         }
         for seat in rows

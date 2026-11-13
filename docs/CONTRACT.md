@@ -440,6 +440,9 @@ booking's own tables, or null to take the wish away) on its own: with date, time
 another table or a blocked one is 422; a booking that can no longer change is 409. The booking, its tables and its
 emails do not change (the chair is only a wish, spec 9.4).
 
+GET /api/staff/{vid}/floor: in `seats`, the chair a guest asked for (a booking owning its table at that time) has state "mine" and
+the other chairs of a booked table "taken"; no name is on any chair.
+
 Owner photos use JSON {kind, opening_key?, content_type, data_base64, alt_text}.
 POST /owner/restaurants/{vid}/photos returns metadata including id/public_id,
 url, actual content_type, width/height, opening_id, position and is_cover.

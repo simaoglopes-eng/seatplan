@@ -342,3 +342,32 @@ def test_a_cancelled_booking_cannot_change_its_chair(
     token = answer.json()["manage_token"]
     assert client.delete(f"/api/b/{token}").status_code == 200
     assert client.patch(f"/api/b/{token}", json={"seat_id": second}).status_code == 409
+
+
+def test_the_staff_map_marks_the_chair_the_guest_asked_for(
+    client: TestClient, session: Session, organiser: Organiser, staff: Organiser
+) -> None:
+    place = make_restaurant(session, organiser)
+    first, second = add_seats(session, place, "T1")
+    add_seats(session, place, "T2", count=1)
+    _, answer = booked(client, place, future_day(), 2, second, table_id=place.table["T1"])
+    assert answer.status_code == 201
+    params = {"date": future_day().isoformat()}
+    headers = auth_header(staff)
+
+    def seats_at(at: str) -> dict[int, str]:
+        floor = client.get(
+            f"/api/staff/{place.public_id}/floor", params={**params, "time": at}, headers=headers
+        ).json()
+        return {seat["id"]: seat["state"] for seat in floor["seats"]}
+
+    during = seats_at("19:00")
+    # Only the asked-for chair is marked; the rest of the booked table looks taken, other tables free.
+    assert during[second] == "mine" and during[first] == "taken"
+    assert set(during.values()) == {"mine", "taken", "free"}
+    # Before the booking nothing is marked, and the guest's name is not on any chair.
+    assert "mine" not in seats_at("12:00").values()
+    floor = client.get(
+        f"/api/staff/{place.public_id}/floor", params={**params, "time": "19:00"}, headers=headers
+    ).json()
+    assert all(seat.get("occupant") is None for seat in floor["seats"])
