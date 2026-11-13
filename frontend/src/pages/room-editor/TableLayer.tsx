@@ -7,9 +7,9 @@ import { snappedPoint } from "./shapeModel";
 import { moveTables } from "./selection";
 import { TableHandles } from "./TableHandles";
 
-interface Props { room: Room; editing: boolean; selected: string | null; keys: string[]; multiple: boolean; chair: string | null; grid: boolean; zoom: number; toWorld: (event: { clientX: number; clientY: number }) => Point; onSelect: (key: string, chair: string | null, multiple?: boolean, long?: boolean) => void; onChange: (room: Room, transient?: boolean) => void; onDragStart: () => void; onError: (message: string) => void }
+interface Props { room: Room; editing: boolean; selected: string | null; keys: string[]; multiple: boolean; chair: string | null; grid: boolean; zoom: number; toWorld: (event: { clientX: number; clientY: number }) => Point; onSelect: (key: string, chair: string | null, multiple?: boolean, long?: boolean) => void; onChange: (room: Room, transient?: boolean) => void; onDragStart: () => void; onError: (message: string) => void; invalidKeys: string[] }
 interface Drag { base: Room; table: string; keys: string[]; chair: string | null; start: Point; at: Point; started: boolean }
-export function TableLayer({ room, editing, selected, keys, multiple, chair, grid, zoom, toWorld, onSelect, onChange, onDragStart, onError }: Props) {
+export function TableLayer({ room, editing, selected, keys, multiple, chair, grid, zoom, toWorld, onSelect, onChange, onDragStart, onError, invalidKeys }: Props) {
   const drag = useRef<Drag | null>(null);
   const hold = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelHold = () => { if (hold.current) { clearTimeout(hold.current); hold.current = null; } };
@@ -41,9 +41,9 @@ export function TableLayer({ room, editing, selected, keys, multiple, chair, gri
       {seat.is_accessible && <circle cx={seat.x} cy={seat.y} r="13" className="room-chair-accessible" />}
       {seat.is_blocked && <path d={`M ${seat.x - 5} ${seat.y - 5} l 10 10 M ${seat.x + 5} ${seat.y - 5} l -10 10`} className="room-chair-blocked" />}
     </g>))}
-    {room.tables.map(table => <g key={table.key} data-room-table={table.key} className={`${keys.includes(table.key) ? "room-selected-table" : ""} ${table.is_active ? "" : "room-inactive-table"}`} transform={`translate(${table.x + table.w / 2} ${table.y + table.h / 2}) rotate(${table.rotation})`} onPointerDown={event => down(event, table.key, null, table)}>
+    {room.tables.map(table => <g key={table.key} data-room-table={table.key} className={`${keys.includes(table.key) ? "room-selected-table" : ""} ${table.is_active ? "" : "room-inactive-table"} ${invalidKeys.includes(table.key) ? "room-invalid-table" : ""}`} transform={`translate(${table.x + table.w / 2} ${table.y + table.h / 2}) rotate(${table.rotation})`} onPointerDown={event => down(event, table.key, null, table)}>
       {table.shape === "round" ? <circle r={table.w / 2} className="room-table" /> : <rect x={-table.w / 2} y={-table.h / 2} width={table.w} height={table.h} className="room-table" />}
-      <text textAnchor="middle" dominantBaseline="middle" className="room-table-label">{table.label}{table.is_active ? "" : " (off)"}</text>
+      <text textAnchor="middle" dominantBaseline="middle" className="room-table-label">{invalidKeys.includes(table.key) ? "⚠ " : ""}{table.label}{table.is_active ? "" : " (off)"}</text>
     </g>)}
     {editing && active && keys.length === 1 && !chair && <TableHandles room={room} table={active} grid={grid} zoom={zoom} toWorld={toWorld} onChange={onChange} onDragStart={onDragStart} onError={onError} />}
   </g>;

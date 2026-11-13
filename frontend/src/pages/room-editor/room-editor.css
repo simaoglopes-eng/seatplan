@@ -63,6 +63,12 @@
 .room-selection-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .room-canvas:focus-visible { outline: 3px solid var(--c-focus); outline-offset: -3px; }
 .room-canvas svg { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.room-invalid-table .room-table, .room-outline-invalid { stroke: var(--c-danger); stroke-width: 4; }
+.room-problems { margin-top: var(--space-3); }
+.room-problems summary { cursor: pointer; min-height: 44px; padding-block: var(--space-3); }
+.room-problems ul { list-style: none; padding: 0; }
+.room-problems .btn { white-space: normal; text-align: left; }
+.room-problems .room-problem-error { color: var(--c-danger); }
 @media (min-width: 1024px) {
   .room-properties { max-height: 34rem; overflow-y: auto; }
 }

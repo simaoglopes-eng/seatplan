@@ -111,3 +111,16 @@ TableHandles rotates in 15-degree steps (Alt gives free angles) and resizes from
 the opposite anchored corner. Table body hit areas take priority over expanded
 chair targets within the body. Touch targets, numeric forms and checkbox lists
 provide alternatives; task 20 completes the phone workspace and camera behavior.
+
+validation.ts mirrors ambience/validation.py with known reference cases in both
+test suites. validateRooms returns RoomProblem values; publication mode adds
+no_north and no_tables. The editor memoizes draft checks on layout changes.
+ProblemList lists all rooms, not just the current one, and clicking a problem
+selects its target and centres the camera/viewport. Error tables have a red
+outline and warning glyph, and invalid outlines are red. Invalid drafts remain
+renderable and editable; unfinished outlines offer Continue drawing walls.
+SAT checks use actual circles/rotated rectangles; chair-clearance footprints add
+45 cm. Circle corners are not treated as rectangle corners. Concave containment
+checks boundary crossings as well as centres/corners. Groups allow 2 cm overlap;
+touching edges alone have no area overlap. The whole restaurant editor is lazy
+loaded so other routes do not load these geometry/interaction modules eagerly.

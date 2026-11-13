@@ -29,6 +29,7 @@ export function WallLayer({ room, zoom, editing, selected, toWorld, onSelect, on
   };
   return <g className="room-openings" onPointerMove={move} onPointerUp={event => { if (editing) event.stopPropagation(); drag.current = null; }} onPointerCancel={() => { drag.current = null; }} onClick={event => { if (editing) event.stopPropagation(); }}>
     {room.openings.map(o => {
+      try {
       const length = sideLength(room.outline, o.side), start = sidePoint(room.outline, o.side, o.offset / length), end = sidePoint(room.outline, o.side, (o.offset + o.width) / length);
       const normal = sideNormal(room.outline, o.side, o.offset / length), hinge = { x: start.x - normal.x * o.width, y: start.y - normal.y * o.width };
       const path = openingPath(room, o);
@@ -40,6 +41,7 @@ export function WallLayer({ room, zoom, editing, selected, toWorld, onSelect, on
         </g>
         {editing && selected === o.key && o.kind !== "glass_wall" && ([{ part: "start", point: start }, { part: "end", point: end }] as const).map(({ part, point }) => <g key={part} data-opening-handle={part} onPointerDown={event => down(event, o, part)}><circle cx={point.x} cy={point.y} r={22 / zoom} className="room-handle-hit" /><circle cx={point.x} cy={point.y} r={6 / zoom} className="room-handle" /></g>)}
       </g>;
+      } catch { return null; }
     })}
   </g>;
 }
