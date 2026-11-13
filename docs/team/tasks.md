@@ -2,6 +2,16 @@
 
 Team: Sergio and Martim (restaurants), Simao and Federico (events).
 
+Restaurant integration update, 2026-11-13: `claude/ambiente` was merged locally
+into `martim/restaurantes-impl` at 31cc829. Claude's implemented work and decisions
+are in [his notes](../claude-ambiente-notas.md). Codex added final browser/performance
+checks and reviewed the integration against the approved spec. Task 38 is only
+partly verified: tasks 25/26/29 (discovery and the public page) are absent.
+Tasks 33/34/36 (chair management and email/demo integration) also remain pending;
+20 and 32 have remaining UI details. Do not present the whole platform as done.
+The [acceptance matrix](../restaurant-final-review.md) is the handoff list.
+No push, PR, deployment or merge into main was performed; Martim integrates.
+
 The rule is simple: **each person owns a slice from the button on the screen
 down to the row in the database**, plus one piece of the shared core. In the
 walkthrough you must be able to open any file in your list, say what it is for,

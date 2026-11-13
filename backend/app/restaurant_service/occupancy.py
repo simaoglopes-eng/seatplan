@@ -57,7 +57,9 @@ def table_specs(tables: list[VenueTable], kinds: dict[int, str]) -> list[TableSp
             zone=kinds.get(table.zone_id, "general") if table.zone_id else "general",
             accessible=table.is_accessible,
             high_chair_ok=table.high_chair_ok,
-            combine_group=table.combine_group,
+            # Group names are local to a room; implicit legacy tables share
+            # the None room. Never join tables across independent floor plans.
+            combine_group=f"{table.room_id}:{table.combine_group}" if table.combine_group else None,
             label=table.label,
         )
         for table in tables

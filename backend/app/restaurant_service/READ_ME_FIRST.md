@@ -29,6 +29,17 @@ moves first with an atomic compare (409 `stale_layout`), objects are upserted by
 what is missing is deleted, chair neighbours are rebuilt, and a table with bookings, a live
 hold or a chosen chair is protected (409 with the tables, "make it unavailable instead").
 `view` shows a restaurant without rooms as one implicit "Main room".
+room_rules.py checks structural opening references/spans, non-overlap, full-side
+glass and view tags, and normalizes winding without moving openings (straight
+or curved). Opening clocks are bounded HH:MM by the router. Geometric problems
+and room area outside 4–5000 m² remain draft errors, not structural save failures.
+occupancy.table_specs scopes combine groups by room; no pure optimiser change
+is needed. Holding retains the half-of-tables cap with a minimum of one.
+publishing.recheck_after_edit atomically puts an explicitly published venue
+back in draft after an invalid room/profile/schedule edit, keeping bookings.
+Legacy default-published venues keep their old path until explicit publication.
+published_at keeps slugs fixed even after unpublish. Room answers include status
+so the editor can explain when new bookings were closed.
 profiles.py creates owner-only restaurant drafts and loads/patches their profile.
 Slugs use ASCII transliteration and a unique database index; concurrent insert
 collisions retry in savepoints, with a bounded number of actual races. Published

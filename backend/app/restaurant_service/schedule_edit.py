@@ -100,3 +100,6 @@ def replace_schedule(
     session.add_all(ServicePeriod(venue_id=venue.id, **asdict(row)) for row in periods)
     session.add_all(TurnTime(venue_id=venue.id, **asdict(row)) for row in turns)
     session.add_all(BlackoutDate(venue_id=venue.id, **asdict(row)) for row in blackouts)
+    from app.restaurant_service.publishing import recheck_after_edit
+
+    recheck_after_edit(session, venue)

@@ -18,7 +18,7 @@ export default function ProfilePage() {
 }
 function Profile({ initial }: { initial: OwnerProfile }) {
   const [profile, setProfile] = useState(initial), [location, setLocation] = useState(false), [message, setMessage] = useState("");
-  const save = async (changes: Parameters<typeof saveOwnerProfile>[1]) => { setProfile(await saveOwnerProfile(profile.public_id, changes)); setMessage("Profile saved"); };
+  const save = async (changes: Parameters<typeof saveOwnerProfile>[1]) => { const next = await saveOwnerProfile(profile.public_id, changes); setProfile(next); setMessage(profile.status === "published" && next.status === "draft" ? "Profile saved as a draft. New bookings are closed until you fix the problems and publish again. Existing bookings are kept." : "Profile saved"); };
   return <><nav className="owner-profile-tabs" aria-label="Profile sections"><Button variant="secondary" aria-pressed={!location} onClick={() => { setLocation(false); setMessage(""); }}>Identity</Button><Button variant="secondary" aria-pressed={location} onClick={() => { setLocation(true); setMessage(""); }}>Location</Button></nav><p role="status">{message}</p>
     {location ? <LocationForm profile={profile} label="Save profile" onSave={save} /> : <IdentityForm profile={profile} label="Save profile" onSave={save} />}
   </>;

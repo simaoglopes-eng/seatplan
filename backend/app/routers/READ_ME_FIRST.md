@@ -16,6 +16,7 @@ who is calling and what they sent, calls a helper (in `events_service/`,
 | `owners.py` | `POST /owner/register`, `POST /owner/verify` | Public, code-send and verification rate limits, consent required |
 | `photos.py` | `/owner/restaurants/{vid}/photos`, `/photos/{public_id}` | Owner-only gallery writes/metadata; public bytes only for published restaurants, otherwise owner-only |
 | `discovery.py` | `GET /restaurants`, `GET /restaurants/{slug}` | Anyone (shared read limit); a draft is visible only to its owner, as a preview |
+| `owner_rooms.py` | `/owner/restaurants/{vid}/rooms`, `/ambience-preview` | Owner-only whole-layout/versioned writes and saved preview; structural validation before persistence, geometric errors allowed in drafts |
 | `venues.py` | `/venues`, `PUT /venues/{vid}/layout` | Organisers and staff (`CurrentUser`) |
 | `demo.py` | `POST /demo/reset`, `GET /demo/links` | Only with `DEMO_MODE=1`; the reset only with a matching `X-Demo-Key` |
 | `events.py` | `/events/...` (guests, seats, auto-fill, scenarios, undo, shared link) | Organisers (`CurrentOrganiser`) |

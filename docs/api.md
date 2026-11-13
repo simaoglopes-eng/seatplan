@@ -36,24 +36,56 @@ read. The design agreement is section 5 of [`CONTRACT.md`](CONTRACT.md).
 `docs/openapi.json` is exported from the real FastAPI app, not written by
 hand. It was last made on 2026-11-13 (after the ambience, discovery and email work) with this command (run from `backend/`; the
 temporary SQLite file goes in `$TMPDIR` so nothing is left in the repository):
+hand. Last export: 2026-11-13, including the restaurant owner/room/ambience APIs.
+Run from the repository root; the script uses and removes a temporary SQLite
+database and does not touch the local application database:
 
-```bash
-cd backend
-DATABASE_URL="sqlite:///$TMPDIR/openapi.db" ../.venv/bin/python -c "
-import json
-from app.main import create_app
-spec = create_app().openapi()
-with open('../docs/openapi.json', 'w') as f:
-    json.dump(spec, f, indent=2)
-    f.write('\n')
-"
-rm -f "$TMPDIR/openapi.db"
+```powershell
+.\.venv\Scripts\python.exe scripts/export_openapi.py
 ```
 
 What that run reported: OpenAPI `3.1.0`, title `SeatPlan API`, version
-`0.1.0`, **77 paths, 87 operations, 46 schemas** (before guest accounts: 56
-paths, 65 operations, 38 schemas). Run the command again after
+`0.1.0`, **93 paths, 108 operations, 62 schemas**. Run the command again after
 changing any router, so the file never drifts from the code.
+
+## Restaurant platform API implemented on this branch
+
+All paths below have the `/api` prefix. Owner routes require an organiser's
+Bearer session and return the same 404 for missing and foreign restaurants.
+
+| Path | Behaviour |
+|---|---|
+| `POST /owner/restaurants` | Owned draft, unique ASCII slug; profile GET/PATCH at `/owner/restaurants/{vid}/profile` |
+| `/owner/restaurants/{vid}/photos` | Private gallery metadata/upload, order/cover/alt/delete; draft bytes require owner auth at `/photos/{photo_id}` |
+| `GET/PUT /owner/restaurants/{vid}/rooms` | Whole nested layout, optimistic `base_version`, IDs preserved, atomic save; answer adds `version`, `status`, `problems` |
+| `GET /owner/restaurants/{vid}/ambience-preview` | Saved-draft preview, date/time/party and optional cursor moment |
+| `GET /owner/restaurants/{vid}/publish-check` | Required problems and recommended photo tip, with fix URLs |
+| `POST /owner/restaurants/{vid}/publish` and `/unpublish` | Server validation, or draft; existing booking links survive |
+| `GET/PUT /staff/{vid}/schedule` | Owner edits opening hours through the existing schedule API; staff limited to demo restaurants |
+| `GET /r/{vid}/map` and `/ambience` | Published restaurants only; additive rooms/light/phrases; map/hold accept optional wishes |
+| `GET /r/{vid}/seats?table_ids=…` | Usable chairs and facing phrases, at most three tables from this venue |
+| `POST /r/{vid}/bookings` | Optional `prefs` and indicative `seat_id`; choice validated before consuming the table hold |
+
+Room writes reject malformed clocks, unknown sides, opening overlap/out-of-wall
+spans, partial glass walls and unknown/duplicate view tags with 422. Foreign
+object IDs return 404. A stale version returns 409 `stale_layout`; a protected
+table deletion returns 409 with `error.tables: [{id,label}]`. Geometric draft
+errors remain saveable, including the 4–5000 m² area rule, and prevent publication.
+Counterclockwise outlines are reversed with opening side/offset remapping.
+Combine groups are scoped by room in the service adapter.
+
+For explicitly published venues, an invalid room/profile/schedule edit saves
+atomically as draft and closes new diner requests; existing management links
+remain usable. Legacy venues defaulted to published before these fields existed
+and retain that compatibility path until first explicit publication. A slug is
+fixed after first publication, including after unpublish. A one-table restaurant
+can hold its only table; larger venues retain the half-of-tables hold cap.
+
+**Still absent:** discovery `/restaurants`, public profile by slug, management
+`Change seat`, and the new restaurant email picture/profile integration. The
+publish answer reserves `/restaurants/{slug}`, but the frontend page is not yet
+implemented. Use the existing `/r/{public_id}` booking route for the working
+journey. See [final review and acceptance matrix](restaurant-final-review.md).
 
 While the backend is running you can also read it live:
 

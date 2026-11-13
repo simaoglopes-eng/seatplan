@@ -28,6 +28,7 @@ from app.models import (
     utc_now,
 )
 from app.restaurant_service.features import refresh_features
+from app.restaurant_service.room_rules import check_openings, normalise_winding
 
 MODELS = {
     "rooms": Room,
@@ -196,6 +197,7 @@ def view(session: Session, venue: Venue, keys: dict | None = None) -> dict[str, 
     return {
         "base_version": venue.layout_version,
         "version": venue.layout_version,
+        "status": venue.status,
         "rooms": result,
         "problems": validate_rooms(result),
     }
@@ -219,6 +221,7 @@ def _check_items(body: dict, existing: dict) -> None:
 
     for room in body["rooms"]:
         check("rooms", room)
+        check_openings(room)
         for name in ("zones", "tables", "openings", "fixtures"):
             for obj in room[name]:
                 check(name, obj)
@@ -250,6 +253,7 @@ def save(session: Session, venue: Venue, body: dict, *, actor: str) -> dict[str,
         raise ApiError(409, "stale_layout", "This layout was changed in another tab or device.")
     existing = _existing(session, venue)
     _check_items(body, existing)
+    body = {**body, "rooms": [normalise_winding(room) for room in body["rooms"]]}
     _check_bookings(session, venue, body, existing)
     keys: dict = {}
     keep: dict[str, set[int]] = {name: set() for name in MODELS}
@@ -317,6 +321,9 @@ def save(session: Session, venue: Venue, body: dict, *, actor: str) -> dict[str,
         rebuild_neighbours(session, venue.id)
         session.flush()
         refresh_features(session, venue)
+        from app.restaurant_service.publishing import recheck_after_edit
+
+        recheck_after_edit(session, venue)
         audit.record(
             session, actor=actor, action="rooms.save", entity="venue", entity_id=venue.public_id
         )

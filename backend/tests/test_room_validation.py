@@ -43,6 +43,23 @@ def codes(value: dict, publish: bool = False) -> list[str]:
     return sorted(p["code"] for p in validate_rooms([value], for_publication=publish))
 
 
+def test_room_area_is_between_four_and_five_thousand_square_metres() -> None:
+    value = room()
+    for width, height, allowed in (
+        (199, 200, False),
+        (200, 200, True),
+        (10000, 5000, True),
+        (10000, 5001, False),
+    ):
+        value["outline"]["points"] = [
+            {"x": 0, "y": 0},
+            {"x": width, "y": 0},
+            {"x": width, "y": height},
+            {"x": 0, "y": height},
+        ]
+        assert ("outline_invalid" not in codes(value)) is allowed
+
+
 def test_validation_accounts_for_rotated_tables_and_circle_containment() -> None:
     value = room()
     value["tables"] = [table("1", 0, 0, rotation=45)]

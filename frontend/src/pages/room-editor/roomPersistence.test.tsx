@@ -84,6 +84,22 @@ describe("roomPayload", () => {
 });
 
 describe("Room editor persistence", () => {
+  it.each([{}, { layout: { rooms: [] } }, { base_version: 5, saved_at: "2026-11-13T10:00:00Z", layout: { base_version: 5, rooms: [{ name: "Damaged" }] } }])("ignores damaged local data and still opens the saved rooms (%j)", async damaged => {
+    fakeServer(() => layout(5), () => json({}));
+    window.localStorage.setItem("seatplan.room-draft.rest", JSON.stringify(damaged));
+    open();
+    await screen.findByRole("heading", { name: "Test Restaurant · Rooms" });
+    expect(shownName()).toBe("Dining room");
+    expect(screen.queryByText(/unsaved changes from this device/i)).toBeNull();
+  });
+  it("explains when an invalid edit has taken a published restaurant back to draft", async () => {
+    fakeServer(() => ({ ...layout(5), status: "published" }), () => json({ ...layout(6, "Changed"), status: "draft" }));
+    open();
+    await rename("Changed");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText(/saved as a draft.*new bookings/i)).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toBe("Saved");
+  });
   it("opens the saved layout and keeps Save off until something changes", async () => {
     fakeServer(() => layout(5), () => json({}));
     open();

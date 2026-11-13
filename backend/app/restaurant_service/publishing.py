@@ -110,6 +110,28 @@ def publish(session: Session, venue: Venue, actor: str) -> dict[str, str]:
     return {"status": "published", "url": f"/restaurants/{venue.slug}"}
 
 
+def recheck_after_edit(session: Session, venue: Venue) -> None:
+    """Invalid edits become drafts atomically, preserving existing bookings.
+
+    Old venues defaulted to published before profiles/rooms existed. Their
+    compatibility path remains until the owner explicitly publishes them.
+    """
+    if venue.status != "published" or venue.published_at is None:
+        return
+    session.flush()
+    found = problems(session, venue)
+    if found:
+        venue.status = "draft"
+        audit.record(
+            session,
+            actor="system",
+            action="restaurant.draft_after_edit",
+            entity="venue",
+            entity_id=venue.public_id,
+            detail={"problems": sorted({p["code"] for p in found})},
+        )
+
+
 def unpublish(session: Session, venue: Venue, actor: str) -> dict[str, str]:
     """Back to a draft: gone from search, no new bookings; existing bookings stay."""
     if venue.status != "draft":

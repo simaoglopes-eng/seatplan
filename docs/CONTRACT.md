@@ -236,7 +236,7 @@ Restaurants, diner (`/r/{venue_public_id}`)
 - `GET /r/{vid}/slots?date=&party=` -> time slots with `available`, `limited`, `full`
 - `GET /r/{vid}/map?date=&time=&party=&prefs=` -> tables with state for that slot, recommended table and reasons. `prefs` is a comma list of wishes (`sun`, `shade`, `view`, `quiet`, `away_from_wc`; at most 5, never `sun` with `shade`, else 422). Added to the old fields: `rooms` (outline, openings, fixtures, `sun`, `sun_patches`, `night`) and on every table `room_id`, `is_active`, `ambience`. Tables switched off are not sent
 - `GET /r/{vid}/ambience?date=&time=&party=&moment=` -> `{rooms: [{id, sun_patches, night}], tables: [{id, light, phrases}], sun, located, time, stay_start, stay_end}` for the diner's time cursor; no personal data, same read limit as the map
-- `POST /r/{vid}/hold` `{date, time, party, table_id?, prefs?}` (no table: optimiser picks, following `prefs`) -> `{hold_id, table, expires_at}`. 429 `rate_limited` when one client already holds 3 tables for that date, or when live holds would block more than half the tables of a slot
+- `POST /r/{vid}/hold` `{date, time, party, table_id?, prefs?}` (no table: optimiser picks, following `prefs`) -> `{hold_id, table, expires_at}`. 429 `rate_limited` when one client already holds 3 tables for that date, or when live holds would block more than half the tables of a slot (minimum allowance one table, so a one-table restaurant is bookable)
 - `DELETE /r/{vid}/hold/{hold_id}` gives a held table back -> 204, or 404 for an unknown hold
 - `POST /r/{vid}/bookings` `{hold_id, name, email, prefs?, seat_id?, ...}` (`seat_id` is the diner's optional chair: it must be a chair of one of the held tables and not blocked, else 422; it is only a wish, the booking stays per table; booking descriptions carry `seat: {id, label, table_id, phrase?} | null` and `prefs`) (`prefs` are stored on the booking and shown to the staff) -> confirmation with manage link. 429 `rate_limited` when this mailbox already has 4 upcoming diner bookings at this restaurant (capitals and a `+tag` count as the same mailbox), or this client address (an IPv6 address by its /64) has made 10 booking attempts here today (UTC); a refused booking keeps its hold (`restaurant_service/booking_caps.py`)
 - `GET /r/{vid}/seats?table_ids=1,2` -> `{tables: [{id, label, shape, x, y, w, h, rotation}], seats: [{id, table_id, label, x, y, state: free|blocked, accessible, phrase}]}` for up to 3 active tables (404 for any other table, 422 for none or more than 3); feeds the optional chair step; no personal data, same read limit
@@ -375,6 +375,16 @@ Ambience inputs are frozen dataclasses and have no database or network dependenc
 New JSON bodies reject unknown fields and constrain free text with PlainText. Existing error envelope error/code/message remains mandatory. Publication may add problems containing code/message/fix_url to that envelope. Room version conflicts may add problem details without replacing the existing envelope. Public responses carry no diner names, email addresses or notes.
 
 Only leaflet@1.9.4 and @types/leaflet are allowed additions. Shared file edits are serial. The overnight plan and report record task dependencies, verification results and conservative deviations.
+
+Final integration checks: rooms with area outside 4–5000 m² carry an
+outline_invalid error; malformed opening clocks/references/spans are structural
+422 errors. Counterclockwise winding is normalized before persistence, including
+curves and opening positions. Combine groups are scoped by room in the adapter.
+GET/PUT rooms include read-only status. Invalid edits of explicitly published
+venues atomically return them to draft; existing management links survive.
+Legacy default-published venues retain compatibility until explicit publication.
+Published slugs remain fixed after unpublish. Discovery/by-slug pages and the
+restaurant mail integration remain planned interfaces, not completed features.
 
 Owner profiles: POST /api/owner/restaurants {name} creates an owned draft at
 1000x700 cm and returns public_id/slug. GET/PATCH

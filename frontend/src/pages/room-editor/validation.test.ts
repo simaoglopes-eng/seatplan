@@ -11,6 +11,11 @@ function table(room: Room, x: number, y: number, w = 100, h = 100, round = false
   const next = addTable(room, round ? "round" : "square", { x, y });
   return editTable(next, next.tables.at(-1)!.key, { w, h });
 }
+it("enforces the same inclusive room area boundaries as the server", () => {
+  for (const [width, height, allowed] of [[199, 200, false], [200, 200, true], [10000, 5000, true], [10000, 5001, false]] as const) {
+    expect(!codes(createRoom("Area", width, height)).includes("outline_invalid")).toBe(allowed);
+  }
+});
 it("matches server cases for rotated rectangles and true circle containment", () => {
   let room = table(createRoom("Main", 1000, 700), 0, 0);
   room = editTable(room, room.tables[0].key, { rotation: 45 });

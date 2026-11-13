@@ -169,6 +169,8 @@ def validate_rooms(rooms: Sequence[Item], *, for_publication: bool = False) -> l
 
         if polygon is None:
             add("outline_invalid", "error", "The walls cross each other.", [])
+        elif not 40000 - EPS <= abs(polygon_area(polygon)) <= 50000000 + EPS:
+            add("outline_invalid", "error", "Use a room area between 4 and 5000 square metres.", [])
         windows = [o for o in room.get("openings", []) if o.get("kind") in {"window", "glass_wall"}]
         if for_publication and windows and room.get("north_deg") is None:
             add("no_north", "error", "Set north so we can work out the sun.", [])

@@ -1,5 +1,211 @@
 # Relatório da noite — 13 de novembro de 2026
 
+## Resumo final para o Martim
+
+Merge de claude/ambiente feito em martim/restaurantes-impl (31cc829), sem
+repetir o trabalho importado. A tarefa 17 não commitada foi descartada como
+pedido. Identidade Git apenas local; sem push, PR, deploy ou alterações a main.
+
+| Tarefa final | Estado | Commit |
+|---|---|---|
+| 37 — Editor/reserva/desempenho | Feita | 0168a4e |
+| 38 — Dono/descoberta | Dono verificado; descoberta bloqueada | 4bb515a |
+| 39 — Revisão, correções, docs e ensaio | Feita para o código implementado | Este commit (HEAD), `fix: close restaurant review gaps and document verified scope` |
+
+Bateria final **verde**, corrida em sequência após a recuperação descrita
+abaixo: Ruff check e formato (203 ficheiros); pytest **837 passed**, 3 warnings
+em **176,92 s**; typecheck; Vitest **355 passed / 48 ficheiros**; build **364 ms**;
+contraste **86 checks / 0 failures**; Playwright **60 passed (1.2m)**, portas
+18765/14317 e traces isolados por processo. Sem reruns isolados. Benchmark HTTP
+com 60 mesas/120 cadeiras: **236,17 / 222,07 / 158,32 ms**, todos <300 ms.
+Guard dos eventos e diff check verdes. OpenAPI: 93 caminhos/108 operações/62
+schemas, exportação repetida idêntica. Capturas desktop/móvel inspecionadas.
+
+**Não está tudo o spec concluído.** Faltam 25/26/29 (descoberta e página por
+slug), 33/34/36 (Change seat, email e novas demos). 20 ainda precisa do layout
+móvel em ecrã inteiro/folha puxável e ensaio num telemóvel físico; 32 ainda tem
+a marca da cadeira no mapa staff pendente. O link View public page por slug
+ainda leva ao NotFound. Descoberta 100 restaurantes <500 ms não foi medida,
+porque não existe endpoint. A reserva atual funciona em /r/:public_id.
+Detalhes e critérios: docs/restaurant-final-review.md.
+
+Revisão corrigiu os dois achados Standards e os cinco Spec com regressões,
+mais o bloqueio de reservas em restaurantes de uma mesa e leitura de rascunhos
+locais danificados. Ranking usa ranking_key() sem mudar key(); rascunhos não
+aceitam novos clientes. Decisões das notas importadas para decisions-log.md.
+
+Dúvidas/decisões para a integração: completar as dependências ausentes antes
+de apresentar a plataforma inteira; confirmar o fluxo tap-to-hold vs inspeção
+do spec; decidir se o staff deve recalcular desejos por hora ao otimizar serviço;
+alinhar key/debounce/checkpoint do rascunho local. PostgreSQL, compassos/gestos
+em dispositivo físico, tiles no deploy e entrega real do novo email não foram
+verificados. Não se fez publicação externa para testar essas partes.
+
+## Revisão 39 — alterações e rastreabilidade
+
+Revisões independentes Standards/Spec pela skill code-review, comparando com
+main 767fbb6. Dois achados Standards e cinco Spec; relatório completo e matriz
+em docs/restaurant-final-review.md. Correções com RED observado antes de GREEN:
+relógios e referências de abertura 500→422, limites/span/tags/vidro/overlap,
+normalização de contorno com curvas/janelas, área 4–5000 m² nos dois lados,
+grupos restritos à sala e edição inválida de publicado a fechar novas reservas.
+O registo de publicação conserva o slug fixo mesmo após unpublish. Sessões
+e caminhos dos eventos não foram alterados; motor puro do Claude intacto.
+
+Teste de reserva numa só mesa revelou 429 permanente no limite de metade;
+passa a haver mínimo de uma mesa, mantendo todos os limites para restaurantes
+maiores. Reserva real, gestão e cancelamento confirmam a correção. Rascunho
+local com estrutura danificada deixa de bloquear a abertura do editor. Aviso
+de gravação como draft testado por Vitest e navegador. Teste móvel completo
+passou de cliques para taps reais. 52 pytest dirigidos e seis Playwright
+dirigidos verdes (11,68 s e 15,7 s). Estado final sujeito à bateria em sequência.
+
+OpenAPI real exportado com scripts/export_openapi.py: 93 caminhos, 108
+operações e 62 schemas; segunda exportação idêntica. Script usa BD temporária,
+sem tocar na BD local. API, modelo, contrato, decisões, guias e tarefas da equipa
+atualizados. Não houve deploy, push, PR nem merge para main.
+
+### Trabalho importado, sem repetição
+
+| Tarefa | Commit do Claude | Situação |
+|---|---|---|
+| 17 / preview 23 | e52b66c | Salas transacionais + rota privada |
+| 18 | 89a2b41 | Persistência e recuperação; debounce/key diferem do spec, checkpoint 30 s pendente |
+| 19 | 31cc829 | Horário e publicação |
+| 21 | 6beb757 | Luz e manchas |
+| 22 | adba4c9 | Ambiente/frases |
+| 23 / 27 / 31 backend | b6f336d | API pública, mapa e desejos |
+| 24 | e08ac93 | Light do editor |
+| 27 frontend | 75c93a1 | Camadas de sala |
+| 28 | 72fffa2 | Separadores, cartão e cursor |
+| 30 | 358fd11 | ranking_key preserva key de três partes |
+| 31 frontend | f5ac35b | Desejos até ao staff |
+| 32 | cdbf97f + 01ec07b | Escolha de cadeira; marca no mapa staff ainda pendente |
+| 35 | a33736a | PNG puro; ligação ao email pendente |
+
+20 está parcial: o percurso de aceitação com touch passa, mas faltam ecrã
+inteiro/folha puxável e ensaio físico. 25/26/29, 33/34/36 continuam por fazer.
+37 está feita em 0168a4e. 38 tem dono verificado em 4bb515a, descoberta bloqueada.
+39 revê/documenta o estado real; não significa que a plataforma inteira acabou.
+
+Fecho da revisão: bateria em sequência verde com os números do resumo final.
+Commit identificado por fix: close restaurant review gaps and document verified
+scope. A recuperação preservou o trabalho e a nova verificação não enfraqueceu
+testes nem orçamento de latência. Todos os resultados anteriores ficam abaixo
+como histórico, incluindo as falhas e decisões tomadas.
+
+## Recuperação durante a revisão 39
+
+Primeira bateria final: Ruff/formato verdes (203 ficheiros), Vitest 355/48,
+build 338 ms, contraste 86/0. Pytest: 836 passed e só o teste de desempenho
+falhou (669,99/473,37/323,50 ms), 4 warnings em 171,25 s. Playwright: 53 passed,
+7 failed, todos com ENOENT nos ficheiros de trace/fecho de contexto na pasta
+global seatplan-e2e-results; não falharam asserções de negócio nesses sete.
+
+Cumprida a regra: confirmado martim/restaurantes-impl e HEAD 4bb515a, patch
+binário/ficheiros novos preservados fora do repositório, depois git reset --hard
+4bb515a. Backup em C:\Users\marti\AppData\Local\Temp\seatplan-39-recovery-3eb8ebc7615c449cbebd4a36ca3c5922.
+Registo reposto imediatamente. Nenhum caminho dos eventos foi alterado.
+
+Opção conservadora: isolar outputDir do Playwright por execução (evita colisão
+entre worktrees), usar portas exclusivas e fazer a bateria final em sequência.
+Restauração do patch de revisão para esta nova verificação, preservando todos
+os testes e o limite de 300 ms. Sem rerun isolado das falhas. O risco de carga
+concorrente é inferência; o ENOENT na pasta global é evidência observada.
+
+## Integração e nova ordem — instrução mais recente do Martim
+
+Descartadas apenas as alterações não commitadas da tarefa 17: main.py e os
+três ficheiros novos rooms.py, owner_rooms.py e test_owner_rooms.py. O trabalho
+equivalente já estava no Claude. Merge de claude/ambiente em
+martim/restaurantes-impl por fast-forward, d1411d2 → 31cc829, sem conflitos.
+Não se repetem as tarefas já integradas. Nova ordem: bateria completa do merge,
+decisões das notas para decisions-log, tarefas 37, 38 e 39 e relatório final.
+Sem push/PR. Caminhos dos eventos intactos pelo guard.
+
+O pedido atual também permite rerun isolado do teste redteam S1 se falhar por
+viragem do minuto, além da corrida conhecida do guest-register. Regra anterior
+de parar antes da tarefa 23 foi substituída pela autorização explícita do merge.
+
+Primeiro inventário: faltam descoberta e página por slug (25/26/29), Change
+seat na gestão (33), integração do email/seed com novas demos (34/36). O PNG
+puro de 35 está implementado. Estes pontos não serão declarados concluídos
+apenas por existir o motor. Bateria inicial do merge verde: Ruff check/formato
+(200 ficheiros), pytest 821 passed/3 warnings em 134,61 s; typecheck, Vitest
+350 passed/48 ficheiros, build 324 ms, contraste 86/0, Playwright 54 passed
+em 58,5 s. Nenhum rerun necessário. Decisões importadas para decisions-log.
+
+## Tarefa 37 — feita
+
+Não repetida a implementação do editor/ambiente do Claude. Acrescentado teste
+HTTP real com 60 mesas/120 cadeiras, duas salas, quatro janelas e coordenadas:
+três respostas de mapa completas em 199,68 / 209,21 / 137,88 ms. Inclui a
+primeira chamada, sem cache nem mocks. Limite de 300 ms verificado em todas.
+
+Playwright novo a 1440/390: duas salas, luz de dia, cursor até noite sem
+segurar mesa, cadeira 2 na confirmação e gestão. Concorrência sincroniza só
+a saída dos pedidos reais de dois browsers; respostas 201/409 e alternativa
+utilizável pelo perdedor. Fixture cria restaurante próprio pelas APIs; demo
+não alterada. Teste completo do editor existente agora tem hasTouch/isMobile,
+mantendo todas as asserções. Seis dirigidos passaram em 16,3 s. Primeira
+execução dos novos testes tinha seletor CSS errado (.room-scene-sun); corrigido
+para a classe real .room-sun, sem alterar comportamento nem expectativas.
+
+Capturas de dia/noite 1440/390 inspecionadas; axe nos estados de mapa/cadeira
+sem violações. O cartão ainda pode descrever a sugestão de outra sala ao trocar
+de separador, comportamento a avaliar na revisão. Faltam requisitos de email
+e gestão de cadeira das dependências 33/34/36; não cobertos por esta tarefa.
+Verificação completa da tarefa em curso; Playwright 57 passed, restante
+frontend verde (350 Vitest, contraste 86/0, build 315 ms).
+
+Novo critério de desempenho ficou RED na bateria, embora os 821 testes
+anteriores passassem: 499,52/148,72/419,06 ms. Diagnóstico com skill
+diagnosing-bugs: segunda bateria 492,47/148,64/394,94 ms, com CPU semelhante
+ao tempo de parede e pausas GC de 295,74 e 237,39 ms. Não era contenção do
+Playwright. Após duas tentativas escolheu-se a medição conservadora num processo
+API novo: mesma BD real, 60 mesas, todos os dados de ambiente, três chamadas,
+incluindo a primeira, GC normal e mesmo máximo estrito <300 ms. Isto separa
+a latência HTTP da recolha dos grafos deixados por centenas de testes anteriores;
+não altera o algoritmo nem aumenta tolerâncias. Instrumentação temporária
+retirada. Verificação voltou a ser a bateria inteira, sem rerun isolado do
+teste de desempenho. Não foi regressão da linha de base de 821 testes.
+
+Bateria final verde: Ruff check/formato (201 ficheiros), pytest 822 passed,
+3 warnings em 131,76 s; medições HTTP 218,50 / 196,76 / 142,10 ms no processo
+API novo. Typecheck, Vitest 350/48, build 315 ms, contraste 86/0 e Playwright
+57 passed em 1,1 min. Guard e diff check verdes. Commit identificado por
+test: verify restaurant ambience journeys concurrency and map latency.
+
+## Tarefa 38 — bloqueada parcialmente; fluxo do dono verificado
+
+O código integrado não contém discovery.py/discovery router, DiscoveryPage
+nem RestaurantPage/rota /restaurants/:slug. São dependências 25/26/29, não
+implementações perdidas por merge (inventário e App.tsx confirmados). Logo não
+há endpoint para medir 100 restaurantes <500 ms, página para axe, nem percurso
+"publicar → encontrar na pesquisa". A opção conservadora é registar o bloqueio
+e continuar a revisão 39, conforme regra do Martim; não criar um teste que
+declare uma pesquisa inexistente como aprovada, nem alargar uma revisão final
+para substituir silenciosamente essas funcionalidades de produto.
+
+O link "View public page" após publicar já aponta para /restaurants/:slug,
+como o contrato exige, mas ainda leva ao NotFound. Requisito 29 pendente,
+explicitamente não validado por clicar nesse link. A rota /r/:id funciona.
+
+Acrescentado owner.spec.ts: publicar/retirar publicação por UI a 1440/390,
+rascunho recusa novos clientes, reserva real com cadeira 2 mantém a gestão e
+cancelamento disponíveis após unpublish. Axe nos estados review, rascunho
+público e gestão sem violações; sem scroll horizontal. Capturas para inspeção.
+Três dirigidos passaram em 10,4 s (inclui o owner-publish anterior). Bateria
+completa da tarefa em execução. Tarefa 37 no commit 0168a4e.
+
+Bateria final da parte executável verde: Ruff check/formato (201 ficheiros),
+pytest 822 passed/3 warnings em 144,58 s; typecheck, Vitest 350/48, build
+333 ms, contraste 86/0 e Playwright 59 passed em 1,2 min. Capturas desktop e
+móvel inspecionadas, guard e diff check verdes. Sem reruns isolados.
+Commit identificado por test: verify owner publication boundaries and record
+the missing discovery dependency. Descoberta/performance de 100 restaurantes
+continuam bloqueadas, não aprovadas.
+
 ## Coordenação atualizada por Martim
 
 Claude trabalha em C:\Users\marti\seatplan-claude, branch claude/ambiente,
@@ -13,8 +219,8 @@ tarefa e sem parar entre tarefas. Antes de começar 23, pára para Martim
 confirmar que claude/ambiente está pronta. Só depois faz merge dessa branch
 na impl e corre a bateria completa antes de prosseguir. Sem push nem PR.
 
-Trabalho em curso na branch martim/restaurantes-impl. Último commit verde
-antes da tarefa 16, ab18e82. Spec e plano aprovados por Martim, commit 880624b
+Histórico antes da tarefa 16: branch martim/restaurantes-impl, último verde
+ab18e82. Spec e plano aprovados por Martim, commit 880624b
 na branch martim/restaurantes-spec. Identidade Git configurada apenas neste
 repositório. Plano com 40 tarefas.
 
@@ -39,6 +245,7 @@ repositório. Plano com 40 tarefas.
 | 13 — Fotos | Feita | 3ddb8bb | Galeria privada, resize, capa/ordem e foto de vista |
 | 14 — Mesas e cadeiras | Feita | 81973f5 | Quatro formas, balcão unilateral, propriedades e cadeiras individuais |
 | 15 — Gestos e seleção | Feita | ab18e82 | Alinhar, distribuir, duplicar, pegas, atalhos e toque longo |
+| 16 — Validação | Feita | d1411d2 | Oito códigos, geometria espelhada e foco nos problemas |
 
 ## Verificações reais
 

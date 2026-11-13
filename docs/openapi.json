@@ -8004,7 +8004,9 @@
           "sun_from": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 5,
+                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
               },
               {
                 "type": "null"
@@ -8015,7 +8017,9 @@
           "sun_until": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 5,
+                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
               },
               {
                 "type": "null"

@@ -117,7 +117,11 @@ def create(session: Session, owner: Organiser, name: str) -> dict[str, Any]:
 
 
 def update(session: Session, venue: Venue, changes: dict[str, Any]) -> dict[str, Any]:
-    if "slug" in changes and changes["slug"] != venue.slug and venue.status == "published":
+    if (
+        "slug" in changes
+        and changes["slug"] != venue.slug
+        and (venue.status == "published" or venue.published_at is not None)
+    ):
         raise ApiError(409, "conflict", "The public link is fixed after publication.")
     for field, value in changes.items():
         setattr(venue, field, value)
@@ -130,6 +134,9 @@ def update(session: Session, venue: Venue, changes: dict[str, Any]) -> dict[str,
         .lower()[:400]
     )
     try:
+        from app.restaurant_service.publishing import recheck_after_edit
+
+        recheck_after_edit(session, venue)
         session.commit()
     except IntegrityError:
         session.rollback()
