@@ -51,6 +51,16 @@ away_from_wc, sunset) and up to three sentences from phrases.py, in the order
 light, view, near. seat_facing gives "Facing / Back to / Side-on to the window"
 for a chosen chair, or None when no window is within 3 m.
 
+The database side lives in `restaurant_service/ambience_view.py` (spec 7.6):
+`load_rooms` turns the saved rooms, openings, fixtures and active tables into
+the values above (tables of a restaurant that never saved a room share one
+implicit rectangle with no north and no windows, so it makes no sun claims) and
+`ambience_payload(session, venue, day, start, party, moment, detail)` answers
+`{rooms: [{id, sun_patches, night}], tables: [{id, light, phrases}], sun}`.
+The stay (sentences, sun minutes) starts at `start` and lasts the restaurant's
+turn time for the party; `moment` is the diner's time cursor and only moves the
+patches and the night veil. No coordinates means `located: false`, no tables.
+
 Why is sunset_at stricter than dark_at? "Sunset from your seat" is a promise
 about the view; "it gets dark" is only about the clock.
 

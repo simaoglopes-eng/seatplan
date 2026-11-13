@@ -285,7 +285,8 @@ def opening_distance(room: AmbienceRoom, table: AmbienceTable, opening: Ambience
     return polygon_distance(table_polygon(table), opening_segments(room, opening))
 
 
-def _is_night(when: datetime, times: SunTimes, sun: SunPosition) -> bool:
+def is_night(when: datetime, times: SunTimes, sun: SunPosition) -> bool:
+    """True before sunrise and from sunset on; polar days use the sun's height."""
     if times.sunrise is None or times.sunset is None:
         return sun.altitude_deg <= 0  # polar day or polar night
     return when < times.sunrise or when >= times.sunset
@@ -330,7 +331,7 @@ def table_light(
     sun = _sun(lat, lng, when, sun)
     if times is None:
         times = sun_times(lat, lng, when.date(), when.tzinfo)  # type: ignore[arg-type]
-    if _is_night(when, times, sun):
+    if is_night(when, times, sun):
         return "night"
     samples = table_samples(table)
     if room.is_outdoor:

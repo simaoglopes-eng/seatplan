@@ -94,3 +94,36 @@ Outras decisões:
   livre cumpre), "No sunny table is free at 13:00" (nenhuma livre cumpre). A
   hora vem do start_slot (grelha de 15 min de clock.py), sem importar o
   restaurant_service, para o optimizador continuar puro.
+
+## Tarefa 23 (parte do serviço, adiantada): restaurant_service/ambience_view.py
+
+Feita já na claude/ambiente depois de trazer a martim/restaurantes-impl
+(81973f5, tarefa 14) para aqui com um merge normal (a martim/restaurantes-impl
+não foi tocada). Ficheiros novos: backend/app/restaurant_service/ambience_view.py
+e backend/tests/test_ambience_view.py (16 testes). Alterações pequenas:
+light.py passa `_is_night` a `is_night` (público, o serviço usa-o) e uma linha
+nova em restaurant_service/READ_ME_FIRST.md e no ambience/READ_ME_FIRST.md.
+
+AINDA NÃO FEITO (precisa da tarefa 17 do Codex, ficheiros proibidos para mim):
+- routers/owner_rooms.py: GET /api/owner/restaurants/{vid}/ambience-preview
+  (dono, rascunho guardado) chama ambience_payload(..., detail=True).
+- routers/restaurants.py: GET /api/r/{vid}/ambience?date=&time=&party=
+  (público, com _limit(..., "read", READ_LIMIT)) chama ambience_payload.
+- Teste de API backend/tests/test_ambience_api.py (isolamento do dono, 404 em
+  rascunho, limite de leituras, sem dados pessoais).
+
+Decisões:
+- Sala implícita (restaurante sem salas guardadas): retângulo width x height,
+  sem norte e sem janelas, id None. Não afirma sol nem vista.
+- Mesas com room_id que não existe contam como da sala implícita.
+- Dois momentos: a estadia [start, start + turn_minutes) dá frases e números;
+  `moment` (o cursor do cliente, por defeito start) só mexe nas manchas e no
+  véu da noite. Resposta traz `time`, `stay_start`, `stay_end`.
+- Sem lat/lng: `located: false`, `sun: null`, sem mesas, manchas vazias.
+- Resposta leve = {id, light, phrases} por mesa (spec); `detail=True` junta
+  sun_minutes, sun_until/from, sunset_at, dark_at, view (com photo_url
+  /api/photos/<public_id>, só metadados, nunca bytes), near, quiet, features.
+- `sun` (nascer, pôr, azimute, altura) vai sempre, também na resposta leve,
+  para a ferramenta Light (tarefa 24) mostrar a direção do sol.
+- Manchas à noite: lista vazia, mesmo que a geometria desse alguma coisa.
+- Desempenho medido: 200 mesas, 4 janelas, estadia de 2 h, 0,5 s. Sem cache.
