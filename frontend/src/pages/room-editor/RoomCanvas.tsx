@@ -12,6 +12,7 @@ import { WallLayer } from "./WallLayer";
 import { NorthDial } from "./NorthTools";
 import { ObjectLayer } from "./ObjectLayer";
 import { OBJECT_DRAG_TYPE } from "./ObjectFields";
+import { TableLayer } from "./TableLayer";
 
 interface Props {
   room: Room; drawing: boolean; grid: boolean; onPoint: (point: Point) => void; onCloseShape: () => void;
@@ -19,9 +20,10 @@ interface Props {
   onChange: (room: Room, transient?: boolean) => void; onDragStart: () => void; onError: (message: string) => void;
   tool: string; opening: string | null; onOpening: (key: string) => void;
   placement: string | null; object: string | null; onObject: (key: string) => void; onPlace: (point: Point, kind: string) => void;
+  chair: string | null; onTableSelect: (key: string, chair: string | null) => void;
 }
 
-export function RoomCanvas({ room, drawing, grid, onPoint, onCloseShape, selection, onSelect, onChange, onDragStart, onError, tool, opening, onOpening, placement, object, onObject, onPlace }: Props) {
+export function RoomCanvas({ room, drawing, grid, onPoint, onCloseShape, selection, onSelect, onChange, onDragStart, onError, tool, opening, onOpening, placement, object, onObject, onPlace, chair, onTableSelect }: Props) {
   const viewport = useRef<HTMLDivElement>(null);
   const patternId = useId();
   const [cursor, setCursor] = useState<Point | null>(null);
@@ -55,11 +57,7 @@ export function RoomCanvas({ room, drawing, grid, onPoint, onCloseShape, selecti
           {points.map((p, i) => <text key={i} x={p.x + 12 / pan.view.k} y={p.y - 10 / pan.view.k} fontSize={12 / pan.view.k} className="room-ruler">{i + 1}</text>)}
           {!drawing && <ObjectLayer room={room} kind="zone" editing={tool === "Zones" && !placement} selected={object} grid={grid} zoom={pan.view.k} toWorld={toWorld} onSelect={onObject} onChange={onChange} onDragStart={() => { pan.zoomBy(1); onDragStart(); }} />}
           {!drawing && <ObjectLayer room={room} kind="fixture" editing={tool === "Fixed" && !placement} selected={object} grid={grid} zoom={pan.view.k} toWorld={toWorld} onSelect={onObject} onChange={onChange} onDragStart={() => { pan.zoomBy(1); onDragStart(); }} />}
-          {room.tables.map(table => <g key={table.key} pointerEvents="none" transform={`translate(${table.x + table.w / 2} ${table.y + table.h / 2}) rotate(${table.rotation})`}>
-            {table.shape === "round" ? <circle r={table.w / 2} className="room-table" /> : <rect x={-table.w / 2} y={-table.h / 2} width={table.w} height={table.h} className="room-table" />}
-            <text textAnchor="middle" dominantBaseline="middle" className="room-table-label">{table.label}</text>
-          </g>)}
-          {room.tables.flatMap(t => t.seats).map(seat => <circle key={seat.key} pointerEvents="none" cx={seat.x} cy={seat.y} r="9" className="room-seat" />)}
+          <TableLayer room={room} editing={tool === "Tables" && !placement} selected={object} chair={chair} grid={grid} zoom={pan.view.k} toWorld={toWorld} onSelect={onTableSelect} onChange={onChange} onDragStart={() => { pan.zoomBy(1); onDragStart(); }} onError={onError} />
           {!drawing && points.length >= 3 && tool === "Shape" && <ShapeHandles room={room} zoom={pan.view.k} grid={grid} selection={selection} toWorld={toWorld} onSelect={onSelect} onChange={onChange} onDragStart={() => { pan.zoomBy(1); onDragStart(); }} onError={onError} />}
           {!drawing && tool === "Walls" && points.map((_, i) => <path key={`select-${i}`} d={sidePath(room.outline, i)} className="room-wall-hit" strokeWidth={44 / pan.view.k} onPointerDown={event => { event.stopPropagation(); onSelect({ kind: "side", index: i }); }} />)}
           {!drawing && <WallLayer room={room} zoom={pan.view.k} editing={tool === "Walls"} selected={opening} toWorld={toWorld} onSelect={onOpening} onChange={onChange} onDragStart={() => { pan.zoomBy(1); onDragStart(); }} onError={onError} />}

@@ -1,7 +1,20 @@
 # Relatório da noite — 13 de novembro de 2026
 
+## Coordenação atualizada por Martim
+
+Claude trabalha em C:\Users\marti\seatplan-claude, branch claude/ambiente,
+a partir de martim/restaurantes-impl. Ficam com ele as tarefas 21, 22 e 30:
+backend/app/ambience/light.py, models.py, table.py, phrases.py e optimizador
+restaurant_*.py. Codex não altera esses módulos. A referência models.py nesta
+lista é backend/app/ambience/models.py.
+
+Codex segue 12, 13, 14, 15, 16, 17, 18, 19 e 20, com commit verificado por
+tarefa e sem parar entre tarefas. Antes de começar 23, pára para Martim
+confirmar que claude/ambiente está pronta. Só depois faz merge dessa branch
+na impl e corre a bateria completa antes de prosseguir. Sem push nem PR.
+
 Trabalho em curso na branch martim/restaurantes-impl. Último commit verde
-antes da tarefa 11, 2fc9ea5. Spec e plano aprovados por Martim, commit 880624b
+antes da tarefa 14, 3ddb8bb. Spec e plano aprovados por Martim, commit 880624b
 na branch martim/restaurantes-spec. Identidade Git configurada apenas neste
 repositório. Plano com 40 tarefas.
 
@@ -21,7 +34,10 @@ repositório. Plano com 40 tarefas.
 | 8 — Estrutura e formas | Feita | 8abad49 | Salas retangulares, em L e desenho livre |
 | 9 — Curvas e cantos | Feita | 3e6e651 | Arcos circulares, arrasto e propriedades acessíveis |
 | 10 — Aberturas e norte | Feita | 2fc9ea5 | Janelas, portas, vidro, normais em arcos e bússola |
-| 11 — Elementos e zonas | Feita | commit desta entrada | Paletas, colocação, arrasto, campos e desfazer |
+| 11 — Elementos e zonas | Feita | 022fd28 | Paletas, colocação, arrasto, campos e desfazer |
+| 12 — Perfil e localização | Feita | a97f0ac | Slug, Identity/Location persistidos, Leaflet e geolocalização explícita |
+| 13 — Fotos | Feita | 3ddb8bb | Galeria privada, resize, capa/ordem e foto de vista |
+| 14 — Mesas e cadeiras | Feita | commit desta entrada | Quatro formas, balcão unilateral, propriedades e cadeiras individuais |
 
 ## Verificações reais
 
@@ -270,3 +286,101 @@ ficheiros, build em 137 ms, contraste 86 checks e 0 failures; Playwright
 39 passed em 36,2 s. Variante pytest com --basetemp novo, -o addopts= e
 -p no:cacheprovider. Guard e git diff --check verdes. Sem bibliotecas novas.
 Commit identificado por feat: add fixed room elements and zones.
+
+## Tarefa 12 — feita
+
+Dependência do Sérgio executada por autorização de Martim: identidade, perfil,
+slug e localização. API cria rascunhos privados, valida cozinhas/contactos/URLs,
+coordenadas/fusos, preserva slug publicado e resolve nomes simultâneos com
+índice único e savepoints. GET canónico /owner/restaurants/{vid}, com alias
+/profile. Assistente guarda Identity/Location e retoma os valores do servidor.
+Cartões de rascunho têm Continue setup. Próximos passos ligam-se nas tarefas
+13/19. Sem alterações aos módulos reservados ao Claude.
+
+RED inicial com POST em falta (405), depois dois testes passaram. A bateria
+dirigida final deu 28 passed em 3,26 s, incluindo três criações simultâneas,
+isolamento, colisão de slug, links publicados fixos, URLs enganadores e campos
+inválidos. Geolocalização só após clique confirmada no componente e no browser.
+Leaflet 1.9.4 e @types/leaflet instalados; @types/geojson é dependência transitiva
+de tipos. npm audit reportou 0 vulnerabilidades na instalação.
+
+Teste novo do assistente detetou estado inicial antigo ao mudar da URL nova
+para a persistida; escolha conservadora: chavear pelo perfil carregado. Também
+detetou o GIF data: interno do Leaflet ao cancelar mosaicos. Decisão 15 regista
+a adição apenas a img-src, sem relaxar scripts/estilos. Mapa carregado por
+importação dinâmica, com atribuição OSM e referer só da origem. Fontes primárias:
+https://leafletjs.com/reference-1.9.4.html e
+https://operations.osmfoundation.org/policies/tiles/ .
+
+Playwright dirigido final: 1 passed em 8,2 s, com criar, guardar, recarregar,
+retomar, pin por clique/arrasto, geolocalização e edição de slug. Axe sem
+violações na localização. Capturas de perfil/localização desktop e 390x844
+inspecionadas. Verificação no deploy fica pendente porque não foi autorizado
+deploy. Bateria completa em curso.
+
+Bateria completa final: Ruff check e formato passaram (173 ficheiros), pytest
+650 passed, 3 warnings em 114,46 s; typecheck passou, Vitest 235 passed em 33
+ficheiros, build em 299 ms (Leaflet em chunk separado), contraste 86 checks
+e 0 failures; Playwright 40 passed em 38,8 s. Guard e diff check passaram.
+Pytest com --basetemp novo, -o addopts= e -p no:cacheprovider. Commit identificado
+por feat: add owner profiles and resumable restaurant location setup.
+
+## Tarefa 13 — feita
+
+Dependência do Sérgio executada: fotos privadas, galeria, capa/ordem/texto,
+foto por janela persistida e redimensionamento no browser. Sem novas bibliotecas
+Python/JS. Cabeçalhos JPEG/PNG/WebP inspecionados sem descodificador; não é uma
+validação integral dos pixels. Limite conservador de dimensões 1600 px no
+servidor, alinhado com o upload do browser. Fonte WebP consultada:
+https://developers.google.com/speed/webp/docs/riff_container .
+
+RED inicial por endpoints inexistentes, depois nove pytest dirigidos passaram
+em 2,51 s: magic bytes, PDF disfarçado, ficheiros truncados/excessivos, dez fotos,
+isolamento em todas as operações, ordenação/capa, uma vista por janela e rate
+limit 60/h. Primeiro teste de resize RED por módulo inexistente, depois verde.
+Dois Playwright dirigidos passaram em 8,6 s: resize real 2400→1600, descrição
+persistida, capa/ordem/remover, privacidade e capa no cartão do dono; segundo
+resize real 1600→1200 quando o primeiro JPEG passa 800 KB. Um primeiro ficheiro
+de ruído RGB continuava acima de 800 KB e foi corretamente recusado: o caso
+de fallback usa ruído monocromático que cabe em 1200, mantendo a asserção exata.
+
+Capturas desktop e 390x844 inspecionadas, axe sem violações e sem scroll lateral.
+Pré-visualizações privadas usam fetch autenticado e URL blob, libertada ao sair.
+Blob permitido só em img-src. Janela sem id mostra pedido para guardar a sala;
+com id liga ao editor de foto. Tarefa 17 concluirá essa persistência. Galeria
+de rascunho usa private/no-store; caches públicas antigas não são revogáveis.
+
+Bateria completa final: Ruff check e formato passaram (176 ficheiros), pytest
+659 passed, 3 warnings em 113,87 s; typecheck passou, Vitest 236 passed em 34
+ficheiros, build em 310 ms, contraste 86 checks e 0 failures; Playwright
+42 passed em 41,5 s. Guard e diff check passaram. Pytest com --basetemp novo,
+-o addopts= e -p no:cacheprovider. Commit identificado por
+feat: add private restaurant photo gallery and browser resizing.
+
+## Tarefa 14 — feita
+
+Quatro formas com dimensões/cadeiras do spec; balcão com cadeiras só num lado.
+Reutiliza seatPositions sem alterações. Modelo imutável, IDs preservados,
+etiquetas únicas por sala e flags/grupos/zonas. Mover/rodar/redimensionar a mesa
+transporta as cadeiras e mantém os desvios manuais. Alterar quantidade de
+cadeiras redistribui posições com aviso explícito; preserva IDs, etiquetas e
+flags das cadeiras mantidas. Remoção de mesas com reservas é tratada nas tarefas
+15/17, sem disponibilizar apagar nesta etapa.
+
+RED por módulo inexistente e depois pelas operações de edição ainda ausentes.
+Quatro testes puros passaram, incluindo limites, imutabilidade, IDs e balcão.
+Dois Playwright passaram em 8,9 s a 1440 e 390: mesa, quantidade, desfazer,
+flags/grupo e cadeira individual. Axe sem violações, sem scroll horizontal.
+Capturas desktop e telefone inspecionadas. Typecheck corrigiu a construção
+duplicada dos campos da cadeira, preservando só o objeto anterior quando existe.
+
+Terceiro Playwright confirmou arrasto de mesa com cadeiras e arrasto individual,
+cada um desfeito num passo; três dirigidos passaram em 9,7 s. Bateria final:
+Ruff check e formato verdes (176 ficheiros), typecheck verde, Vitest 240 passed
+em 35 ficheiros, build em 303 ms, contraste 86 checks/0 failures e Playwright
+45 passed em 43,3 s. Pytest: 658 passed e só a falha conhecida concorrente
+dos eventos com [201,422], 4 warnings em 114,49 s. Rerun isolado autorizado:
+1 passed, 1 warning em 1,07 s. Linha de base considerada verde pela regra de
+Martim; eventos intactos. Pytest com --basetemp novo, -o addopts= e
+-p no:cacheprovider. Guard e diff check passaram. Commit identificado por
+feat: add restaurant tables and individually editable chairs.

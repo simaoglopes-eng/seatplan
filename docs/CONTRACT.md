@@ -373,3 +373,29 @@ Ambience inputs are frozen dataclasses and have no database or network dependenc
 New JSON bodies reject unknown fields and constrain free text with PlainText. Existing error envelope error/code/message remains mandatory. Publication may add problems containing code/message/fix_url to that envelope. Room version conflicts may add problem details without replacing the existing envelope. Public responses carry no diner names, email addresses or notes.
 
 Only leaflet@1.9.4 and @types/leaflet are allowed additions. Shared file edits are serial. The overnight plan and report record task dependencies, verification results and conservative deviations.
+
+Owner profiles: POST /api/owner/restaurants {name} creates an owned draft at
+1000x700 cm and returns public_id/slug. GET/PATCH
+/api/owner/restaurants/{vid}/profile reads or partially updates identity and
+location (the canonical read URL is /api/owner/restaurants/{vid}; /profile is
+also accepted for reads). Coordinates are supplied as a pair; known timezones and 1–3 distinct
+fixed-list cuisines are required when supplied. Conflicting slugs and attempts
+to change a published slug return 409. Missing and inaccessible profiles return
+the same 404. Unknown fields return 422. Setup uses these persisted values.
+Geolocation permission is self-only; camera/microphone remain disabled. Image
+CSP permits self, OSM tiles and data images used internally by Leaflet when
+cancelling tiles. No script or style policy relaxation is required.
+
+Owner photos use JSON {kind, opening_key?, content_type, data_base64, alt_text}.
+POST /owner/restaurants/{vid}/photos returns metadata including id/public_id,
+url, actual content_type, width/height, opening_id, position and is_cover.
+GET on the same path lists metadata only. PATCH /{photo_id} changes alt_text;
+PUT /order requires the exact gallery photo_ids list and cover_id; DELETE
+/{photo_id} removes a photo and preserves a cover if any gallery photos remain.
+All routes require the owner, with 404 for foreign restaurants/photos. Uploads
+are limited to 60/hour/owner, 10 gallery photos and one view per saved window.
+Decoded bytes are at most 800000, dimensions 1–1600 px; the declared media type
+does not determine storage. Header checks cover PNG/JPEG/WebP, without a full
+pixel decoder. GET /photos/{public_id} serves draft bytes only to the owner,
+private/no-store; published bytes use public,max-age=31536000,immutable.
+img-src also permits blob: for authenticated previews and local resizing.

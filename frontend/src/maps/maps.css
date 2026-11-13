@@ -1,0 +1,5 @@
+.owner-location-map { height: 22rem; width: 100%; isolation: isolate; border: 1px solid var(--c-border-strong); border-radius: var(--radius-lg); background: var(--c-surface-sunk); }
+.owner-map-pin { color: var(--c-primary); background: var(--c-surface); border: 3px solid var(--c-primary); border-radius: 50%; text-align: center; line-height: 24px; box-shadow: 0 0 0 4px var(--c-surface); }
+.owner-location-map .leaflet-control-attribution { color: #222; background: #fff; }
+.owner-location-map .leaflet-control-attribution a { color: #174d70; }
+.owner-location-map .leaflet-control-zoom a { min-width: 44px; min-height: 44px; line-height: 44px; }

@@ -14,6 +14,26 @@ owner_view.py builds private owner cards and setup progress. It reads image
 metadata without loading image bytes. Publication validation remains the
 server's responsibility, independently of the progress indicator.
 
+profiles.py creates owner-only restaurant drafts and loads/patches their profile.
+Slugs use ASCII transliteration and a unique database index; concurrent insert
+collisions retry in savepoints, with a bounded number of actual races. Published
+links cannot change. The owner router validates PlainText, cuisine choices,
+coordinate pairs, timezone and contact links, rejecting unknown fields. Profile
+reads/updates match owner id, restaurant kind and public id before returning data.
+
+photos.py stores at most 800000 decoded bytes per photo. It identifies JPEG,
+PNG and WebP by their actual headers, reads bounded dimensions (1–1600 px),
+and uses no decoder dependency. Header validation is not a full pixel decode.
+Uploads serialize on the venue row so concurrent count/cover decisions hold.
+Gallery cap is ten, view cap one per saved window/glass wall. Canonical saved
+opening keys are o<id> (numeric ids also accepted). Room persistence must use
+that key or update this resolver when it is introduced in task 17.
+Listing defers bytes. Order includes every gallery photo exactly once and
+selects a cover. Deleting a cover selects the first remaining photo. Draft
+bytes require the owner and use private/no-store; published bytes are immutable
+public URLs. Old public caches cannot be revoked when a venue is unpublished.
+WebP header reference: https://developers.google.com/speed/webp/docs/riff_container .
+
 The database side of the restaurants vertical. The three routers
 (`routers/restaurants.py` for diners, `routers/bookings.py` for manage links
 and the waitlist, `routers/staff.py` for staff) only check the request and

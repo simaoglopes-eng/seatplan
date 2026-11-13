@@ -18,6 +18,9 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import OwnerHomePage from "./pages/owner/OwnerHomePage";
 import OwnerSignUpPage from "./pages/owner/OwnerSignUpPage";
+import NewRestaurantWizard from "./pages/owner/NewRestaurantWizard";
+import ProfilePage from "./pages/owner/ProfilePage";
+import PhotoEditorPage from "./pages/owner/PhotoEditor";
 import RoomEditorPage from "./pages/room-editor/RoomEditorPage";
 import BookingPage from "./pages/restaurant/BookingPage";
 import ManageBookingPage from "./pages/restaurant/ManageBookingPage";
@@ -30,6 +33,10 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/owner" element={<OwnerHomePage />} />
       <Route path="/owner/sign-up" element={<OwnerSignUpPage />} />
+      <Route path="/owner/new" element={<NewRestaurantWizard />} />
+      <Route path="/owner/:venueId/setup" element={<NewRestaurantWizard />} />
+      <Route path="/owner/:venueId/profile" element={<ProfilePage />} />
+      <Route path="/owner/:venueId/photos" element={<PhotoEditorPage />} />
       <Route path="/owner/sign-in" element={<Login defaultNext="/owner" />} />
       <Route path="/owner/:venueId/dashboard" element={<StaffPage />} />
       <Route path="/owner/:venueId/rooms" element={<RoomEditorPage />} />
