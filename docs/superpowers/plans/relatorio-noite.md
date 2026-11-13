@@ -16,7 +16,7 @@ repositório. Plano com 40 tarefas.
 | 3 — Geometria | Feita | 1839a52 | Contorno circular, normais, rumos, área e contenção |
 | 4 — Sol | Feita | 7581213 | Posição e horas solares, fusos e casos polares |
 | 5 — Registo e isolamento | Feita | dca8703 | Código, consentimento, concorrência, staff apenas demo |
-| 6 — Área do dono | Feita | Commit desta entrada | Formulários, cartões privados e destino do login |
+| 6 — Área do dono | Feita | d4eefca | Formulários, cartões privados e destino do login |
 
 ## Verificações reais
 
@@ -147,3 +147,14 @@ Ruff check passou e formato com 171 ficheiros. Typecheck passou e Vitest com
 e 0 failures e Playwright com 26 passed em 25,7 s. A captura dos cartões
 foi inspecionada e o cartão único ajustado para manter largura de cartão.
 Guard e diff check passaram. Commit identificado por feat: add owner signup and private restaurant home.
+
+## Tarefa 7 — feita
+
+Modelo imutável do editor e geometria TS criados com testes RED antes dos
+módulos existirem. Depois passaram cinco testes, com os mesmos casos de
+referência do Python para área, bordas, semicírculo, rotação e rumo.
+Operações addRoom/replaceRoom preservam os objetos anteriores e limitam a
+cinco salas. Typecheck passou. Guia do módulo criado. Bateria completa passou
+com 622 passed, 3 warnings em 103,21 s no backend, Ruff check verde e formato
+com 171 ficheiros. Vitest com 215 passed em 25 ficheiros. Guard e diff check
+passaram. Commit identificado por feat: add immutable room model and browser geometry.
