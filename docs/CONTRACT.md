@@ -412,6 +412,18 @@ goes back to a draft (200 {status: "draft"}): off the search, no new bookings, e
 Diner routes under /api/r/{vid} answer 404 for a restaurant that is not published; manage links (/b/{token}) keep
 working. `venues.features` ({sun, view, accessible, terrace}) is recomputed whenever rooms are saved and on publish.
 
+Discovery (public, same read limit as /r/*): GET /api/restaurants?q=&cuisine=&price=&features=&lat=&lng=&date=&time=&party=&available=&limit=&offset=
+-> {items, total}. Text ignores accents and capitals and looks at name and cuisines (never a pattern); cuisine, price
+and features repeat, cuisines/prices are "any of", features are "all of" (sun, view, accessible, terrace). lat and lng
+come together (422 otherwise) and sort nearest first with `distance_m`; restaurants without a pin go last; without a
+location the order is by name. date, time and party also come together; each card then has `next_times`, the three
+seatings closest to the time that still have a table (nearest first), and `available=true` keeps only restaurants with
+one within 60 minutes. Limit 1 to 50 (default 20). A card is {slug, public_id, name, cuisines, price_level, cover_url,
+cover_alt, address, lat, lng, distance_m, features, next_times}; only published restaurants appear.
+GET /api/restaurants/{slug} is the public page: the card's fields plus description, phone, website, instagram,
+timezone, rooms_summary, photos [{url, alt, is_cover}], max_party, schedule, book_url ("/r/<public_id>") and maps_url.
+A draft answers 404 to everyone except its own organiser, who gets it with `preview: true`.
+
 Owner photos use JSON {kind, opening_key?, content_type, data_base64, alt_text}.
 POST /owner/restaurants/{vid}/photos returns metadata including id/public_id,
 url, actual content_type, width/height, opening_id, position and is_cover.

@@ -360,3 +360,10 @@ ligações no painel do dono; testes unitários (10) e e2e owner-publish.spec.ts
   existiam estão `published` por defeito, por isso nada muda para a demo.
 - Como a tarefa era do Sérgio: está num commit separado para ele poder trocá-la
   pela versão dele sem mexer no resto.
+
+## Task 25: discovery API
+- Search runs in Python over published restaurants (accent/capital-insensitive on name + cuisines only, not address,
+  so "rua" does not match everything; legacy and demo rows have an empty `search_text`, which is why the column is not used).
+- `available=true` means a free seating within 60 minutes of the time asked; `next_times` are the 3 nearest non-full seatings.
+- The public page is `GET /api/restaurants/{slug}`; a draft shows only to its own organiser (`preview: true`), 404 otherwise.
+- Shares the diner read limit (`r-read:<ip>` bucket) with `/r/*`.

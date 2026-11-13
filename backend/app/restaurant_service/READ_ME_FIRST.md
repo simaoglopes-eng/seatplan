@@ -14,6 +14,10 @@ owner_view.py builds private owner cards and setup progress. It reads image
 metadata without loading image bytes. Publication validation remains the
 server's responsibility, independently of the progress indicator.
 
+discovery.py is search (name and cuisines without accents, cuisine/price/features filters, nearest first, paging,
+`next_times`, `available`) and the public restaurant page. It filters published restaurants in Python, and only the
+page being returned gets its cover photo and free times looked up.
+
 publishing.py checks and flips a restaurant between draft and published: `problems` (identity, location,
 hours, a table, no room-editor errors, north where there are windows, each with a fix link), `review` (the
 read-only checklist with the photo tip), `publish` (all or nothing, idempotent) and `unpublish`. features.py
