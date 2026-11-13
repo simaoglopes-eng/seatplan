@@ -1,9 +1,10 @@
-// One search result: cover photo, name, cuisines, price, distance, features in
-// words, and (when the diner said when) up to three free times that open the
-// restaurant page with the date, time and party already chosen.
+// One search result, with four things and no more: the photo, who it is (name, cuisines, price,
+// distance), one line about the room (sunny tables, a view, a terrace: facts the restaurant
+// already has, nothing worked out per search), and, when the diner said when, up to three free
+// times that open the restaurant page with the date, time and party already chosen.
 import { Link } from "react-router-dom";
 import type { RestaurantCard as Card, SearchWhen } from "../../api/discovery";
-import { cuisineLabel, featureNames, formatDistance, priceText, restaurantHref } from "./discoverModel";
+import { ambienceLine, cuisineLabel, formatDistance, priceText, restaurantHref } from "./discoverModel";
 
 interface Props {
   card: Card;
@@ -14,7 +15,7 @@ interface Props {
 
 export function RestaurantCard({ card, when, highlighted, onHighlight }: Props) {
   const distance = formatDistance(card.distance_m);
-  const names = featureNames(card.features);
+  const room = ambienceLine(card.features);
   const price = priceText(card.price_level);
   return (
     <article
@@ -27,7 +28,7 @@ export function RestaurantCard({ card, when, highlighted, onHighlight }: Props) 
       onBlur={() => onHighlight(null)}
     >
       <Link to={restaurantHref(card, when)} className="discover-card-photo" tabIndex={-1} aria-hidden="true">
-        {card.cover_url ? <img src={card.cover_url} alt={card.cover_alt ?? ""} loading="lazy" width={640} height={360} /> : <span className="discover-card-nophoto">No photo yet</span>}
+        {card.cover_url ? <img src={card.cover_url} alt={card.cover_alt ?? ""} loading="lazy" width={640} height={400} /> : <span className="discover-card-nophoto">No photo yet</span>}
       </Link>
       <div className="discover-card-body">
         <h3 id={`name-${card.public_id}`}>
@@ -45,13 +46,7 @@ export function RestaurantCard({ card, when, highlighted, onHighlight }: Props) 
           )}
           {distance && ` · ${distance}`}
         </p>
-        {names.length > 0 && (
-          <ul className="discover-features" aria-label="Features">
-            {names.map((name) => (
-              <li key={name}>{name}</li>
-            ))}
-          </ul>
-        )}
+        {room && <p className="discover-ambience">{room}</p>}
         {when && (
           <div className="discover-times">
             {card.next_times.length > 0 ? (

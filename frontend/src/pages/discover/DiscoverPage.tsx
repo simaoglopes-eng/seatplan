@@ -1,35 +1,29 @@
-// The home page (spec 9.1): search restaurants by name or cuisine, near me or in a
-// city, with filters and an optional "When?", as a list with a map beside it
-// (a List/Map switch on a phone). Twenty at a time, "Show more" for the rest.
+// The home page (spec 9.1): search restaurants by name or cuisine, near me or in a city, with
+// filters and an optional date, time and party, as a list with a map beside it (a List/Map
+// switch on a phone). One sticky command bar holds the search and the quick controls; the
+// secondary filters are in a drawer. Twenty results at a time, "Show more" for the rest.
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ReactNode } from "react";
 import { searchRestaurants } from "../../api/discovery";
 import type { FeatureKey, RestaurantCard as Card, SearchQuery } from "../../api/discovery";
-import { CUISINES } from "../../api/owner";
-import { Button, EmptyState, ErrorState, Field, PageShell, Select, Skeleton } from "../../design/components";
+import { Button, EmptyState, ErrorState, PageShell, Skeleton } from "../../design/components";
 import { errorMessage } from "../restaurant/format";
+import { ContextControls } from "./ContextControls";
+import { DiscoverBar } from "./DiscoverBar";
+import { FilterDrawer, QUICK_FEATURES } from "./FilterDrawer";
 import { PublicHeaderActions } from "./PublicHeaderActions";
 import { RestaurantCard } from "./RestaurantCard";
-import { CITIES, FEATURE_KEYS, FEATURE_LABELS, completeWhen, cuisineLabel, loadPlace, savePlace } from "./discoverModel";
+import { completeWhen, loadPlace, savePlace } from "./discoverModel";
 import type { Place } from "./discoverModel";
 import "./discover.css";
 
 const ResultsMap = lazy(() => import("../../maps/ResultsMap"));
 const PAGE = 20;
-// The cuisines shown before "More cuisines": the first ones of the list are the most common.
-const FIRST_CUISINES = 8;
-const PARTIES = Array.from({ length: 10 }, (_, i) => ({ value: String(i + 1), label: i === 0 ? "1 person" : `${i + 1} people` }));
+const DEFAULT_TIME = "20:00";
 
 type Results = { status: "loading" } | { status: "error"; message: string } | { status: "ready"; items: Card[]; total: number };
 
-function today(): string {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${String(now.getDate()).padStart(2, "0")}`;
-}
-
 function useWide(): boolean {
-  const query = "(min-width: 60rem)";
+  const query = "(min-width: 64rem)";
   const [wide, setWide] = useState(() => typeof window.matchMedia === "function" && window.matchMedia(query).matches);
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
@@ -41,8 +35,13 @@ function useWide(): boolean {
   return wide;
 }
 
-function toggle<T>(list: T[], value: T): T[] {
-  return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+/** "Lisboa · 20 Nov, 20:00 · 2 people": the context on a phone, where the controls are in the drawer. */
+function contextSummary(place: Place | null, date: string, time: string, party: string): string {
+  const where = place?.label ?? "Anywhere";
+  if (!date) return `${where} · Any date`;
+  const [year, month, day] = date.split("-").map(Number);
+  const when = new Date(year, month - 1, day).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return `${where} · ${when}, ${time} · ${party === "1" ? "1 person" : `${party} people`}`;
 }
 
 export default function DiscoverPage() {
@@ -54,12 +53,11 @@ export default function DiscoverPage() {
   const [place, setPlace] = useState<Place | null>(loadPlace);
   const [locating, setLocating] = useState(false);
   const [locationNote, setLocationNote] = useState("");
-  const [whenOpen, setWhenOpen] = useState(false);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [party, setParty] = useState("2");
   const [availableOnly, setAvailableOnly] = useState(true);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [drawer, setDrawer] = useState(false);
   const [allCuisines, setAllCuisines] = useState(false);
   const [view, setView] = useState<"list" | "map">("list");
   const [highlighted, setHighlighted] = useState<string | null>(null);
@@ -75,12 +73,12 @@ export default function DiscoverPage() {
     return () => window.clearTimeout(id);
   }, [text]);
 
-  const when = whenOpen ? completeWhen(date, time, Number(party)) : null;
+  const when = completeWhen(date, time, Number(party));
   const query: SearchQuery = useMemo(
     () => ({ q, cuisines, prices, features, place: place ? { lat: place.lat, lng: place.lng } : null, when, availableOnly: availableOnly && when !== null, limit: PAGE, offset: 0 }),
     // `when` is rebuilt every render, so depend on its parts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [q, cuisines, prices, features, place, whenOpen, date, time, party, availableOnly],
+    [q, cuisines, prices, features, place, date, time, party, availableOnly],
   );
   const queryKey = JSON.stringify(query);
 
@@ -115,6 +113,7 @@ export default function DiscoverPage() {
   const choosePlace = (next: Place | null): void => {
     setPlace(next);
     savePlace(next);
+    setLocationNote("");
   };
   const nearMe = (): void => {
     setLocationNote("");
@@ -130,22 +129,26 @@ export default function DiscoverPage() {
       },
       () => {
         setLocating(false);
-          setLocationNote("We could not get your location. Choose a city instead.");
+        setLocationNote("We could not get your location. Choose a city instead.");
       },
       { timeout: 10_000, maximumAge: 300_000 },
     );
   };
 
-  const openWhen = (): void => {
-    if (!whenOpen) {
-      setDate(today());
-      setTime("20:00");
-      setParty("2");
-    }
-    setWhenOpen(!whenOpen);
+  // Picking a date is enough to ask "what is free": the time starts at dinner, ready to change.
+  const changeDate = (value: string): void => {
+    setDate(value);
+    if (value && !time) setTime(DEFAULT_TIME);
+  };
+  const clearWhen = (): void => {
+    setDate("");
+    setTime("");
   };
 
-  const filterCount = cuisines.length + prices.length + features.length;
+  const quickCount = features.filter((f) => QUICK_FEATURES.includes(f)).length;
+  // On a wide screen the quick filters sit in the bar, so the button counts only what is inside the drawer.
+  const filterCount = cuisines.length + prices.length + (features.includes("accessible") ? 1 : 0) + (wide ? 0 : quickCount);
+  const anyFilter = filterCount > 0 || quickCount > 0 || text !== "";
   const clearFilters = (): void => {
     setText("");
     setQ("");
@@ -173,82 +176,72 @@ export default function DiscoverPage() {
       <section className="discover-top" aria-labelledby="discover-heading">
         <h1 id="discover-heading">Find a table you will love</h1>
         <p className="discover-lede">See the room, the light and the view before you book.</p>
-        <form className="discover-search" role="search" onSubmit={(event) => event.preventDefault()}>
-          <Field label="Restaurant or cuisine" type="search" value={text} onChange={(event) => setText(event.target.value)} maxLength={80} autoComplete="off" />
-          <div className="discover-search-buttons">
-            <Button variant="secondary" busy={locating} onClick={nearMe}>
-              Near me
-            </Button>
-            <Button variant="secondary" aria-expanded={whenOpen} onClick={openWhen}>
-              When?
-            </Button>
-          </div>
-        </form>
-
-        {place?.label !== "Near me" && (
-          <div className="discover-place">
-            <Select
-              label="Choose a city"
-              value={place && place.label !== "Near me" ? place.label : ""}
-              options={[{ value: "", label: "Anywhere" }, ...CITIES.map((c) => ({ value: c.label, label: c.label }))]}
-              onChange={(event) => choosePlace(CITIES.find((c) => c.label === event.target.value) ?? null)}
-            />
-          </div>
-        )}
-        {locationNote && <p role="status">{locationNote}</p>}
-        {place?.label === "Near me" && (
-          <p role="status" className="discover-near">
-            Sorted by distance from where you are. <Button variant="ghost" onClick={() => choosePlace(null)}>Stop using my location</Button>
-          </p>
-        )}
-
-        {whenOpen && (
-          <fieldset className="discover-when">
-            <legend>When?</legend>
-            <Field label="Date" type="date" min={today()} value={date} onChange={(event) => setDate(event.target.value)} />
-            <Field label="Time" type="time" step={900} value={time} onChange={(event) => setTime(event.target.value)} />
-            <Select label="People" value={party} options={PARTIES} onChange={(event) => setParty(event.target.value)} />
-            {when === null && <p className="rb-muted">Fill in the date, time and people to see free times.</p>}
-          </fieldset>
-        )}
-
-        <div className="discover-filters-bar">
-          <Button variant="secondary" className="discover-filters-toggle" aria-expanded={filtersOpen} aria-controls="discover-filters" onClick={() => setFiltersOpen((v) => !v)}>
-            Filters{filterCount > 0 ? ` (${filterCount})` : ""}
-          </Button>
-        </div>
-        <div id="discover-filters" className={`discover-filters${filtersOpen ? " is-open" : ""}`}>
-          <Chips label="Cuisine">
-            {CUISINES.filter((key, index) => allCuisines || index < FIRST_CUISINES || cuisines.includes(key)).map((key) => (
-              <Chip key={key} pressed={cuisines.includes(key)} onClick={() => setCuisines(toggle(cuisines, key))}>
-                {cuisineLabel(key)}
-              </Chip>
-            ))}
-            <button type="button" className="discover-more" aria-expanded={allCuisines} onClick={() => setAllCuisines(!allCuisines)}>
-              {allCuisines ? "Fewer cuisines" : "More cuisines"}
-            </button>
-          </Chips>
-          <Chips label="Price">
-            {[1, 2, 3, 4].map((level) => (
-              <Chip key={level} pressed={prices.includes(level)} label={`${"€".repeat(level)}, price level ${level} of 4`} onClick={() => setPrices(toggle(prices, level))}>
-                {"€".repeat(level)}
-              </Chip>
-            ))}
-          </Chips>
-          <Chips label="Features">
-            {FEATURE_KEYS.map((key) => (
-              <Chip key={key} pressed={features.includes(key)} onClick={() => setFeatures(toggle(features, key))}>
-                {FEATURE_LABELS[key]}
-              </Chip>
-            ))}
-            {when && (
-              <Chip pressed={availableOnly} onClick={() => setAvailableOnly(!availableOnly)}>
-                Available at that time
-              </Chip>
-            )}
-          </Chips>
-        </div>
       </section>
+
+      <DiscoverBar
+        wide={wide}
+        text={text}
+        onText={setText}
+        place={place}
+        onPlace={choosePlace}
+        locating={locating}
+        onNearMe={nearMe}
+        date={date}
+        time={time}
+        party={party}
+        onDate={changeDate}
+        onTime={setTime}
+        onParty={setParty}
+        onClearWhen={clearWhen}
+        features={features}
+        onFeatures={setFeatures}
+        filterCount={filterCount}
+        drawerOpen={drawer}
+        onDrawer={() => setDrawer(true)}
+      />
+      {!wide && (
+        <button type="button" className="discover-summary" onClick={() => setDrawer(true)}>
+          {contextSummary(place, date, time, party)}
+        </button>
+      )}
+      {locationNote && <p role="status">{locationNote}</p>}
+      {place?.label === "Near me" && (
+        <p role="status" className="discover-near">
+          Sorted by distance from where you are.{" "}
+          <Button variant="ghost" onClick={() => choosePlace(null)}>
+            Stop using my location
+          </Button>
+        </p>
+      )}
+
+      <FilterDrawer
+        open={drawer}
+        onClose={() => setDrawer(false)}
+        cuisines={cuisines}
+        onCuisines={setCuisines}
+        prices={prices}
+        onPrices={setPrices}
+        features={features}
+        onFeatures={setFeatures}
+        allCuisines={allCuisines}
+        onAllCuisines={setAllCuisines}
+        hasWhen={when !== null}
+        availableOnly={availableOnly}
+        onAvailableOnly={setAvailableOnly}
+        onClear={clearFilters}
+        total={results.status === "ready" ? results.total : null}
+        showQuick={!wide}
+        narrowExtras={
+          wide ? null : (
+            <>
+              <ContextControls variant="stacked" place={place} onPlace={choosePlace} date={date} time={time} party={party} onDate={changeDate} onTime={setTime} onParty={setParty} onClearWhen={clearWhen} />
+              <Button variant="secondary" busy={locating} onClick={nearMe}>
+                Near me
+              </Button>
+            </>
+          )
+        }
+      />
 
       <div className="discover-view-switch">
         <Button variant="secondary" aria-pressed={view === "map"} onClick={() => setView(view === "map" ? "list" : "map")}>
@@ -264,6 +257,11 @@ export default function DiscoverPage() {
             <>
               <p role="status" className="discover-count">
                 {results.total === 0 ? "" : `${results.total} ${results.total === 1 ? "restaurant" : "restaurants"}`}
+                {anyFilter && results.total > 0 && (
+                  <button type="button" className="discover-more" onClick={clearFilters}>
+                    Clear filters
+                  </button>
+                )}
               </p>
               {results.items.length === 0 ? (
                 <EmptyState title="No restaurants match. Try removing a filter." action={<Button onClick={clearFilters}>Clear filters</Button>} />
@@ -296,24 +294,5 @@ export default function DiscoverPage() {
         )}
       </div>
     </PageShell>
-  );
-}
-
-function Chips({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div role="group" aria-label={label} className="discover-chips">
-      <span className="discover-chips-label" aria-hidden="true">
-        {label}
-      </span>
-      {children}
-    </div>
-  );
-}
-
-function Chip({ pressed, onClick, children, label }: { pressed: boolean; onClick: () => void; children: ReactNode; label?: string }) {
-  return (
-    <button type="button" className={`discover-chip${pressed ? " is-on" : ""}`} aria-pressed={pressed} aria-label={label} onClick={onClick}>
-      {children}
-    </button>
   );
 }

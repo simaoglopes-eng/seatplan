@@ -20,7 +20,7 @@ function card(index: number, patch: Partial<RestaurantCard> = {}): RestaurantCar
     lat: 38.7 + index / 100,
     lng: -9.1,
     distance_m: null,
-    features: { sun: true, view: false, accessible: true, terrace: false },
+    features: { sun: true, view: false, accessible: true, terrace: true },
     next_times: [],
     ...patch,
   };
@@ -40,6 +40,11 @@ function server(answer: (params: URLSearchParams) => { items: RestaurantCard[]; 
   return asked;
 }
 
+/** A wide screen has the where-and-when capsule and the quick filters in the bar; a phone keeps them in the drawer. */
+function screenIs(kind: "wide" | "phone"): void {
+  vi.stubGlobal("matchMedia", (query: string) => ({ matches: kind === "wide", media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+}
+
 function renderPage(): void {
   render(
     <MemoryRouter>
@@ -48,42 +53,43 @@ function renderPage(): void {
   );
 }
 
-beforeEach(() => sessionStorage.clear());
+async function openDrawer(): Promise<HTMLElement> {
+  fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+  return screen.findByRole("dialog", { name: "Filters" });
+}
+
+beforeEach(() => {
+  sessionStorage.clear();
+  screenIs("wide");
+});
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
 
-describe("DiscoverPage", () => {
-  it("shows the title, the search box and a card per restaurant with its features in words", async () => {
+describe("DiscoverPage: the command bar", () => {
+  it("shows the title, one search bar and a card per restaurant with four things on it", async () => {
     server(() => ({ items: [card(1), card(2)], total: 2 }));
     renderPage();
     expect(screen.getByRole("heading", { level: 1, name: "Find a table you will love" })).toBeTruthy();
     expect(screen.getByText("See the room, the light and the view before you book.")).toBeTruthy();
-    expect(screen.getByLabelText("Restaurant or cuisine")).toBeTruthy();
+    const bar = screen.getByRole("search");
+    expect(within(bar).getByLabelText("Restaurant or cuisine")).toBeTruthy();
+    // On a wide screen the bar holds where and when, near me, the three quick filters and the drawer button.
+    expect(within(bar).getByLabelText("Choose a city")).toBeTruthy();
+    expect(within(bar).getByLabelText("Date")).toBeTruthy();
+    expect(within(bar).getByRole("button", { name: "Near me" })).toBeTruthy();
+    for (const name of ["Sunny tables", "With a view", "Terrace"]) expect(within(bar).getByRole("button", { name })).toBeTruthy();
     const first = (await screen.findByRole("heading", { name: "Casa 1" })).closest("article") as HTMLElement;
     expect(within(first).getByText("Portuguese, Seafood", { exact: false })).toBeTruthy();
-    expect(within(first).getByText("Sunny tables")).toBeTruthy();
-    expect(within(first).getByText("Wheelchair accessible")).toBeTruthy();
+    // One line about the room, from the three facts the restaurant has. Wheelchair access is a filter, not card clutter.
+    expect(within(first).getByText("Sunny tables · Terrace")).toBeTruthy();
+    expect(within(first).queryByText("Wheelchair accessible")).toBeNull();
     expect(within(first).getByRole("link", { name: "Casa 1" }).getAttribute("href")).toBe("/restaurants/casa-1");
     const photo = first.querySelector("img");
     expect(photo?.getAttribute("loading")).toBe("lazy");
     expect(photo?.getAttribute("alt")).toBe("The room of Casa 1");
     expect(screen.getByText("2 restaurants")).toBeTruthy();
-  });
-
-  it("shows the common cuisines first, the rest on More cuisines, and keeps a chosen one visible", async () => {
-    server(() => ({ items: [card(1)], total: 1 }));
-    renderPage();
-    await screen.findByRole("heading", { name: "Casa 1" });
-    expect(screen.queryByRole("button", { name: "Korean" })).toBeNull();
-    const more = screen.getByRole("button", { name: "More cuisines" });
-    expect(more.getAttribute("aria-expanded")).toBe("false");
-    fireEvent.click(more);
-    fireEvent.click(screen.getByRole("button", { name: "Korean" }));
-    fireEvent.click(screen.getByRole("button", { name: "Fewer cuisines" }));
-    expect(screen.getByRole("button", { name: "Korean" }).getAttribute("aria-pressed")).toBe("true"); // still there while chosen
-    expect(screen.queryByRole("button", { name: "Thai" })).toBeNull();
   });
 
   it("links the header to the owners page and to the demo", async () => {
@@ -105,18 +111,16 @@ describe("DiscoverPage", () => {
     expect(asked.filter((p) => p.has("q")).length).toBe(1);
   });
 
-  it("sends the chosen cuisines, prices and features", async () => {
+  it("filters at once with the quick chips in the bar", async () => {
     const asked = server(() => ({ items: [card(1)], total: 1 }));
     renderPage();
     await screen.findByRole("heading", { name: "Casa 1" });
-    fireEvent.click(screen.getByRole("button", { name: "Sushi" }));
-    fireEvent.click(screen.getByRole("button", { name: "Pizza" }));
-    fireEvent.click(screen.getByRole("button", { name: /^€€, price level 2/ }));
     fireEvent.click(screen.getByRole("button", { name: "Sunny tables" }));
-    await waitFor(() => expect(asked.at(-1)?.getAll("cuisine")).toEqual(["sushi", "pizza"]));
-    expect(asked.at(-1)?.getAll("price")).toEqual(["2"]);
-    expect(asked.at(-1)?.getAll("features")).toEqual(["sun"]);
-    expect(screen.getByRole("button", { name: "Sushi" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "Terrace" }));
+    await waitFor(() => expect(asked.at(-1)?.getAll("features")).toEqual(["sun", "terrace"]));
+    expect(screen.getByRole("button", { name: "Terrace" }).getAttribute("aria-pressed")).toBe("true");
+    // The drawer button counts only what is inside the drawer, so quick chips do not inflate it.
+    expect(screen.getByRole("button", { name: "Filters" })).toBeTruthy();
   });
 
   it("falls back to a city when the browser refuses the location, and remembers the city", async () => {
@@ -133,7 +137,7 @@ describe("DiscoverPage", () => {
     expect(sessionStorage.getItem("seatplan.discover.place")).toContain("Porto");
   });
 
-  it("uses the location when the browser gives it", async () => {
+  it("uses the location when the browser gives it, and names it in the city list", async () => {
     const asked = server(() => ({ items: [card(1)], total: 1 }));
     vi.stubGlobal("navigator", { geolocation: { getCurrentPosition: (ok: (p: unknown) => void) => ok({ coords: { latitude: 38.71, longitude: -9.14 } }) } });
     renderPage();
@@ -141,25 +145,133 @@ describe("DiscoverPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Near me" }));
     await waitFor(() => expect(asked.at(-1)?.get("lat")).toBe("38.71"));
     expect(screen.getByText(/Sorted by distance/)).toBeTruthy();
+    expect((screen.getByLabelText("Choose a city") as HTMLSelectElement).value).toBe("__near");
   });
+});
 
-  it("with When? shows the next free times as links that carry the date, time and party", async () => {
+describe("DiscoverPage: when", () => {
+  it("picking a date asks for free times at dinner, and the cards offer links that carry date, time and party", async () => {
     const asked = server((params) => ({ items: [card(1, { next_times: params.has("date") ? ["20:00", "20:15", "19:45"] : [] }), card(2)], total: 2 }));
     renderPage();
     await screen.findByRole("heading", { name: "Casa 1" });
-    fireEvent.click(screen.getByRole("button", { name: "When?" }));
+    expect(asked.at(-1)?.has("date")).toBe(false);
     fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2030-05-01" } });
-    fireEvent.change(screen.getByLabelText("Time"), { target: { value: "20:00" } });
+    // The time is filled in at 20:00 for the diner, who can change it.
+    expect((screen.getByLabelText("Time") as HTMLInputElement).value).toBe("20:00");
     fireEvent.change(screen.getByLabelText("People"), { target: { value: "4" } });
     await waitFor(() => expect(asked.at(-1)?.get("party")).toBe("4"));
     expect(asked.at(-1)?.get("available")).toBe("true");
     const link = await screen.findByRole("link", { name: "20:15" });
     expect(link.getAttribute("href")).toBe("/restaurants/casa-1?date=2030-05-01&time=20%3A15&party=4");
     expect(screen.getByText("No free table near 20:00.")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Available at that time" }));
+    // "Available at that time" lives in the drawer and can be switched off.
+    const drawer = await openDrawer();
+    fireEvent.click(within(drawer).getByRole("button", { name: "Available at that time" }));
     await waitFor(() => expect(asked.at(-1)?.has("available")).toBe(false));
   });
 
+  it("clears the date and time with the cross", async () => {
+    const asked = server(() => ({ items: [card(1)], total: 1 }));
+    renderPage();
+    await screen.findByRole("heading", { name: "Casa 1" });
+    fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2030-05-01" } });
+    await waitFor(() => expect(asked.at(-1)?.has("date")).toBe(true));
+    fireEvent.click(screen.getByRole("button", { name: "Clear the date" }));
+    await waitFor(() => expect(asked.at(-1)?.has("date")).toBe(false));
+  });
+});
+
+describe("DiscoverPage: the filters drawer", () => {
+  it("sends the chosen cuisines, prices and wheelchair access", async () => {
+    const asked = server(() => ({ items: [card(1)], total: 1 }));
+    renderPage();
+    await screen.findByRole("heading", { name: "Casa 1" });
+    const drawer = await openDrawer();
+    fireEvent.click(within(drawer).getByRole("button", { name: "Sushi" }));
+    fireEvent.click(within(drawer).getByRole("button", { name: "Pizza" }));
+    fireEvent.click(within(drawer).getByRole("button", { name: /^€€, price level 2/ }));
+    fireEvent.click(within(drawer).getByRole("button", { name: "Wheelchair accessible" }));
+    await waitFor(() => expect(asked.at(-1)?.getAll("cuisine")).toEqual(["sushi", "pizza"]));
+    expect(asked.at(-1)?.getAll("price")).toEqual(["2"]);
+    expect(asked.at(-1)?.getAll("features")).toEqual(["accessible"]);
+    expect(within(drawer).getByRole("button", { name: "Sushi" }).getAttribute("aria-pressed")).toBe("true");
+    // The button on the bar counts what is inside the drawer: two cuisines, one price, wheelchair.
+    fireEvent.click(within(drawer).getByRole("button", { name: /^Show 1 restaurant/ }));
+    expect(screen.getByRole("button", { name: "Filters (4)" })).toBeTruthy();
+  });
+
+  it("shows the common cuisines first, the rest on More cuisines, and keeps a chosen one visible", async () => {
+    server(() => ({ items: [card(1)], total: 1 }));
+    renderPage();
+    await screen.findByRole("heading", { name: "Casa 1" });
+    const drawer = await openDrawer();
+    expect(within(drawer).queryByRole("button", { name: "Korean" })).toBeNull();
+    const more = within(drawer).getByRole("button", { name: "More cuisines" });
+    expect(more.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(more);
+    fireEvent.click(within(drawer).getByRole("button", { name: "Korean" }));
+    fireEvent.click(within(drawer).getByRole("button", { name: "Fewer cuisines" }));
+    expect(within(drawer).getByRole("button", { name: "Korean" }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(drawer).queryByRole("button", { name: "Thai" })).toBeNull();
+  });
+
+  it("closes with Escape and gives focus back to the Filters button", async () => {
+    server(() => ({ items: [card(1)], total: 1 }));
+    renderPage();
+    await screen.findByRole("heading", { name: "Casa 1" });
+    const button = screen.getByRole("button", { name: "Filters" });
+    button.focus();
+    await openDrawer();
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(document.activeElement).toBe(button);
+  });
+
+  it("says so when nothing matches and clears the filters", async () => {
+    const asked = server((params) => (params.has("cuisine") ? { items: [], total: 0 } : { items: [card(1)], total: 1 }));
+    renderPage();
+    await screen.findByRole("heading", { name: "Casa 1" });
+    const drawer = await openDrawer();
+    fireEvent.click(within(drawer).getByRole("button", { name: "Sushi" }));
+    fireEvent.click(within(drawer).getByRole("button", { name: "Clear filters" }));
+    await waitFor(() => expect(asked.at(-1)?.has("cuisine")).toBe(false));
+    fireEvent.click(within(drawer).getByRole("button", { name: /^Show / }));
+    await screen.findByRole("heading", { name: "Casa 1" });
+  });
+});
+
+describe("DiscoverPage: on a phone", () => {
+  beforeEach(() => screenIs("phone"));
+
+  it("keeps only the search and the Filters button in the bar, with a summary of where and when under it", async () => {
+    server(() => ({ items: [card(1)], total: 1 }));
+    renderPage();
+    await screen.findByRole("heading", { name: "Casa 1" });
+    const bar = screen.getByRole("search");
+    expect(within(bar).queryByLabelText("Choose a city")).toBeNull();
+    expect(within(bar).queryByRole("button", { name: "Near me" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Anywhere · Any date" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Map" })).toBeTruthy();
+  });
+
+  it("puts where and when, and the quick filters, in the drawer, and counts them on the button", async () => {
+    const asked = server(() => ({ items: [card(1)], total: 1 }));
+    renderPage();
+    await screen.findByRole("heading", { name: "Casa 1" });
+    const drawer = await openDrawer();
+    fireEvent.change(within(drawer).getByLabelText("Choose a city"), { target: { value: "Porto" } });
+    fireEvent.change(within(drawer).getByLabelText("Date"), { target: { value: "2030-05-01" } });
+    fireEvent.click(within(drawer).getByRole("button", { name: "With a view" }));
+    await waitFor(() => expect(asked.at(-1)?.getAll("features")).toEqual(["view"]));
+    expect(asked.at(-1)?.get("lat")).toBe("41.1579");
+    expect(asked.at(-1)?.get("time")).toBe("20:00");
+    fireEvent.click(within(drawer).getByRole("button", { name: /^Show / }));
+    expect(screen.getByRole("button", { name: "Filters (1)" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Porto · 1 May, 20:00 · 2 people$/ })).toBeTruthy();
+  });
+});
+
+describe("DiscoverPage: results", () => {
   it("shows twenty at a time and adds the rest on Show more", async () => {
     const all = Array.from({ length: 25 }, (_, i) => card(i + 1));
     const asked = server((params) => {
@@ -176,15 +288,15 @@ describe("DiscoverPage", () => {
     expect(screen.queryByRole("button", { name: "Show more" })).toBeNull();
   });
 
-  it("says so when nothing matches and clears the filters", async () => {
-    const asked = server((params) => (params.has("cuisine") ? { items: [], total: 0 } : { items: [card(1)], total: 1 }));
+  it("offers Clear filters next to the count while something is filtered", async () => {
+    const asked = server(() => ({ items: [card(1)], total: 1 }));
     renderPage();
     await screen.findByRole("heading", { name: "Casa 1" });
-    fireEvent.click(screen.getByRole("button", { name: "Sushi" }));
-    expect(await screen.findByText("No restaurants match. Try removing a filter.")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
-    await screen.findByRole("heading", { name: "Casa 1" });
-    expect(asked.at(-1)?.has("cuisine")).toBe(false);
+    expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "With a view" }));
+    const clear = await screen.findByRole("button", { name: "Clear filters" });
+    fireEvent.click(clear);
+    await waitFor(() => expect(asked.at(-1)?.has("features")).toBe(false));
   });
 
   it("shows an error with a working retry", async () => {

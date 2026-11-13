@@ -321,6 +321,25 @@
   outline: none;
 }
 
+/* A drawer from the right edge: used for the discovery filters. */
+.dialog-backdrop-side {
+  place-items: stretch end;
+  padding: 0;
+}
+
+.dialog-side {
+  width: min(100%, 24rem);
+  max-height: none;
+  height: 100%;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  animation: slide-in-right var(--dur-base) var(--ease-out);
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(2rem); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
 .dialog-title {
   font-size: var(--fs-xl);
 }

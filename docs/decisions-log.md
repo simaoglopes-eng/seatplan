@@ -895,3 +895,11 @@ were retained and the report restored before the next verification.
 29. **Frontend tests tolerate a busy machine.** `testTimeout` is 20 s and `asyncUtilTimeout` 5 s (vite.config.ts, src/test/setup.ts). On an idle
     machine nothing changes; with a game or Docker running, long interaction tests (events ones too) used to time out at 5 s / 1 s without any
     real fault. A real hang still fails, only later.
+
+30. **Discovery: one command bar and a filters drawer** (branch claude/ux-v2, step 1 of the UX plan). On a wide screen (64 rem) the page has one sticky
+    bar: search, a where-and-when capsule (city, date, time, people), Near me, the quick filters Sunny tables / With a view / Terrace, and the
+    Filters button. Cuisine, price, wheelchair access and "available at that time" live in a drawer from the right (`Dialog` got an optional
+    `placement="side"`; the default is unchanged, events are not touched). On a phone the bar is only the search and the Filters button, a pill
+    under it summarises where and when, and the drawer also holds where, when and the quick filters. Picking a date fills the time with 20:00. Cards
+    show four things: photo (16:10), name, cuisines, price and distance, one line about the room from the three booleans the restaurant already
+    has (nothing is worked out per search), and up to three free times. Wheelchair access is a filter, not card clutter.

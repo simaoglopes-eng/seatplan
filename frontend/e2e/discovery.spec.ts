@@ -14,6 +14,18 @@ test("the home page lists the demo restaurants and has no accessibility problems
   expect(found.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
 });
 
+test("the filters drawer has no accessibility problems, on the wide bar and on a phone", async ({ page }) => {
+  for (const [width, height] of [[1280, 800], [390, 844]]) {
+    await page.setViewportSize({ width, height });
+    await page.goto("/");
+    await expect(page.getByRole("article")).toHaveCount(5);
+    await page.getByRole("button", { name: /^Filters/ }).click();
+    await expect(page.getByRole("dialog", { name: "Filters" })).toBeVisible();
+    const found = await new AxeBuilder({ page }).withTags(TAGS).analyze();
+    expect(found.violations.map((v) => `${width}px ${v.id}: ${v.help}`)).toEqual([]);
+  }
+});
+
 test("search ignores accents, chips filter, and the city sorts by distance", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("article")).toHaveCount(5);
@@ -23,12 +35,22 @@ test("search ignores accents, chips filter, and the city sorts by distance", asy
 
   await page.getByLabel("Restaurant or cuisine").fill("");
   await expect(page.getByRole("article")).toHaveCount(5);
-  // On a phone the chips sit behind the Filters button.
-  const filters = page.getByRole("button", { name: /^Filters/ });
-  if (await filters.isVisible()) await filters.click();
+  // The quick filters sit in the command bar; two of the five demo restaurants have a terrace.
   await page.getByRole("button", { name: "Terrace", exact: true }).click();
   await expect(page.getByRole("article")).toHaveCount(2);
   await page.getByRole("button", { name: "Terrace", exact: true }).click();
+  await expect(page.getByRole("article")).toHaveCount(5);
+  // The rest of the filters are in the drawer, which opens from the right and closes with Escape.
+  await page.getByRole("button", { name: /^Filters/ }).click();
+  const drawer = page.getByRole("dialog", { name: "Filters" });
+  await drawer.getByRole("button", { name: "Wheelchair accessible" }).click();
+  await expect(page.getByRole("button", { name: "Filters (1)" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(drawer).toHaveCount(0);
+  await page.getByRole("button", { name: "Filters (1)" }).click();
+  await page.getByRole("dialog", { name: "Filters" }).getByRole("button", { name: "Clear filters" }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("article")).toHaveCount(5);
 
   await page.getByLabel("Choose a city").selectOption("Lisboa");
   await expect(page.getByRole("article").first()).toContainText(/\d+(\.\d)? (m|km)/);
@@ -36,9 +58,8 @@ test("search ignores accents, chips filter, and the city sorts by distance", asy
 
 test("with a date, time and people the cards offer free times that open the booking", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "When?" }).click();
   await page.getByLabel("Date").fill(isoDaysFromToday(4));
-  await page.getByLabel("Time").fill("20:00");
+  await expect(page.getByLabel("Time")).toHaveValue("20:00");
   const card = page.getByRole("article").filter({ hasText: "Tasca do Bairro" });
   await expect(card.getByRole("link", { name: /^\d\d:\d\d$/ }).first()).toBeVisible();
   await card.getByRole("link", { name: /^\d\d:\d\d$/ }).first().click();

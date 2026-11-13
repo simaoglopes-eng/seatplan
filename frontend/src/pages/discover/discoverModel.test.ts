@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { searchQueryString } from "../../api/discovery";
 import type { SearchQuery } from "../../api/discovery";
-import { CITIES, completeWhen, cuisineLabel, featureNames, formatDistance, loadPlace, priceText, restaurantHref, savePlace } from "./discoverModel";
+import { ambienceLine, CITIES, completeWhen, cuisineLabel, featureNames, formatDistance, loadPlace, priceText, restaurantHref, savePlace } from "./discoverModel";
 
 const EMPTY: SearchQuery = { q: "", cuisines: [], prices: [], features: [], place: null, when: null, availableOnly: false, limit: 20, offset: 0 };
 
@@ -53,6 +53,12 @@ describe("labels", () => {
     expect(priceText(3)).toBe("€€€");
     expect(priceText(null)).toBe("");
     expect(cuisineLabel("petiscos")).toBe("Petiscos");
+  });
+
+  it("writes one line about the room from the three facts a restaurant has, and nothing when it has none", () => {
+    expect(ambienceLine({ sun: true, view: true, accessible: true, terrace: true })).toBe("Sunny tables · With a view · Terrace");
+    expect(ambienceLine({ sun: false, view: false, accessible: true, terrace: true })).toBe("Terrace");
+    expect(ambienceLine({ sun: false, view: false, accessible: true, terrace: false })).toBe("");
   });
 
   it("lists the fourteen cities of the spec with Lisboa first", () => {

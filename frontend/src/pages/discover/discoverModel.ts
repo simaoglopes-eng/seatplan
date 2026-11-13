@@ -57,6 +57,14 @@ export function featureNames(features: Features): string[] {
   return FEATURE_KEYS.filter((key) => features[key]).map((key) => FEATURE_LABELS[key]);
 }
 
+/** One line about the room for the card, from the three facts the restaurant already has: "Sunny tables · With a view · Terrace". */
+export function ambienceLine(features: Features): string {
+  return (["sun", "view", "terrace"] as FeatureKey[])
+    .filter((key) => features[key])
+    .map((key) => FEATURE_LABELS[key])
+    .join(" · ");
+}
+
 /** The public page of a restaurant, with the date, time and party already chosen when we know them. */
 export function restaurantHref(card: Pick<RestaurantCard, "slug">, when: SearchWhen | null, time?: string): string {
   const base = `/restaurants/${encodeURIComponent(card.slug)}`;
