@@ -56,7 +56,7 @@ function holdFailure(error: unknown, tableId: number | null, label: string | nul
 
 export function StepTable(props: StepTableProps) {
   const { venueId, needs, time, hold, onHold } = props;
-  const key = `${needs.date}|${time}|${needs.party}|${needs.needs_accessible}|${needs.high_chairs}`;
+  const key = `${needs.date}|${time}|${needs.party}|${needs.needs_accessible}|${needs.high_chairs}|${(needs.prefs ?? []).join(",")}`;
   const { state, reload } = useLoad(() => getDinerMap(venueId, needs, time), key);
   // Someone else's booking bumps the venue-day version; we then quietly fetch the map again.
   useLive(venueDayScope(venueId, needs.date), () => reload(true));

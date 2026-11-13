@@ -4,6 +4,7 @@ import type { BookingStatus, BookingView } from "../../api/restaurant";
 import { Badge } from "../../design/components";
 import type { BadgeTone } from "../../design/components";
 import { formatDate, people, tablesText } from "./format";
+import { prefWords } from "./prefs";
 
 const STATUS_TEXT: Record<BookingStatus, { label: string; tone: BadgeTone }> = {
   confirmed: { label: "Confirmed", tone: "success" },
@@ -63,6 +64,12 @@ export function BookingSummary({ booking }: { booking: BookingView }) {
         <dt>Needs</dt>
         <dd>{needsText(booking)}</dd>
       </div>
+      {prefWords(booking.prefs) && (
+        <div>
+          <dt>Your wishes</dt>
+          <dd>{prefWords(booking.prefs)}</dd>
+        </div>
+      )}
       {booking.notes && (
         <div>
           <dt>Notes</dt>

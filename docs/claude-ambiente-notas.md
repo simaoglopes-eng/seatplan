@@ -264,3 +264,18 @@ no Chromium (desktop).
   (nome acessível); agora aria-label "Hold table 8".
 - Falta ainda a prop `prefs` (tarefa 31, StepParty) e a conta das preferências
   no pedido do mapa/hold.
+
+## Tarefa 31 (parte frontend): desejos no passo 1 até à reserva
+
+Ficheiros: pages/restaurant/prefs.ts (novo), StepParty.tsx (cinco caixas
+"Sunny table", "In the shade", "With a view", "Quiet corner", "Away from the
+toilets"; sol e sombra excluem-se, o último escolhido ganha), StepTable.tsx
+(a chave de recarga inclui os desejos), BookingSummary.tsx ("Your wishes"),
+SelectionPanel.tsx (staff: "Guest wished for: ..."), api/restaurant.ts
+(PartyNeeds.prefs opcional; `?prefs=sun,view` no mapa; `prefs` no hold e na
+reserva só quando há desejos; BookingView/StaffBooking.prefs).
+Testes: prefs.test.tsx (8). Total frontend: 293 testes, typecheck, build,
+contraste e e2e 45/45.
+- Sem desejos nada muda nos pedidos (não vai `prefs` vazio).
+- O servidor continua a ser quem decide: o desejo só desempata (nunca tira a
+  mesa de 2 a um casal para dar a de 8, ver tarefa 30).

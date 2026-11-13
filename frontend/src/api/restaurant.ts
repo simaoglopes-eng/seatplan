@@ -72,6 +72,8 @@ export interface PartyNeeds {
   party: number;
   needs_accessible: boolean;
   high_chairs: number;
+  /** Ambience wishes (sun, shade, view, quiet, away_from_wc). Sent only when there are some. */
+  prefs?: string[];
 }
 
 // ---------- Diner: map and hold ----------
@@ -143,6 +145,8 @@ export interface BookingView {
   needs_accessible: boolean;
   high_chairs: number;
   notes: string;
+  /** The wishes this booking was made with (sunny table, a view...). */
+  prefs?: string[];
   /** The biggest party this restaurant can seat. Only GET /b/{token} sends it, so it can be null. */
   max_party: number | null;
 }
@@ -215,6 +219,7 @@ export interface StaffBooking {
   needs_accessible: boolean;
   high_chairs: number;
   notes: string;
+  prefs?: string[];
 }
 
 /** The staff floor. `services` lets the time scrubber know where a service starts and ends. */
@@ -425,6 +430,8 @@ export interface ServerBooking {
   party_size: number;
   name: string;
   notes: string;
+  /** Ambience wishes the diner ticked (sun, view, ...). Absent on old answers. */
+  prefs?: string[];
   needs_accessible: boolean;
   high_chairs: number;
   status: BookingStatus;
@@ -527,6 +534,7 @@ export function toBookingView(server: ServerBooking): BookingView {
     needs_accessible: server.needs_accessible,
     high_chairs: server.high_chairs,
     notes: server.notes,
+    prefs: server.prefs ?? [],
     max_party: server.max_party ?? null,
   };
 }
@@ -545,6 +553,7 @@ export function toStaffBooking(server: ServerBooking): StaffBooking {
     needs_accessible: server.needs_accessible,
     high_chairs: server.high_chairs,
     notes: server.notes,
+    prefs: server.prefs ?? [],
   };
 }
 
@@ -619,7 +628,8 @@ export async function getSlots(vid: string, date: IsoDate, party: number): Promi
 }
 
 export async function getDinerMap(vid: string, needs: PartyNeeds, time: ClockTime): Promise<DinerMap> {
-  const params = query({ date: needs.date, time, party: needs.party, accessible: needs.needs_accessible, high_chairs: needs.high_chairs });
+  const wishes: Record<string, string> = needs.prefs?.length ? { prefs: needs.prefs.join(",") } : {};
+  const params = query({ date: needs.date, time, party: needs.party, accessible: needs.needs_accessible, high_chairs: needs.high_chairs, ...wishes });
   return toDinerMap(await api.get<ServerDinerMap>(`${diner(vid)}/map?${params}`));
 }
 
@@ -631,7 +641,8 @@ export async function getAmbience(vid: string, needs: PartyNeeds, time: ClockTim
 
 /** Without `tableId` the optimiser picks the table ("Choose for me"). */
 export async function holdTable(vid: string, needs: PartyNeeds, time: ClockTime, tableId: number | null): Promise<HoldResponse> {
-  const body = { ...needs, time, ...(tableId === null ? {} : { table_id: tableId }) };
+  const { prefs, ...rest } = needs;
+  const body = { ...rest, ...(prefs?.length ? { prefs } : {}), time, ...(tableId === null ? {} : { table_id: tableId }) };
   return toHold(await api.post<ServerHold>(`${diner(vid)}/hold`, body));
 }
 
@@ -642,7 +653,8 @@ export async function releaseHold(vid: string, holdId: string): Promise<void> {
 
 export async function createBooking(vid: string, holdId: string, contact: ContactDetails, needs: PartyNeeds): Promise<BookingConfirmation> {
   // The backend checks the party size against the hold, so it is sent again here.
-  const body = { hold_id: holdId, ...contact, party: needs.party, needs_accessible: needs.needs_accessible, high_chairs: needs.high_chairs };
+  const wishes = needs.prefs?.length ? { prefs: needs.prefs } : {};
+  const body = { hold_id: holdId, ...contact, party: needs.party, needs_accessible: needs.needs_accessible, high_chairs: needs.high_chairs, ...wishes };
   const server = await api.post<ServerConfirmation>(`${diner(vid)}/bookings`, body);
   return { booking: toBookingView(server.booking), manage_url: server.manage_path, email: contact.email };
 }

@@ -6,6 +6,7 @@ import type { PartyNeeds, RestaurantInfo } from "../../api/restaurant";
 import { Button, Checkbox, Field, Select } from "../../design/components";
 import type { SelectOption } from "../../design/components";
 import { formatDate, people, todayIso, weekdayName } from "./format";
+import { PREF_OPTIONS, togglePref } from "./prefs";
 import { StepHeading } from "./StepHeading";
 
 interface StepPartyProps {
@@ -88,6 +89,18 @@ export function StepParty({ info, needs, onChange, onNext, focusOnMount }: StepP
           value={String(needs.high_chairs)}
           onChange={(e) => onChange({ ...needs, high_chairs: Number(e.target.value) })}
         />
+      </fieldset>
+      <fieldset className="rb-needs">
+        <legend className="field-label">What would you like your table to be like? (optional)</legend>
+        <p className="rb-muted">We will suggest a table that fits when we can. Wishes never take a table away from a bigger party.</p>
+        {PREF_OPTIONS.map((option) => (
+          <Checkbox
+            key={option.key}
+            label={option.label}
+            checked={(needs.prefs ?? []).includes(option.key)}
+            onChange={(e) => onChange({ ...needs, prefs: togglePref(needs.prefs, option.key, e.target.checked) })}
+          />
+        ))}
       </fieldset>
       <div className="rb-actions">
         <Button type="submit" disabled={closed !== null || dateMissing}>

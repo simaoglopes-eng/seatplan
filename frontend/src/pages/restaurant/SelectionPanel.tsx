@@ -5,6 +5,7 @@ import { Badge, Button } from "../../design/components";
 import { BookingActions } from "./BookingActions";
 import { people, tablesText } from "./format";
 import { FLOOR_LOOK } from "./staffStatus";
+import { prefWords } from "./prefs";
 
 interface SelectionPanelProps {
   venueId: string;
@@ -74,6 +75,7 @@ function BookingDetails({ booking }: { booking: StaffBooking }) {
         {booking.needs_accessible && <Badge tone="info">Accessible table</Badge>}
         {booking.high_chairs > 0 && <Badge>High chairs: {booking.high_chairs}</Badge>}
       </div>
+      {prefWords(booking.prefs) && <p className="st-note">Guest wished for: {prefWords(booking.prefs)}</p>}
       {booking.notes && <p className="st-note">Note: {booking.notes}</p>}
     </div>
   );
