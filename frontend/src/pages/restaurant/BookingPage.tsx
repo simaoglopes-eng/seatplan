@@ -8,6 +8,7 @@ import { ApiError } from "../../api/client";
 import { getRestaurant } from "../../api/restaurant";
 import type { RestaurantInfo } from "../../api/restaurant";
 import { EmptyState, ErrorState, PageShell, Skeleton, Stepper } from "../../design/components";
+import { ChooseSeat } from "./ChooseSeat";
 import { Confirmation } from "./Confirmation";
 import { errorMessage } from "./format";
 import { StepDetails } from "./StepDetails";
@@ -67,7 +68,10 @@ function BookingFlow({ venueId, info }: { venueId: string; info: RestaurantInfo 
       <Stepper steps={STEPS} current={step} label="Booking steps" />
       {step === STEP.party && <StepParty info={info} needs={needs} onChange={flow.setNeeds} onNext={() => flow.go(STEP.time)} focusOnMount={false} />}
       {step === STEP.time && <StepTime venueId={venueId} needs={needs} onPick={flow.pickTime} onBack={() => flow.go(STEP.party)} />}
-      {step === STEP.table && time && (
+      {step === STEP.table && flow.choosingSeat && hold && (
+        <ChooseSeat venueId={venueId} hold={hold} secondsLeft={flow.secondsLeft} seatId={flow.seatId} onDone={flow.chooseSeat} onBackToMap={flow.backToMap} />
+      )}
+      {step === STEP.table && time && !flow.choosingSeat && (
         <StepTable
           venueId={venueId}
           needs={needs}
@@ -76,7 +80,7 @@ function BookingFlow({ venueId, info }: { venueId: string; info: RestaurantInfo 
           secondsLeft={flow.secondsLeft}
           carriedNotice={flow.carriedNotice}
           onHold={flow.setHold}
-          onNext={() => flow.go(STEP.details)}
+          onNext={flow.askSeat}
           onBack={() => flow.go(STEP.time)}
         />
       )}
@@ -85,6 +89,7 @@ function BookingFlow({ venueId, info }: { venueId: string; info: RestaurantInfo 
           venueId={venueId}
           needs={needs}
           hold={hold}
+          seatId={flow.seatId}
           secondsLeft={flow.secondsLeft ?? 0}
           contact={flow.contact}
           onContactChange={flow.setContact}

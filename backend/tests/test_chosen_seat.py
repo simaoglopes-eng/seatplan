@@ -219,3 +219,66 @@ def test_a_staff_move_drops_a_chair_that_is_no_longer_at_the_table(
     assert moved.status_code == 200, moved.text
     session.expire_all()
     assert session.query(Booking).one().chosen_seat_id is None
+
+
+# ---------------------------------------------------------------- listing the chairs of a table
+
+
+def test_the_chairs_of_a_table_come_with_their_sentence_and_blocked_flag(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    place = make_restaurant(session, organiser)
+    room_with_window(session, place)
+    north, south = add_seats(session, place, "T1")
+    for seat_id, (x, y) in ((north, (500, 612)), (south, (500, 698))):
+        seat = session.get(Seat, seat_id)
+        assert seat is not None
+        seat.x, seat.y = x, y
+    blocked = session.get(Seat, south)
+    assert blocked is not None
+    blocked.is_blocked = True
+    session.commit()
+    answer = client.get(
+        f"/api/r/{place.public_id}/seats", params={"table_ids": str(place.table["T1"])}
+    )
+    assert answer.status_code == 200, answer.text
+    body = answer.json()
+    assert [t["id"] for t in body["tables"]] == [place.table["T1"]]
+    assert {"x", "y", "w", "h", "rotation", "shape", "label"} <= set(body["tables"][0])
+    by_id = {s["id"]: s for s in body["seats"]}
+    assert by_id[north]["state"] == "free" and by_id[north]["phrase"] == "Facing the window"
+    assert by_id[south]["state"] == "blocked"
+    assert {"table_id", "label", "x", "y", "accessible"} <= set(by_id[north])
+
+
+def test_several_tables_can_be_asked_at_once_up_to_three(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    place = make_restaurant(session, organiser)
+    add_seats(session, place, "T5", count=1)
+    add_seats(session, place, "T6", count=2)
+    ids = f"{place.table['T5']},{place.table['T6']}"
+    body = client.get(f"/api/r/{place.public_id}/seats", params={"table_ids": ids}).json()
+    assert len(body["tables"]) == 2 and len(body["seats"]) == 3
+    four = ",".join(str(place.table[label]) for label in ("T1", "T2", "T3", "T4"))
+    assert (
+        client.get(f"/api/r/{place.public_id}/seats", params={"table_ids": four}).status_code == 422
+    )
+
+
+def test_unknown_inactive_foreign_or_malformed_tables_are_refused(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    place = make_restaurant(session, organiser)
+    other = make_restaurant(session, organiser)
+    off = session.get(VenueTable, place.table["T2"])
+    assert off is not None
+    off.is_active = False
+    session.commit()
+    url = f"/api/r/{place.public_id}/seats"
+    assert client.get(url, params={"table_ids": "987654"}).status_code == 404
+    assert client.get(url, params={"table_ids": str(other.table["T1"])}).status_code == 404
+    assert client.get(url, params={"table_ids": str(place.table["T2"])}).status_code == 404
+    assert client.get(url, params={"table_ids": "abc"}).status_code == 422
+    assert client.get(url, params={"table_ids": ""}).status_code == 422
+    assert client.get(url).status_code == 422

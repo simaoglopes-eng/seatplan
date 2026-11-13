@@ -51,8 +51,14 @@ export function useBookingFlow(info: RestaurantInfo, link: LinkAnswers = { date:
   const [contact, setContact] = useState<ContactDetails>(NO_CONTACT);
   const [confirmation, setConfirmation] = useState<BookingConfirmation | null>(null);
   const [carriedNotice, setCarriedNotice] = useState<string | null>(null);
-  // Stable function: StepTable calls it from inside an effect.
-  const setHold = useCallback((next: Hold | null) => setHoldState(next), []);
+  // The optional chair (spec 9.4) is asked inside the Table step, once a table is held.
+  const [choosingSeat, setChoosingSeat] = useState(false);
+  const [seatId, setSeatId] = useState<number | null>(null);
+  // Stable function: StepTable calls it from inside an effect. A new hold is a new table: the old chair no longer applies.
+  const setHold = useCallback((next: Hold | null) => {
+    setHoldState(next);
+    setSeatId(null);
+  }, []);
   const secondsLeft = useSecondsLeft(hold?.expiresAt ?? null);
 
   const go = (next: number): void => {
@@ -62,7 +68,15 @@ export function useBookingFlow(info: RestaurantInfo, link: LinkAnswers = { date:
       setHold(null);
     }
     if (next !== STEP.table) setCarriedNotice(null);
+    setChoosingSeat(false);
     setStep(next);
+  };
+  const askSeat = (): void => setChoosingSeat(true);
+  const backToMap = (): void => setChoosingSeat(false);
+  /** The chair step is over, with a chair or without: on to the details. */
+  const chooseSeat = (chosen: number | null): void => {
+    setSeatId(chosen);
+    go(STEP.details);
   };
   const pickTime = (picked: string): void => {
     setTime(picked);
@@ -72,6 +86,7 @@ export function useBookingFlow(info: RestaurantInfo, link: LinkAnswers = { date:
   const holdLost = (message: string): void => {
     setHold(null);
     setCarriedNotice(message);
+    setChoosingSeat(false);
     setStep(STEP.table);
   };
   const booked = (result: BookingConfirmation): void => {
@@ -80,5 +95,26 @@ export function useBookingFlow(info: RestaurantInfo, link: LinkAnswers = { date:
     setStep(STEP.done);
   };
 
-  return { step, needs, setNeeds, time, hold, setHold, secondsLeft, contact, setContact, confirmation, carriedNotice, go, pickTime, holdLost, booked };
+  return {
+    step,
+    needs,
+    setNeeds,
+    time,
+    hold,
+    setHold,
+    secondsLeft,
+    contact,
+    setContact,
+    confirmation,
+    carriedNotice,
+    choosingSeat,
+    seatId,
+    go,
+    pickTime,
+    holdLost,
+    booked,
+    askSeat,
+    backToMap,
+    chooseSeat,
+  };
 }

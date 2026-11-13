@@ -10,7 +10,7 @@ import { dinerMap } from "../pages/restaurant/__tests__/fixtures";
 describe("restaurant conversions", () => {
   it("joins the labels of a held combination and keeps the hold id as text", () => {
     const hold = toHold({ hold_id: "abc", table: { table_ids: [5, 6], labels: ["T5", "T6"] }, table_choice: "auto", expires_at: "x" });
-    expect(hold).toEqual({ hold_id: "abc", table: { id: 5, label: "T5 + T6" }, expires_at: "x" });
+    expect(hold).toEqual({ hold_id: "abc", table: { id: 5, label: "T5 + T6" }, table_ids: [5, 6], expires_at: "x" });
   });
 
   it("draws a too-small table as blocked and keeps only the best recommendation", () => {

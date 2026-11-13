@@ -123,7 +123,23 @@ export interface HeldTable {
 export interface HoldResponse {
   hold_id: string;
   table: HeldTable;
+  /** Every held table (more than one when the optimiser joined tables). */
+  table_ids: number[];
   expires_at: string; // ISO date-time, UTC
+}
+
+/** A chair the diner may pick (spec 9.4). `blocked` chairs are shown but cannot be chosen. */
+export interface TableSeats {
+  tables: { id: number; label: string; shape: string; x: number; y: number; w: number; h: number; rotation: number }[];
+  seats: { id: number; table_id: number; label: string; x: number; y: number; state: "free" | "blocked"; accessible: boolean; phrase: string | null }[];
+}
+
+/** The chair a booking was made with. `phrase` is only on the diner's own pages. */
+export interface BookingSeat {
+  id: number;
+  label: string;
+  table_id: number;
+  phrase?: string | null;
 }
 
 // ---------- Bookings ----------
@@ -147,6 +163,7 @@ export interface BookingView {
   notes: string;
   /** The wishes this booking was made with (sunny table, a view...). */
   prefs?: string[];
+  seat?: BookingSeat | null;
   /** The biggest party this restaurant can seat. Only GET /b/{token} sends it, so it can be null. */
   max_party: number | null;
 }
@@ -220,6 +237,7 @@ export interface StaffBooking {
   high_chairs: number;
   notes: string;
   prefs?: string[];
+  seat?: BookingSeat | null;
 }
 
 /** The staff floor. `services` lets the time scrubber know where a service starts and ends. */
@@ -432,6 +450,7 @@ export interface ServerBooking {
   notes: string;
   /** Ambience wishes the diner ticked (sun, view, ...). Absent on old answers. */
   prefs?: string[];
+  seat?: BookingSeat | null;
   needs_accessible: boolean;
   high_chairs: number;
   status: BookingStatus;
@@ -516,7 +535,7 @@ export function toDinerMap(server: ServerDinerMap): DinerMap {
 
 export function toHold(server: ServerHold): HoldResponse {
   const table = { id: server.table.table_ids[0], label: server.table.labels.join(" + ") };
-  return { hold_id: server.hold_id, table, expires_at: server.expires_at };
+  return { hold_id: server.hold_id, table, table_ids: server.table.table_ids, expires_at: server.expires_at };
 }
 
 export function toBookingView(server: ServerBooking): BookingView {
@@ -535,6 +554,7 @@ export function toBookingView(server: ServerBooking): BookingView {
     high_chairs: server.high_chairs,
     notes: server.notes,
     prefs: server.prefs ?? [],
+    seat: server.seat ?? null,
     max_party: server.max_party ?? null,
   };
 }
@@ -554,6 +574,7 @@ export function toStaffBooking(server: ServerBooking): StaffBooking {
     high_chairs: server.high_chairs,
     notes: server.notes,
     prefs: server.prefs ?? [],
+    seat: server.seat ?? null,
   };
 }
 
@@ -651,10 +672,21 @@ export async function releaseHold(vid: string, holdId: string): Promise<void> {
   await api.delete<null>(`${diner(vid)}/hold/${encodeURIComponent(holdId)}`);
 }
 
-export async function createBooking(vid: string, holdId: string, contact: ContactDetails, needs: PartyNeeds): Promise<BookingConfirmation> {
+/** The chairs of the held tables, with the sentence about each one's view. */
+export async function getTableSeats(vid: string, tableIds: number[]): Promise<TableSeats> {
+  return api.get<TableSeats>(`${diner(vid)}/seats?${query({ table_ids: tableIds.join(",") })}`);
+}
+
+export async function createBooking(
+  vid: string,
+  holdId: string,
+  contact: ContactDetails,
+  needs: PartyNeeds,
+  seatId: number | null = null,
+): Promise<BookingConfirmation> {
   // The backend checks the party size against the hold, so it is sent again here.
   const wishes = needs.prefs?.length ? { prefs: needs.prefs } : {};
-  const body = { hold_id: holdId, ...contact, party: needs.party, needs_accessible: needs.needs_accessible, high_chairs: needs.high_chairs, ...wishes };
+  const body = { hold_id: holdId, ...contact, party: needs.party, needs_accessible: needs.needs_accessible, high_chairs: needs.high_chairs, ...wishes, ...(seatId === null ? {} : { seat_id: seatId }) };
   const server = await api.post<ServerConfirmation>(`${diner(vid)}/bookings`, body);
   return { booking: toBookingView(server.booking), manage_url: server.manage_path, email: contact.email };
 }

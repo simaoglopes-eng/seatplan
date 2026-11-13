@@ -9,11 +9,12 @@ moves the booking to other tables.
 
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ApiError
 from app.models import Booking, Seat, Venue
-from app.restaurant_service import ambience_view
+from app.restaurant_service import ambience_view, occupancy
 
 
 def check_chosen_seat(
@@ -60,3 +61,52 @@ def seat_payload(
     if with_phrase:
         answer["phrase"] = ambience_view.seat_sentence(session, venue, seat)
     return answer
+
+
+MAX_TABLES = 3  # a booking joins at most three tables
+
+
+def table_seats(session: Session, venue: Venue, table_ids: list[int]) -> dict[str, Any]:
+    """The tables and chairs a diner may pick from, for the "Where would you
+    like to sit?" step: table shapes, and per chair its state ("free" or
+    "blocked"), whether it is accessible and the sentence about its view.
+
+    Only active tables of this restaurant count; anything else is a 404 that
+    reveals nothing about other restaurants. Read-only and free of personal data.
+    """
+    wanted = sorted(set(table_ids))
+    if not wanted or len(wanted) > MAX_TABLES:
+        raise ApiError(422, "validation", f"Ask for 1 to {MAX_TABLES} tables.")
+    tables = [t for t in occupancy.venue_tables(session, venue) if t.id in wanted]
+    if len(tables) != len(wanted):
+        raise ApiError(404, "not_found", "Table not found.")
+    rows = list(session.scalars(select(Seat).where(Seat.table_id.in_(wanted)).order_by(Seat.id)))
+    sentences = ambience_view.seat_sentences(session, venue, rows)
+    return {
+        "tables": [
+            {
+                "id": t.id,
+                "label": t.label,
+                "shape": t.shape,
+                "x": t.x,
+                "y": t.y,
+                "w": t.w,
+                "h": t.h,
+                "rotation": t.rotation,
+            }
+            for t in tables
+        ],
+        "seats": [
+            {
+                "id": s.id,
+                "table_id": s.table_id,
+                "label": s.label,
+                "x": s.x,
+                "y": s.y,
+                "state": "blocked" if s.is_blocked else "free",
+                "accessible": s.is_accessible,
+                "phrase": sentences[s.id],
+            }
+            for s in rows
+        ],
+    }

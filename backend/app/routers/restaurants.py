@@ -15,10 +15,11 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app import db
-from app.core.errors import SeatTaken
+from app.core.errors import ApiError, SeatTaken
 from app.core.text import PlainText
 from app.restaurant_service import (
     ambience_view,
+    chosen_seat,
     diner_flow,
     holding,
     map_view,
@@ -178,6 +179,23 @@ def ambience(
     check_party_size(session, venue, party)
     schedule.check_bookable(session, venue, date, time)
     return ambience_view.ambience_payload(session, venue, date, time, party=party, moment=moment)
+
+
+@router.get("/r/{venue_public_id}/seats")
+def table_seats(
+    venue_public_id: str, request: Request, session: db.SessionDep, table_ids: str
+) -> dict[str, Any]:
+    """The chairs of up to three tables, for the optional "where would you like
+    to sit?" step (spec 9.4). `table_ids` is a comma list of table ids."""
+    _limit(session, request, "read", READ_LIMIT)
+    venue = load_restaurant(session, venue_public_id)
+    try:
+        ids = [int(part) for part in table_ids.split(",") if part.strip()]
+    except ValueError:
+        raise ApiError(
+            422, "validation", "table_ids must be numbers separated by commas."
+        ) from None
+    return chosen_seat.table_seats(session, venue, ids)
 
 
 @router.post("/r/{venue_public_id}/hold", status_code=201, response_model=None)

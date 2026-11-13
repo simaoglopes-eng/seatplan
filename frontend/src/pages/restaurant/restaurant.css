@@ -899,3 +899,16 @@
   fill: var(--c-info);
   opacity: 0.38;
 }
+
+.rb-seat-choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.rb-seat-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-target);
+}

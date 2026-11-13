@@ -21,6 +21,11 @@ function tableText(booking: BookingView): string {
   return tablesText(booking.table_labels);
 }
 
+/** "Seat 2, facing the window": the sentence is only there on the diner's own pages. */
+function seatText(seat: { label: string; phrase?: string | null }): string {
+  return seat.phrase ? `Seat ${seat.label}, ${seat.phrase.charAt(0).toLowerCase()}${seat.phrase.slice(1)}` : `Seat ${seat.label}`;
+}
+
 function needsText(booking: BookingView): string {
   const needs: string[] = [];
   if (booking.needs_accessible) needs.push("Accessible table");
@@ -56,6 +61,12 @@ export function BookingSummary({ booking }: { booking: BookingView }) {
         <dt>Table</dt>
         <dd>{tableText(booking)}</dd>
       </div>
+      {booking.seat && (
+        <div>
+          <dt>Seat</dt>
+          <dd>{seatText(booking.seat)}</dd>
+        </div>
+      )}
       <div>
         <dt>Name</dt>
         <dd>{booking.name}</dd>

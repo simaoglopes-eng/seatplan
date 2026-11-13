@@ -279,3 +279,23 @@ contraste e e2e 45/45.
 - Sem desejos nada muda nos pedidos (não vai `prefs` vazio).
 - O servidor continua a ser quem decide: o desejo só desempata (nunca tira a
   mesa de 2 a um casal para dar a de 8, ver tarefa 30).
+
+## Tarefa 32 (parte frontend e rota de cadeiras)
+
+Backend: GET /api/r/{vid}/seats?table_ids= (chosen_seat.table_seats,
+ambience_view.seat_sentences); testes em test_chosen_seat.py (12 no total).
+Frontend: ChooseSeat.tsx (novo), useBookingFlow (choosingSeat, seatId, askSeat,
+backToMap, chooseSeat), BookingPage, StepTable (Hold guarda tableIds), StepDetails
+(seatId), BookingSummary ("Seat 2, facing the window"), SelectionPanel (staff:
+"Guest chose seat 2"), api/restaurant.ts (getTableSeats, TableSeats, BookingSeat,
+createBooking com seat_id). Testes: chooseSeat.test.tsx (6); o restaurant.spec
+do e2e passou a clicar "Skip" e há um e2e novo que escolhe a cadeira e a vê na
+confirmação. Frontend: 299 testes, typecheck, build, contraste e e2e.
+- O passo da cadeira é uma paragem dentro do passo Table (o Stepper continua
+  com 5 passos). Sem cadeiras utilizáveis, ou se não carregam, salta sozinho.
+- Mudar de mesa (novo hold) esquece a cadeira; "Back to the map" não larga o hold.
+- O toHold passou a devolver também table_ids (teste de conversão atualizado
+  só para acrescentar esse campo).
+- Falta: cadeira marcada no mapa do staff (padrão "marked"), "Change seat" na
+  página de gestão (tarefa 33, Sérgio; o backend já tem check_chosen_seat) e o
+  email (34/35/36).

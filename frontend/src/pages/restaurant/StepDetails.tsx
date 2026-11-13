@@ -18,6 +18,8 @@ interface StepDetailsProps {
   venueId: string;
   needs: PartyNeeds;
   hold: Hold;
+  /** The chair the diner would like, if they chose one. */
+  seatId: number | null;
   secondsLeft: number;
   /** Kept by the page, so going back to the map does not wipe what was typed. */
   contact: ContactDetails;
@@ -31,7 +33,7 @@ interface StepDetailsProps {
 const FIELD_ORDER: (keyof ContactDetails)[] = ["name", "email", "phone", "notes"];
 
 export function StepDetails(props: StepDetailsProps) {
-  const { venueId, needs, hold, secondsLeft, contact, onContactChange, onBooked, onHoldLost, onBack } = props;
+  const { venueId, needs, hold, seatId, secondsLeft, contact, onContactChange, onBooked, onHoldLost, onBack } = props;
   const [touched, setTouched] = useState<Partial<Record<keyof ContactDetails, boolean>>>({});
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export function StepDetails(props: StepDetailsProps) {
     setBusy(true);
     setProblem(null);
     try {
-      onBooked(await createBooking(venueId, hold.holdId, trimmed(contact), needs));
+      onBooked(await createBooking(venueId, hold.holdId, trimmed(contact), needs, seatId));
     } catch (error) {
       setBusy(false);
       if (error instanceof ApiError && (error.code === "hold_expired" || error.code === "seat_taken")) {

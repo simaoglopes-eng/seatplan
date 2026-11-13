@@ -24,6 +24,8 @@ import { useLoad } from "./useLoad";
 export interface Hold {
   holdId: string;
   tableId: number;
+  /** Every held table (a joined booking has several). The chair step lists the chairs of all of them. */
+  tableIds?: number[];
   tableLabel: string;
   expiresAt: string;
 }
@@ -81,7 +83,7 @@ export function StepTable(props: StepTableProps) {
     setProblem(null);
     try {
       const result = await holdTable(venueId, needs, time, tableId);
-      onHold({ holdId: result.hold_id, tableId: result.table.id, tableLabel: result.table.label, expiresAt: result.expires_at });
+      onHold({ holdId: result.hold_id, tableId: result.table.id, tableIds: result.table_ids, tableLabel: result.table.label, expiresAt: result.expires_at });
       setSpoken(`Table ${result.table.label} is held for you for 5 minutes.`);
       // Only now give the old table back: if the new hold had failed, the diner would still have the old one.
       await releaseQuietly(venueId, hold);

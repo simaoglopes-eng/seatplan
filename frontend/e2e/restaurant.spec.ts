@@ -18,6 +18,10 @@ test("a diner books a table, then cancels through the manage link", async ({ pag
   await expect(next).toBeEnabled();
   await next.click();
 
+  // The chair is optional: this diner skips it.
+  await expect(page.getByRole("heading", { name: /Where would you like to sit/ })).toBeVisible();
+  await page.getByRole("button", { name: "Skip" }).click();
+
   await page.getByLabel("Name for the booking").fill("Tess Diner");
   await page.getByLabel("Email", { exact: true }).fill("tess.diner@example.com");
   await page.getByRole("button", { name: "Confirm booking" }).click();
@@ -36,6 +40,29 @@ test("a diner books a table, then cancels through the manage link", async ({ pag
   const stored = await request.get(`/api/b/${token}`);
   expect(stored.status()).toBe(200);
   expect(((await stored.json()) as { status: string }).status).toBe("cancelled");
+});
+
+test("a diner picks a chair and sees it on the confirmation", async ({ page, request }) => {
+  const links = await demoLinks(request);
+  await page.goto(`${links.restaurant_booking}?date=${isoDaysFromToday(3)}&party=2`);
+  await page.getByRole("button", { name: "See free times" }).click();
+  await page.getByRole("button", { name: /^\d\d:\d\d Available$/ }).first().click();
+  await expect(page.getByRole("heading", { name: "Choose your table" })).toBeVisible();
+  await page.getByRole("button", { name: "Choose for me" }).click();
+  await page.getByRole("button", { name: /^Continue with table / }).click();
+
+  await expect(page.getByRole("heading", { name: /Where would you like to sit/ })).toBeVisible();
+  // The demo's chairs are labelled like "W2-2": take the second one, whatever the table is called.
+  const second = page.getByRole("radio").nth(1);
+  const seat = ((await second.evaluate((el) => el.parentElement?.textContent ?? "")).split(" · ")[0] ?? "").trim();
+  await second.check();
+  await page.getByRole("button", { name: /^Continue with seat / }).click();
+
+  await page.getByLabel("Name for the booking").fill("Chair Diner");
+  await page.getByLabel("Email", { exact: true }).fill("chair.diner@example.com");
+  await page.getByRole("button", { name: "Confirm booking" }).click();
+  await expect(page.getByRole("heading", { name: "You are booked, Chair" })).toBeVisible();
+  await expect(page.getByText(seat, { exact: false }).first()).toBeVisible();
 });
 
 test("staff seat a walk-in from the live floor", async ({ page, request }) => {

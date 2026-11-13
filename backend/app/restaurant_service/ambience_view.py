@@ -283,15 +283,26 @@ def table_features(
     return {row["id"]: frozenset(row["features"]) for row in answer["tables"]}
 
 
+def seat_sentences(session: Session, venue: Venue, seats: list[Seat]) -> dict[int, str | None]:
+    """Seat id -> "Facing the window" / "Back to the window" / "Side-on to the
+    window", or None when no window is near enough to say (spec 7.5). The rooms
+    are read once for all the chairs."""
+    placed = {
+        row.id: (loaded.room, engine_table)
+        for loaded in load_rooms(session, venue)
+        for row, engine_table in loaded.tables
+    }
+    sentences: dict[int, str | None] = {}
+    for seat in seats:
+        found = placed.get(seat.table_id)
+        chair = AmbienceSeat(seat.id, seat.table_id, seat.label, seat.x, seat.y)
+        sentences[seat.id] = seat_facing(found[0], found[1], chair) if found else None
+    return sentences
+
+
 def seat_sentence(session: Session, venue: Venue, seat: Seat) -> str | None:
-    """ "Facing the window" / "Back to the window" / "Side-on to the window" for a
-    chair, or None when no window is near enough to say (spec 7.5)."""
-    for loaded in load_rooms(session, venue):
-        for row, engine_table in loaded.tables:
-            if row.id == seat.table_id:
-                chair = AmbienceSeat(seat.id, row.id, seat.label, seat.x, seat.y)
-                return seat_facing(loaded.room, engine_table, chair)
-    return None
+    """The sentence for one chair (see seat_sentences)."""
+    return seat_sentences(session, venue, [seat])[seat.id]
 
 
 def ambience_payload(

@@ -75,6 +75,7 @@ function BookingDetails({ booking }: { booking: StaffBooking }) {
         {booking.needs_accessible && <Badge tone="info">Accessible table</Badge>}
         {booking.high_chairs > 0 && <Badge>High chairs: {booking.high_chairs}</Badge>}
       </div>
+      {booking.seat && <p className="st-note">Guest chose seat {booking.seat.label}</p>}
       {prefWords(booking.prefs) && <p className="st-note">Guest wished for: {prefWords(booking.prefs)}</p>}
       {booking.notes && <p className="st-note">Note: {booking.notes}</p>}
     </div>
