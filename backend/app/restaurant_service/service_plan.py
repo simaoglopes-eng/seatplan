@@ -5,7 +5,7 @@ Two staff tools, both built on the pure optimiser:
 1. POST /staff/{vid}/optimise/service: assign_service re-plans the tables of
    the service's bookings. Only bookings the optimiser placed in the first
    place (table_choice "auto") and that are not seated yet may move. A diner
-   who picked their own table, a party already sitting down, and every booking
+   who picked their own table, a diner who asked for sun, a view or the like, a party already sitting down, and every booking
    of another service stay exactly where they are (fixed_tables). The first
    call only previews; a second call with "apply" and the preview's plan_id
    writes it.

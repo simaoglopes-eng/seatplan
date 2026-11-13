@@ -3,7 +3,7 @@
 // applies exactly that preview: the plan_id proves it is the same plan, and
 // the server answers 409 if the floor changed in between.
 // Only bookings the optimiser placed itself and that have not sat down yet
-// may move; a diner's own choice and a seated party always stay put.
+// may move; a diner's own choice, a diner's wishes (sun, view...) and a seated party always stay put.
 import { useState } from "react";
 import { applyServicePlan, previewServicePlan } from "../../api/restaurant";
 import type { PlanScore, ServicePlan } from "../../api/restaurant";
@@ -67,7 +67,7 @@ export function ServicePlanCard({ venueId, date, service }: ServicePlanCardProps
         {title}
       </h2>
       <p className="rb-muted st-small">
-        Finds a better table for {service} bookings that the system placed. Diners who chose their own table and parties already seated never move.
+        Finds a better table for {service} bookings that the system placed. Diners who chose their own table or asked for sun, a view or the like, and parties already seated, never move.
       </p>
       <Button variant={plan ? "secondary" : "primary"} busy={busy && !plan} onClick={() => void preview()}>
         Preview moves
@@ -86,7 +86,7 @@ export function ServicePlanCard({ venueId, date, service }: ServicePlanCardProps
 }
 
 function PlanPreview({ plan, busy, onApply }: { plan: ServicePlan; busy: boolean; onApply: () => void }) {
-  const stays = `${count(plan.fixed, "booking")} stay where they are (the diner chose the table, or the party is already seated).`;
+  const stays = `${count(plan.fixed, "booking")} stay where they are (the diner chose the table or asked for something, or the party is already seated).`;
   if (plan.moves.length === 0) {
     return (
       <div className="st-answer">

@@ -745,7 +745,8 @@ Decisions taken while finishing tasks 17 to 38 of the restaurant plan (Claude's 
     `seed/demo_photos.py`, which is their recorded source (no third-party images). The demo organiser now owns five restaurants.
 25. **Choosing a table on the map is two steps** (branch claude/ux-polish): a tap or Enter selects it and shows its card, and "Hold this table"
     reserves it, so a finger never holds a table by accident (spec 9.3). The list buttons still hold in one step. Holds and live updates are
-    unchanged. Optimiser service plan and what-if still ignore wishes (they need per-party features); that is open.
+    unchanged. The staff planner (service re-plan and what-if) treats a booking made with wishes as fixed, so it keeps the table it was given with them
+    (decision 26, branch claude/staff-polish). Weighing wishes per party in the planner stays a possible later improvement.
 ## 2026-11-13 — integration of claude/ambiente
 
 Imported from [Claude's implementation notes](claude-ambiente-notas.md).

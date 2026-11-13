@@ -5,7 +5,8 @@ the current tables as the plan) and call whatif_walkin. Nothing is written:
 the answer is advice for the staff member, who then decides.
 
 A booking is fixed (never moved) when the diner chose the table themselves,
-or when the party is already sitting there.
+when the diner asked for something (sun, view...), or when the party is already
+sitting there.
 """
 
 from datetime import date, time
@@ -24,7 +25,13 @@ from app.restaurant_service.clock import booking_window
 
 def _party_of(venue: Venue, booking: Booking, tables: tuple[int, ...]) -> PartySpec:
     start, end = booking_window(venue, booking)
-    fixed = booking.table_choice == "chosen" or booking.status in ("seated", "finishing")
+    # A booking with wishes (sun, view, quiet...) keeps the table it was given with those wishes:
+    # the planner does not weigh wishes per party, so moving it could quietly lose what the diner asked for.
+    fixed = (
+        booking.table_choice == "chosen"
+        or bool(booking.prefs)
+        or booking.status in ("seated", "finishing")
+    )
     return PartySpec(
         id=booking.id,
         size=booking.party_size,

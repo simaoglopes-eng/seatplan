@@ -364,7 +364,7 @@ export interface ServicePlan {
   moves: PlanMove[];
   before: PlanScore;
   after: PlanScore;
-  /** Bookings that never move: the diner chose the table, or the party is already seated. */
+  /** Bookings that never move: the diner chose the table or asked for something, or the party is already seated. */
   fixed: number;
   movable: number;
 }
