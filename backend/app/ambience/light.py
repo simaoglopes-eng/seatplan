@@ -12,6 +12,7 @@ saying yes, while physics saying no always wins over the owner's hours.
 import math
 from collections.abc import Sequence
 from datetime import datetime, time, timedelta
+from functools import lru_cache
 from itertools import pairwise
 from typing import Literal
 
@@ -74,7 +75,27 @@ def _span(room: AmbienceRoom, opening: AmbienceOpening) -> tuple[float, float]:
 
 
 def opening_segments(room: AmbienceRoom, opening: AmbienceOpening) -> tuple[Segment, ...]:
-    """The opening as straight pieces: one on a straight side, 16 on a curved one."""
+    """The opening as straight pieces: one on a straight side, 16 on a curved one.
+
+    Every table asks for the same openings again and again, so the answer is kept
+    for the exact outline and opening values (a plain tuple key: nothing is shared
+    between rooms that differ in any number).
+    """
+    corners = tuple((p["x"], p["y"], p.get("curve", 0)) for p in room.outline["points"])
+    return _segments_of(corners, opening.side, opening.offset, opening.width, opening.kind)
+
+
+@lru_cache(maxsize=1024)
+def _segments_of(
+    corners: tuple[tuple[float, float, float], ...],
+    side: int,
+    offset: float,
+    width: float,
+    kind: str,
+) -> tuple[Segment, ...]:
+    outline = {"points": [{"x": x, "y": y, "curve": curve} for x, y, curve in corners]}
+    room = AmbienceRoom(key="cached", outline=outline, north_deg=None)
+    opening = AmbienceOpening(key="cached", side=side, offset=offset, width=width, kind=kind)  # type: ignore[arg-type]
     start, end = _span(room, opening)
     a, _ = _side_ends(room, opening.side)
     count = ARC_SEGMENTS if a.get("curve", 0) else 1
@@ -199,6 +220,25 @@ def sun_patches(
     the sun is high enough (awnings are handled in table_light).
     """
     sun = _sun(lat, lng, when, sun)
+    # Every table of a room asks for the same patches at the same moment, so they are kept
+    # for the exact room values (a plain tuple key, nothing shared between different rooms).
+    corners = tuple((p["x"], p["y"], p.get("curve", 0)) for p in room.outline["points"])
+    return _patches_of(corners, room.north_deg, room.is_outdoor, tuple(room.openings), sun, when)
+
+
+@lru_cache(maxsize=256)
+def _patches_of(
+    corners: tuple[tuple[float, float, float], ...],
+    north_deg: float | None,
+    is_outdoor: bool,
+    openings: tuple[AmbienceOpening, ...],
+    sun: SunPosition,
+    when: datetime,
+) -> tuple[Polygon, ...]:
+    outline = {"points": [{"x": x, "y": y, "curve": curve} for x, y, curve in corners]}
+    room = AmbienceRoom(
+        key="cached", outline=outline, north_deg=north_deg, is_outdoor=is_outdoor, openings=openings
+    )
     if room.is_outdoor:  # outdoors needs no north and no window
         return (outline_polygon(room.outline),) if _sun_is_up(sun) else ()
     if room.north_deg is None or not _sun_is_up(sun):
@@ -271,12 +311,18 @@ def _segment_distance(a: Point, b: Point, c: Point, d: Point) -> float:
 def polygon_distance(polygon: Sequence[Point], segments: Sequence[Segment]) -> float:
     """Shortest edge-to-edge distance in cm; 0 when a segment touches the polygon."""
     edges = list(zip(polygon, (*polygon[1:], *polygon[:1]), strict=True))
+    boxes = [(min(a.x, b.x), min(a.y, b.y), max(a.x, b.x), max(a.y, b.y)) for a, b in edges]
     best = math.inf
     for c, d in segments:
         if point_in_polygon(c, polygon) or point_in_polygon(d, polygon):
             return 0.0
-        for a, b in edges:
-            best = min(best, _segment_distance(a, b, c, d))
+        low_x, low_y, high_x, high_y = min(c.x, d.x), min(c.y, d.y), max(c.x, d.x), max(c.y, d.y)
+        for (a, b), (x0, y0, x1, y1) in zip(edges, boxes, strict=True):
+            # The gap between the two boxes is never more than the real distance, so a pair
+            # whose boxes are already farther apart than the best found cannot improve it.
+            gap = math.hypot(max(x0 - high_x, low_x - x1, 0.0), max(y0 - high_y, low_y - y1, 0.0))
+            if gap < best:
+                best = min(best, _segment_distance(a, b, c, d))
     return best
 
 
