@@ -20,3 +20,12 @@ of real north, so screen bearings must be relative to that direction.
 
 Who validates a draft? Geometry provides measurements. The editor validation
 layer reports geometric problems and the persistence layer checks references.
+
+
+solar.py exposes sun_position and sun_times with frozen SunPosition/SunTimes.
+Instants must be timezone aware. Input longitudes are positive east, and output
+rise/set/noon instants use the requested ZoneInfo timezone. Rise/set are None
+on polar days and nights. The 90.833 degree apparent horizon applies only to
+rise/set. The geometric altitude is used for later direct-sun decisions.
+Reference equations are linked in solar.py. Tests cover the approved Lisbon
+solstice reference times and angles, summer night, UTC equivalence and Troms?.
