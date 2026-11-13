@@ -1,14 +1,15 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ApiError, getVenue } from "../../api/client";
+import { getRooms } from "../../api/rooms";
+import type { RoomsAnswer } from "../../api/rooms";
 import type { VenueDetail } from "../../api/types";
 import { Button, Checkbox, ErrorState, Field, PageShell, Select, Skeleton } from "../../design/components";
-import { useHistory } from "../editor/useHistory";
 import { useUnsavedGuard } from "../editor/useUnsavedGuard";
 import { useLoad } from "../restaurant/useLoad";
 import { outlineToPolygon, polygonArea, sideLength, sidePoint } from "./geometry";
 import type { Point } from "./geometry";
-import { legacyRoom } from "./legacyRoom";
+import { useRoomDraft } from "./useRoomDraft";
 import { NewRoomDialog } from "./NewRoomDialog";
 import { addRoom, replaceRoom } from "./roomModel";
 import type { Room } from "./roomModel";
@@ -33,18 +34,18 @@ import "./room-editor.css";
 
 export default function RoomEditorPage() {
   const { venueId = "" } = useParams();
-  const { state, reload } = useLoad(() => getVenue(venueId), venueId);
+  const { state, reload } = useLoad(async () => ({ info: await getVenue(venueId), rooms: await getRooms(venueId) }), venueId);
   return <PageShell title="Rooms" width="wide">
     {state.status === "loading" && <Skeleton label="Loading your rooms" lines={4} />}
     {state.status === "error" && (state.error instanceof ApiError && state.error.status === 401 ? <p><Link to={`/owner/sign-in?next=${encodeURIComponent(`/owner/${venueId}/rooms`)}`}>Sign in to edit your rooms</Link></p> : <ErrorState title="We could not open these rooms" message="Check the restaurant link or try again." onRetry={() => reload()} />)}
-    {state.status === "ready" && (state.data.kind === "restaurant" ? <RoomSession info={state.data} /> : <p>Restaurant not found.</p>)}
+    {state.status === "ready" && (state.data.info.kind === "restaurant" ? <RoomSession venueId={venueId} info={state.data.info} server={state.data.rooms} /> : <p>Restaurant not found.</p>)}
   </PageShell>;
 }
 
-function RoomSession({ info }: { info: VenueDetail }) {
-  const [initial] = useState(() => legacyRoom(info));
-  const history = useHistory(initial);
-  const [selectedRoom, setSelectedRoom] = useState(initial.rooms[0].key);
+function RoomSession({ venueId, info, server }: { venueId: string; info: VenueDetail; server: RoomsAnswer }) {
+  const draft = useRoomDraft(venueId, server);
+  const history = draft.history;
+  const [selectedRoom, setSelectedRoom] = useState(server.rooms[0].key);
   const [adding, setAdding] = useState(false);
   const [drawingRoom, setDrawingRoom] = useState<string | null>(null);
   const [selection, setSelection] = useState<ShapeSelection>(null);
@@ -66,7 +67,7 @@ function RoomSession({ info }: { info: VenueDetail }) {
     const keys = selectedChair ? [key] : long ? [...new Set([...tableKeys, key])] : additive ? tableKeys.includes(key) ? tableKeys.filter(k => k !== key) : [...tableKeys, key] : tableKeys.includes(key) ? tableKeys : [key];
     setSelectedTables(keys); setObject(keys.includes(key) ? key : keys.at(-1) ?? null); setChair(selectedChair); if (long) setMultiple(true);
   };
-  const dirty = JSON.stringify(history.present) !== JSON.stringify(initial);
+  const dirty = draft.dirty;
   const problems = useMemo(() => validateRooms(history.present.rooms), [history.present]);
   useUnsavedGuard(dirty);
   const addPoint = (point: Point) => {
@@ -135,8 +136,9 @@ function RoomSession({ info }: { info: VenueDetail }) {
     }
   }}>
     <header className="room-header"><Link to="/owner">← Back to my restaurants</Link><h1>{info.name} · Rooms</h1>
-      <div className="room-actions"><Button variant="secondary" disabled={!history.canUndo} onClick={history.undo}>Undo</Button><Button variant="secondary" disabled={!history.canRedo} onClick={history.redo}>Redo</Button><Button disabled>Save</Button><span role="status">{dirty ? "Unsaved" : "Saved"}</span></div>
+      <div className="room-actions"><Button variant="secondary" disabled={!history.canUndo} onClick={history.undo}>Undo</Button><Button variant="secondary" disabled={!history.canRedo} onClick={history.redo}>Redo</Button><Button disabled={!dirty || draft.state === "saving"} busy={draft.state === "saving"} onClick={() => void draft.save()}>Save</Button><span role="status">{draft.state === "saving" ? "Saving" : dirty ? "Unsaved" : "Saved"}</span></div>
     </header>
+    <SaveNotices draft={draft} />
     <div className="room-tabs"><Select label="Room" value={room.key} onChange={e => { setSelectedRoom(e.target.value); setDrawingRoom(null); setSelection(null); }} options={history.present.rooms.map(r => ({ value: r.key, label: r.name }))} /><Button variant="secondary" disabled={history.present.rooms.length >= 5} onClick={() => setAdding(true)}>Add room</Button></div>
     {error && <p role="alert" className="room-error">{error}</p>}
     <div className="room-workspace"><nav className="room-tools" aria-label="Room tools">{["Shape", "Walls", "North", "Fixed", "Zones", "Tables", "Light", "Preview"].map(name => <button key={name} type="button" aria-pressed={tool === name} disabled={!["Shape", "Walls", "North", "Fixed", "Zones", "Tables"].includes(name) || (drawing && name !== "Shape")} onClick={() => { setTool(name); setPlacement(null); setError(""); }}>{name}</button>)}</nav>
@@ -157,4 +159,13 @@ function RoomSession({ info }: { info: VenueDetail }) {
     </div><footer className="room-status">{area.toLocaleString("pt-PT", { maximumFractionDigits: 1 })} m² · {grid ? "Grid on" : "Grid off"}<ProblemList problems={problems} onSelect={selectProblem} /></footer>
     {adding && <NewRoomDialog onClose={() => setAdding(false)} onCreate={(created, draw) => { history.commit(addRoom(history.present, created)); setSelectedRoom(created.key); setDrawingRoom(draw ? created.key : null); setSelection(null); setTool("Shape"); setAdding(false); }} />}
   </section>;
+}
+
+/** What the owner must decide or know about saving: a draft found on this device, another tab that saved first, a blocked delete. */
+function SaveNotices({ draft }: { draft: ReturnType<typeof useRoomDraft> }) {
+  return <>
+    {draft.found && <div className="room-notice" role="region" aria-label="Unsaved changes found"><p>We found unsaved changes from this device ({new Date(draft.found.saved_at).toLocaleString("en-GB")}).</p><div className="room-actions"><Button onClick={draft.restoreFound}>Restore my changes</Button><Button variant="secondary" onClick={draft.discardFound}>Discard my changes</Button></div></div>}
+    {draft.state === "conflict" && <div className="room-notice" role="alert"><p>This layout was changed in another tab or device. Your work is kept here and on this device.</p><div className="room-actions"><Button variant="secondary" onClick={() => void draft.loadLatest()}>Discard mine and load the latest</Button><Button onClick={() => void draft.saveOverLatest()}>Save mine over it</Button></div></div>}
+    {draft.notice && <p role="alert" className="room-error">{draft.notice}</p>}
+  </>;
 }

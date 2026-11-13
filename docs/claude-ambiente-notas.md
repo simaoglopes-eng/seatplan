@@ -313,3 +313,19 @@ primeiro (git checkout -- backend/app/main.py e remover os 3 novos), senão o
 merge recusa por ficheiros não rastreados.
 Também a rota GET /owner/restaurants/{vid}/ambience-preview (tarefa 23):
 tests/test_ambience_api.py (5).
+
+## Tarefa 18 (continuação do Codex): guardar e recuperar o editor
+
+Ficheiros: frontend/src/api/rooms.ts, pages/room-editor/useRoomDraft.ts (novos),
+RoomEditorPage.tsx (carrega do servidor, Save a funcionar, avisos), api/client.ts
+(ApiError.details) e types.ts (código stale_layout); removido legacyRoom.ts
+(a sala implícita vem agora do servidor). Testes: roomPersistence.test.tsx (10) e
+e2e room-editor.spec.ts (telemóvel 390x844: sala 10x7, curva, 2 janelas, norte,
+bar, 8 mesas, guardar, recarregar e ver o mesmo; dois separadores com 409 e
+"Save mine over it"). O teste unitário antigo do editor passou a responder por
+URL (GET venue e GET rooms), sem enfraquecer nada.
+- O rascunho local só é oferecido se diferir do guardado; restaurar reaproveita a
+  versão atual como base (o servidor continua a ser quem recusa ids apagados).
+- Critério de aceitação 6 (telemóvel) e o do conflito entre separadores ficam
+  cobertos por e2e. Falta: "desfazer/refazer em todas as ferramentas" (o Codex
+  cobriu a maior parte) e o publicar bloquear com erros (tarefa 19).

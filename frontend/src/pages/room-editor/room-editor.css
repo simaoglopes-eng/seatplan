@@ -81,3 +81,5 @@
   .room-properties { border-left: 0; border-top: 1px solid var(--c-border); }
   .room-header h1 { font-size: var(--fs-xl); }
 }
+
+.room-notice { border: 1px solid var(--c-accent-bright); background: var(--c-accent-soft); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-block: var(--space-3); }

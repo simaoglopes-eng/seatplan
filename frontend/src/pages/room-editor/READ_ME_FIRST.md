@@ -124,3 +124,20 @@ SAT checks use actual circles/rotated rectangles; chair-clearance footprints add
 checks boundary crossings as well as centres/corners. Groups allow 2 cm overlap;
 touching edges alone have no area overlap. The whole restaurant editor is lazy
 loaded so other routes do not load these geometry/interaction modules eagerly.
+
+
+## Saving and recovery (task 18)
+
+The editor opens what the server has (`GET /api/owner/restaurants/{vid}/rooms`, a
+restaurant without rooms arrives as one implicit "Main room") and Save replaces the whole
+layout in one request (`api/rooms.ts`, `useRoomDraft.ts`). The request carries the
+version the layout was opened at; if another tab or device saved first the server
+answers 409 `stale_layout` and changes nothing. The owner's work then stays on screen and
+on this device (localStorage `seatplan.room-draft.<venue>`, written 400 ms after each
+change, removed on save), with two choices: "Discard mine and load the latest" or "Save
+mine over it" (rebased on the latest version; if something it refers to was deleted
+elsewhere the server says 404 and the owner is told to load the latest). A draft left from
+an earlier visit is offered back ("Restore my changes" / "Discard my changes") and is never
+overwritten before that choice. A table with bookings cannot be deleted (409 with its name):
+the message points to "Available for booking" instead. Storage errors (private windows) only
+mean no local copy; the editor still works.

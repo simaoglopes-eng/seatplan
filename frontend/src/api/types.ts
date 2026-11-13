@@ -20,6 +20,7 @@ export type ErrorCode =
   | "deadline_passed"
   | "rate_limited"
   | "conflict"
+  | "stale_layout" // HTTP 409: the room layout was saved elsewhere since it was opened
   | "event_full" // HTTP 409: no place left for one more guest (docs/guest-accounts.md)
   | "link_closed" // HTTP 403: the shared link is valid but switched off
   | "method_not_allowed" // HTTP 405

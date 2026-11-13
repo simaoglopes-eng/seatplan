@@ -33,12 +33,15 @@ export type Auth = "organiser" | "guest" | "none";
 export class ApiError extends Error {
   readonly status: number;
   readonly code: ErrorCode;
+  /** The whole `error` object the server sent, for the few answers that carry more than a message (for example the tables that block a save). */
+  readonly details?: Record<string, unknown>;
 
-  constructor(status: number, code: ErrorCode, message: string) {
+  constructor(status: number, code: ErrorCode, message: string, details?: Record<string, unknown>) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -150,7 +153,7 @@ export async function request<T>(method: Method, path: string, body?: unknown, a
   // A guest session the server refuses is over: forget it, so pages send the person to sign in.
   if (response.status === 401 && auth === "guest") clearGuestToken();
   if (isApiErrorBody(data)) {
-    throw new ApiError(response.status, data.error.code, data.error.message);
+    throw new ApiError(response.status, data.error.code, data.error.message, data.error as unknown as Record<string, unknown>);
   }
   if (response.status >= 500) {
     throw new ApiError(response.status, "unknown", `The SeatPlan server is not answering right now (HTTP ${response.status}). Please try again shortly.`);
