@@ -329,3 +329,17 @@ URL (GET venue e GET rooms), sem enfraquecer nada.
 - Critério de aceitação 6 (telemóvel) e o do conflito entre separadores ficam
   cobertos por e2e. Falta: "desfazer/refazer em todas as ferramentas" (o Codex
   cobriu a maior parte) e o publicar bloquear com erros (tarefa 19).
+
+## Tarefa 24 (continuação do Codex): ferramenta Light do editor
+
+Ficheiros: pages/room-editor/{lightModel.ts, LightLayer.tsx, LightTools.tsx,
+useLightPreview.ts} (novos, com lightModel.test.ts e lightTool.test.tsx: 20
+testes), RoomCanvas.tsx (prop `light`), RoomEditorPage.tsx (botão Light ligado),
+api/rooms.ts (getLightPreview), useRoomDraft (savedVersion), e2e room-editor.spec.ts
+(o sol numa sala guardada em Lisboa ao almoço e a noite às 23:00, com axe).
+e2e/room-session.ts ganhou `ownerToken` (um login por worker: o login tem limite
+de 10 por minuto e os testes novos faziam 429).
+- A pré-visualização é do rascunho GUARDADO e avisa quando há alterações por
+  guardar; sem localização ou sem norte explica em vez de mostrar sol.
+- A tarefa 24 pedia a direção solar: o sol aparece na borda da planta, calculado
+  de azimute + north_deg (sunDirection, testado).

@@ -141,3 +141,15 @@ an earlier visit is offered back ("Restore my changes" / "Discard my changes") a
 overwritten before that choice. A table with bookings cannot be deleted (409 with its name):
 the message points to "Available for booking" instead. Storage errors (private windows) only
 mean no local copy; the editor still works.
+
+## Light tool (task 24)
+
+The "Light" tool previews the SAVED rooms (`GET /api/owner/restaurants/{vid}/ambience-preview`,
+asked 250 ms after the date or time stops changing, and again after a save). `lightModel.ts` has the
+words and numbers (compass names, "On 21 June at 13:00 the sun is in the south (180°), 74° high.
+Sunset at 21:05.", the 06:00-23:45 slider grid, the Sunrise / Lunch 13:00 / Sunset / Dinner 20:30
+shortcuts, and the sun's screen direction from the room's north). `LightLayer.tsx` draws striped
+sun patches clipped to the room, the dark-blue veil after sunset and the sun on the plan's edge;
+it never catches a tap. `LightTools.tsx` is the panel, with a "Describe table" list that shows the
+same sentences diners get. It says why nothing is shown (no location, north not set, unsaved
+changes) instead of guessing.

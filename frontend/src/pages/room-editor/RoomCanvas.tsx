@@ -13,6 +13,8 @@ import { NorthDial } from "./NorthTools";
 import { ObjectLayer } from "./ObjectLayer";
 import { OBJECT_DRAG_TYPE } from "./ObjectFields";
 import { TableLayer } from "./TableLayer";
+import { LightLayer } from "./LightLayer";
+import type { AmbienceAnswer } from "../../api/restaurant";
 import { tablesInBox } from "./selection";
 import type { RoomProblem } from "./validation";
 
@@ -25,9 +27,11 @@ interface Props {
   chair: string | null; onTableSelect: (key: string, chair: string | null, multiple?: boolean, long?: boolean) => void;
   tableKeys: string[]; multiple: boolean; areaMode: boolean; onArea: (keys: string[]) => void;
   problems: RoomProblem[]; focusTarget: { roomKey: string; point: Point; serial: number } | null;
+  /** The Light tool's picture of the saved rooms; drawn only while that tool is open. */
+  light?: AmbienceAnswer | null;
 }
 
-export function RoomCanvas({ room, drawing, grid, onPoint, onCloseShape, selection, onSelect, onChange, onDragStart, onError, tool, opening, onOpening, placement, object, onObject, onPlace, chair, onTableSelect, tableKeys, multiple, areaMode, onArea, problems, focusTarget }: Props) {
+export function RoomCanvas({ room, drawing, grid, onPoint, onCloseShape, selection, onSelect, onChange, onDragStart, onError, tool, opening, onOpening, placement, object, onObject, onPlace, chair, onTableSelect, tableKeys, multiple, areaMode, onArea, problems, focusTarget, light = null }: Props) {
   const viewport = useRef<HTMLDivElement>(null);
   const patternId = useId();
   const [cursor, setCursor] = useState<Point | null>(null);
@@ -71,6 +75,7 @@ export function RoomCanvas({ room, drawing, grid, onPoint, onCloseShape, selecti
           {Array.from({ length: Math.floor(maxX / 100) + 1 }, (_, i) => <text key={`x${i}`} x={i * 100} y={-35 / pan.view.k} textAnchor="middle" fontSize={11 / pan.view.k} className="room-ruler">{i} m</text>)}
           {Array.from({ length: Math.floor(maxY / 100) + 1 }, (_, i) => <text key={`y${i}`} x={-30 / pan.view.k} y={i * 100} textAnchor="end" fontSize={11 / pan.view.k} className="room-ruler">{i} m</text>)}
           {!drawing && points.length >= 3 && <path d={outlinePath(room.outline)} className={problems.some(p => p.code === "outline_invalid") ? "room-outline room-outline-invalid" : "room-outline"} />}
+          {!drawing && tool === "Light" && <LightLayer room={room} light={light} zoom={pan.view.k} />}
           {drawing && <polyline points={[...points, ...(cursor ? [cursor] : [])].map(p => `${p.x},${p.y}`).join(" ")} className="room-drawing" />}
           {points.map((p, i) => <text key={i} x={p.x + 12 / pan.view.k} y={p.y - 10 / pan.view.k} fontSize={12 / pan.view.k} className="room-ruler">{i + 1}</text>)}
           {!drawing && <ObjectLayer room={room} kind="zone" editing={tool === "Zones" && !placement} selected={object} grid={grid} zoom={pan.view.k} toWorld={toWorld} onSelect={onObject} onChange={onChange} onDragStart={() => { pan.zoomBy(1); onDragStart(); }} />}

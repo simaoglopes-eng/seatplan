@@ -3,6 +3,7 @@
 // 409 "stale_layout" means someone saved in between and nothing was changed.
 import type { RoomLayout } from "../pages/room-editor/roomModel";
 import { api, ApiError } from "./client";
+import type { AmbienceAnswer } from "./restaurant";
 
 /** What the server answers to GET and PUT: the layout with real ids, its version and the problems it found. */
 export interface RoomsAnswer extends RoomLayout {
@@ -18,6 +19,11 @@ export function getRooms(venueId: string): Promise<RoomsAnswer> {
 
 export function putRooms(venueId: string, layout: RoomLayout): Promise<RoomsAnswer> {
   return api.put<RoomsAnswer>(url(venueId), roomPayload(layout));
+}
+
+/** The light of the SAVED rooms on a date and time, for the editor's Light tool. */
+export function getLightPreview(venueId: string, date: string, time: string): Promise<AmbienceAnswer> {
+  return api.get<AmbienceAnswer>(`${url(venueId).replace(/rooms$/, "ambience-preview")}?${new URLSearchParams({ date, time })}`);
 }
 
 /** The layout as the server accepts it: only base_version and rooms, and none of the read-only flags. */

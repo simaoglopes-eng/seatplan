@@ -10,6 +10,8 @@ import { useLoad } from "../restaurant/useLoad";
 import { outlineToPolygon, polygonArea, sideLength, sidePoint } from "./geometry";
 import type { Point } from "./geometry";
 import { useRoomDraft } from "./useRoomDraft";
+import { LightTools } from "./LightTools";
+import { useLightPreview } from "./useLightPreview";
 import { NewRoomDialog } from "./NewRoomDialog";
 import { addRoom, replaceRoom } from "./roomModel";
 import type { Room } from "./roomModel";
@@ -68,6 +70,8 @@ function RoomSession({ venueId, info, server }: { venueId: string; info: VenueDe
     setSelectedTables(keys); setObject(keys.includes(key) ? key : keys.at(-1) ?? null); setChair(selectedChair); if (long) setMultiple(true);
   };
   const dirty = draft.dirty;
+  const [lightDate, setLightDate] = useState(todayLocal), [lightTime, setLightTime] = useState("13:00");
+  const light = useLightPreview(venueId, tool === "Light", lightDate, lightTime, draft.savedVersion);
   const problems = useMemo(() => validateRooms(history.present.rooms), [history.present]);
   useUnsavedGuard(dirty);
   const addPoint = (point: Point) => {
@@ -141,8 +145,8 @@ function RoomSession({ venueId, info, server }: { venueId: string; info: VenueDe
     <SaveNotices draft={draft} />
     <div className="room-tabs"><Select label="Room" value={room.key} onChange={e => { setSelectedRoom(e.target.value); setDrawingRoom(null); setSelection(null); }} options={history.present.rooms.map(r => ({ value: r.key, label: r.name }))} /><Button variant="secondary" disabled={history.present.rooms.length >= 5} onClick={() => setAdding(true)}>Add room</Button></div>
     {error && <p role="alert" className="room-error">{error}</p>}
-    <div className="room-workspace"><nav className="room-tools" aria-label="Room tools">{["Shape", "Walls", "North", "Fixed", "Zones", "Tables", "Light", "Preview"].map(name => <button key={name} type="button" aria-pressed={tool === name} disabled={!["Shape", "Walls", "North", "Fixed", "Zones", "Tables"].includes(name) || (drawing && name !== "Shape")} onClick={() => { setTool(name); setPlacement(null); setError(""); }}>{name}</button>)}</nav>
-      <RoomCanvas room={room} drawing={drawing} grid={grid} onPoint={addPoint} onCloseShape={closeShape} selection={selection} onSelect={setSelection} onChange={changeRoom} onDragStart={history.checkpoint} onError={setError} tool={tool} opening={opening} onOpening={setOpening} placement={placement} object={object} onObject={setObject} onPlace={placeObject} chair={chair} onTableSelect={chooseTable} tableKeys={tableKeys} multiple={multiple} areaMode={areaMode} onArea={keys => { updateKeys(keys); setAreaMode(false); }} problems={problems.filter(p => p.room_key === room.key)} focusTarget={focusTarget} />
+    <div className="room-workspace"><nav className="room-tools" aria-label="Room tools">{["Shape", "Walls", "North", "Fixed", "Zones", "Tables", "Light", "Preview"].map(name => <button key={name} type="button" aria-pressed={tool === name} disabled={!["Shape", "Walls", "North", "Fixed", "Zones", "Tables", "Light"].includes(name) || (drawing && name !== "Shape")} onClick={() => { setTool(name); setPlacement(null); setError(""); }}>{name}</button>)}</nav>
+      <RoomCanvas room={room} drawing={drawing} grid={grid} onPoint={addPoint} onCloseShape={closeShape} selection={selection} onSelect={setSelection} onChange={changeRoom} onDragStart={history.checkpoint} onError={setError} tool={tool} opening={opening} onOpening={setOpening} placement={placement} object={object} onObject={setObject} onPlace={placeObject} chair={chair} onTableSelect={chooseTable} tableKeys={tableKeys} multiple={multiple} areaMode={areaMode} onArea={keys => { updateKeys(keys); setAreaMode(false); }} problems={problems.filter(p => p.room_key === room.key)} focusTarget={focusTarget} light={tool === "Light" ? light.answer : null} />
       <aside className="room-properties"><h2>Room properties</h2><div className="room-form">
         <Field label="Selected room name" value={room.name} maxLength={60} onChange={e => history.commit(replaceRoom(history.present, { ...room, name: e.target.value }))} />
         <Checkbox label="Show 50 cm grid" checked={grid} onChange={e => setGrid(e.target.checked)} />
@@ -151,6 +155,7 @@ function RoomSession({ venueId, info, server }: { venueId: string; info: VenueDe
         {!drawing && tool === "Shape" && <RoomProperties key={`${room.key}:${selection?.kind}:${selection?.index}`} room={room} selection={selection} onSelect={setSelection} onChange={changeRoom} onError={setError} />}
         {!drawing && tool === "Shape" && room.outline.points.length < 3 && <Button onClick={() => setDrawingRoom(room.key)}>Continue drawing walls</Button>}
         {!drawing && tool === "Walls" && <WallTools room={room} selection={selection} selected={opening} onSelect={setOpening} onSide={setSelection} onChange={changeRoom} onError={setError} />}
+        {!drawing && tool === "Light" && <LightTools room={room} unsaved={dirty} date={lightDate} time={lightTime} onDate={setLightDate} onTime={setLightTime} answer={light.answer} failed={light.failed} />}
         {!drawing && tool === "North" && <NorthTools key={room.key} room={room} onChange={changeRoom} />}
         {!drawing && tool === "Fixed" && <FixtureTools room={room} selected={object} placement={placement} onSelect={setObject} onArm={setPlacement} onCentre={placeCentre} onChange={changeRoom} onError={setError} />}
         {!drawing && tool === "Zones" && <ZoneTools room={room} selected={object} placement={placement} onSelect={setObject} onArm={setPlacement} onCentre={placeCentre} onChange={changeRoom} />}
@@ -168,4 +173,10 @@ function SaveNotices({ draft }: { draft: ReturnType<typeof useRoomDraft> }) {
     {draft.state === "conflict" && <div className="room-notice" role="alert"><p>This layout was changed in another tab or device. Your work is kept here and on this device.</p><div className="room-actions"><Button variant="secondary" onClick={() => void draft.loadLatest()}>Discard mine and load the latest</Button><Button onClick={() => void draft.saveOverLatest()}>Save mine over it</Button></div></div>}
     {draft.notice && <p role="alert" className="room-error">{draft.notice}</p>}
   </>;
+}
+
+/** Today's date as YYYY-MM-DD on this device, the Light tool's first date. */
+function todayLocal(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }

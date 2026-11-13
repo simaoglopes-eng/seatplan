@@ -2,15 +2,12 @@
 // wall, adds two windows, sets north, adds a bar and eight tables, saves,
 // reloads the page and sees exactly the same. A second tab that saved first
 // makes the first tab's save a 409, and the first tab keeps its work.
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, ORGANISER, test } from "./fixtures";
+import { expect, test } from "./fixtures";
+import { ownerToken } from "./room-session";
 import type { APIRequestContext, Page } from "@playwright/test";
-
-async function ownerToken(request: APIRequestContext): Promise<string> {
-  const answer = await request.post("/api/auth/login", { data: ORGANISER });
-  expect(answer.status()).toBe(200);
-  return ((await answer.json()) as { token: string }).token;
-}
 
 /** A brand-new restaurant, so saving never touches the demo; its room is the implicit 10 x 7 m one. */
 async function newRestaurant(request: APIRequestContext, token: string, name: string): Promise<string> {
@@ -105,4 +102,39 @@ test("a second tab that saved first makes the next save a conflict, and the work
   await expect(first.getByLabel("Selected room name")).toHaveValue("First tab's work");
   await first.close();
   await second.close();
+});
+
+test("the Light tool shows the sun on the saved room at lunch, and the night after sunset", async ({ page, request }, info) => {
+  const token = await ownerToken(request);
+  const headers = { Authorization: `Bearer ${token}` };
+  const venue = await newRestaurant(request, token, "Light Test");
+  // Lisbon, so the sun's position is the one the backend tests check.
+  const located = await request.patch(`/api/owner/restaurants/${venue}/profile`, { data: { lat: 38.7223, lng: -9.1393, timezone: "Europe/Lisbon", address: "Rua Augusta 1, Lisboa" }, headers });
+  expect(located.status()).toBe(200);
+  const url = `/api/owner/restaurants/${venue}/rooms`;
+  const initial = (await (await request.get(url, { headers })).json()) as { base_version: number; rooms: Record<string, unknown>[] };
+  const room = initial.rooms[0] as Record<string, unknown>;
+  room.north_deg = 0;
+  room.openings = [{ id: null, key: "w1", side: 2, offset: 300, width: 400, kind: "window", top_height: 220 }];
+  room.tables = [{ id: null, key: "t1", zone_key: null, label: "Window table", shape: "rect", x: 460, y: 600, w: 80, h: 80, max_party: 2, seats: [] }];
+  const saved = await request.put(url, { data: { base_version: initial.base_version, rooms: initial.rooms }, headers });
+  expect(saved.status()).toBe(200);
+
+  await open(page, token, venue);
+  await page.getByRole("button", { name: "Light", exact: true }).click();
+  await page.getByLabel("Date").fill("2026-06-21");
+  await page.getByRole("button", { name: "Lunch 13:00", exact: true }).click();
+  await expect(page.getByText(/On 21 June at 13:00 the sun is in the south-east/)).toBeVisible();
+  await expect(page.locator("path.room-sun").first()).toBeVisible();
+  await expect(page.locator(".room-sun-direction")).toHaveCount(1);
+  await page.getByLabel("Describe table").selectOption({ label: "Window table" });
+  await expect(page.getByText(/Direct sun/).first()).toBeVisible();
+  await page.screenshot({ path: join(tmpdir(), `seatplan-room-light-day-${info.project.name}.png`), fullPage: true });
+  expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+
+  await page.getByLabel("Time of day").fill("68"); // 06:00 + 68 x 15 min = 23:00
+  await expect(page.locator(".room-night")).toHaveCount(1);
+  await expect(page.locator("path.room-sun")).toHaveCount(0);
+  await expect(page.getByText(/below the horizon/)).toBeVisible();
+  await page.screenshot({ path: join(tmpdir(), `seatplan-room-light-night-${info.project.name}.png`), fullPage: true });
 });

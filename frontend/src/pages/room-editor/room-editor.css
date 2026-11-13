@@ -83,3 +83,8 @@
 }
 
 .room-notice { border: 1px solid var(--c-accent-bright); background: var(--c-accent-soft); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-block: var(--space-3); }
+
+.room-light-tools { display: flex; flex-direction: column; gap: var(--space-3); }
+.room-light-slider input[type="range"] { width: 100%; min-height: var(--touch-target); accent-color: var(--c-primary); }
+.room-sun-direction circle { fill: var(--c-accent-bright); stroke: var(--c-accent); stroke-width: 2; }
+.room-sun-direction line { stroke: var(--c-accent-bright); stroke-width: 3; stroke-linecap: round; }

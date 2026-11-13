@@ -151,5 +151,5 @@ export function useRoomDraft(venueId: string, server: RoomsAnswer) {
     setFound(null);
   }, [venueId]);
 
-  return { history, dirty, state, notice, found, save, loadLatest, saveOverLatest, restoreFound, discardFound };
+  return { history, dirty, state, notice, found, savedVersion: saved.base_version, save, loadLatest, saveOverLatest, restoreFound, discardFound };
 }
