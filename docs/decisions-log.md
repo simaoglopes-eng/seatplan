@@ -889,3 +889,9 @@ were retained and the report restored before the next verification.
     restaurant showed broken photos, because a draft's photos need the owner's sign-in and a plain image cannot send it; the preview now fetches
     them with the sign-in (`PhotoImg`); (b) the confirmation email's map marked no chair when the chair was at the second table of a joined
     booking; it now draws the room of the chair's table, marks the chair there and highlights every booked table of that room.
+
+28. **A dead control removed.** The room editor's toolbar had a "Preview" button that was always disabled. A button that never works is worse
+    than none, and the Light tool already shows the saved room as a diner sees it, so the button is gone (branch claude/staff-polish).
+29. **Frontend tests tolerate a busy machine.** `testTimeout` is 20 s and `asyncUtilTimeout` 5 s (vite.config.ts, src/test/setup.ts). On an idle
+    machine nothing changes; with a game or Docker running, long interaction tests (events ones too) used to time out at 5 s / 1 s without any
+    real fault. A real hang still fails, only later.

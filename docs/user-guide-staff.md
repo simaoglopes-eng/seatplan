@@ -14,6 +14,9 @@ Pick a date and time (default: now). Every table shows one status:
 | Seated | The guests are at the table |
 | Finishing | The guests are on dessert or paying; the table frees soon |
 
+When a guest asked for a chair, that chair is drawn with its own mark on the booked table (and named in the key as **Chair asked for**),
+so you can lay the right place. The other chairs of a booked table look taken, and no chair carries a name.
+
 Below the map is the list of the day's open bookings with their tables.
 
 ## Changing a booking's status
@@ -45,15 +48,15 @@ you seat a large party.
 Ask "where would a party of 6 go at 20:00?" without changing anything. The
 answer is either a free table, or the cheapest set of moves that makes room:
 which bookings would move and to which tables, named by the guest's name and
-the table labels. Bookings the diner chose themselves and parties already
-seated are never moved.
+the table labels. Bookings the diner chose themselves, bookings made with wishes (sun, a view, a quiet corner...)
+and parties already seated are never moved.
 
 ## Re-plan a service
 
 Over an evening, bookings that SeatPlan placed automatically can end up on
 tables bigger than they need. "Re-plan" asks the optimiser to place again the
 bookings of one service (for example Friday dinner) whose diners did not pick
-a table:
+a table and did not ask for anything (sun, a view...); those keep the table they were given with their wishes:
 
 1. **Preview.** You see who would move where, and covers seated and wasted
    seats before and after. Nothing changes yet.

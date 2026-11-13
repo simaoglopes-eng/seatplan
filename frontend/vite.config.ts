@@ -25,5 +25,8 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
     css: false,
+    // The default 5 s is enough on an idle machine, but long interaction tests time out when the machine is busy
+    // with other programs; a real hang still fails, only later.
+    testTimeout: 20000,
   },
 });

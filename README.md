@@ -250,7 +250,7 @@ questions. On the frontend there is one in `frontend/` and one in each of
 | [`docs/design-system.md`](docs/design-system.md), [`docs/ux-events.md`](docs/ux-events.md), [`docs/ux-restaurant.md`](docs/ux-restaurant.md) | Design tokens, seat states and the screen-by-screen UX notes |
 | [`docs/accessibility.md`](docs/accessibility.md) | Accessibility statement (no conformance claim), WCAG 2.2 A and AA review, heuristic review |
 | [`docs/usability/`](docs/usability/README.md) | Usability test kit; no session has been run yet |
-| User guides: [attendee](docs/user-guide-attendee.md), [organiser](docs/user-guide-organiser.md), [diner](docs/user-guide-diner.md), [staff](docs/user-guide-staff.md) | How to use each screen |
+| User guides: [attendee](docs/user-guide-attendee.md), [organiser](docs/user-guide-organiser.md), [restaurant owner](docs/user-guide-owner.md), [diner](docs/user-guide-diner.md), [staff](docs/user-guide-staff.md) | How to use each screen |
 | [`docs/guest-accounts.md`](docs/guest-accounts.md) | The shared event link and guest accounts: decisions, API, emails with the seat picture, GDPR, review fixes |
 | [`docs/security.md`](docs/security.md) | Threat model, findings (fixed and open), who may call each route |
 | [`docs/test-report.md`](docs/test-report.md) | Every test layer, how to run it and today's results |
