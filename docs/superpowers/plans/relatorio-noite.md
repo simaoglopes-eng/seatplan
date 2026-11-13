@@ -1,54 +1,101 @@
-# Relat?rio da noite ? 2026-11-13
+# Relatório da noite — 13 de novembro de 2026
 
-## Estado atual
+Trabalho em curso na branch martim/restaurantes-impl. Último commit verde
+antes da migração, 7581213. Spec e plano aprovados por Martim, commit 880624b
+na branch martim/restaurantes-spec. Identidade Git configurada apenas neste
+repositório. Plano com 40 tarefas.
 
-Branch martim/restaurantes-impl. Spec e plano guardados no commit 880624b em martim/restaurantes-spec. Identidade Git configurada apenas neste reposit?rio. Plano com 40 tarefas aprovado durante a prepara??o. Execu??o em curso.
+## Tarefas e commits
 
-## Linha de base
+| Tarefa | Estado | Commit | Resultado |
+|---|---|---|---|
+| Spec e plano | Feita | 880624b | Leitura e inventário concluídos |
+| 0 — Proteção | Feita | ecc6dfc | AGENTS.md, guard e dois testes reais de Git |
+| 1 — Contratos | Feita | 54f89d7 | Dependência do Sérgio executada por autorização |
+| 2 — Modelos e migração | Feita | Commit desta entrada | 30 tabelas, migração repetível e formato legado preservado |
+| 3 — Geometria | Feita | 1839a52 | Contorno circular, normais, rumos, área e contenção |
+| 4 — Sol | Feita | 7581213 | Posição e horas solares, fusos e casos polares |
 
-- Ruff passou e typecheck passou na verifica??o inicial.
-- Frontend com 209 passed em 23 ficheiros.
-- Backend inicial com uma falha conhecida de concorr?ncia no registo de convidados. Rerun isolado com 1 passed, 1 warning in 1.07s. Exce??o autorizada por Martim.
-- Chromium instalado e npm run e2e com 23 passed (24.8s), desktop e 390x844.
-- Permiss?es herdadas em pastas tempor?rias/cache exigem pytest com --basetemp ?nico e -p no:cacheprovider. Esta variante mant?m a recolha e execu??o de todos os testes.
+## Verificações reais
 
-## Tarefa 0 ? feita
+Cada bateria completa executou backend ruff check ., ruff format --check .,
+python -m pytest -q -o addopts=, e frontend npm run typecheck e npm test.
+O pytest usa --basetemp novo e -p no:cacheprovider devido a permissões herdadas
+na primeira sessão. Todos os testes continuam a ser recolhidos e executados.
 
-Criados AGENTS.md, scripts/check_forbidden_paths.py e dois testes que usam reposit?rios tempor?rios. Testes RED com 2 failed antes do script existir e GREEN com 2 passed. Cobrem main, ficheiros untracked/staged/committed, renomea??o e altera??es permitidas. Primeiro lint encontrou quatro chamadas subprocess sem check expl?cito, j? corrigidas sem alterar asser??es.
+| Tarefa | Pytest | Frontend | Formato |
+|---|---|---|---|
+| 0 | 600 passed, 3 warnings em 98,61 s | 209 passed em 23 ficheiros, tipos passaram | 160 ficheiros |
+| 1 | 600 passed, 3 warnings em 112,59 s | 209 passed, tipos passaram | 160 ficheiros |
+| 3 | 604 passed, 3 warnings em 99,06 s | 209 passed, tipos passaram | 164 ficheiros |
+| 4 | 612 passed, 3 warnings em 105,17 s | 209 passed, tipos passaram | 166 ficheiros |
 
-Verifica??o real antes do commit
+Ruff e guard scripts/check_forbidden_paths.py --base main passaram em cada
+commit, assim como git diff --check. Nenhum caminho protegido foi alterado.
+Na tarefa 4, npm run build passou em 128 ms, npm run contrast deu 86 checks
+e 0 failures, e npm run e2e deu 23 passed (23,4 s), desktop e 390x844.
+O E2E usa E2E_PYTHON com caminho absoluto do venv Windows. Na linha de base
+inicial, E2E deu 23 passed (24,8 s) após instalar Chromium.
 
-- Guard com --base main passou.
-- backend ruff check . passou.
-- backend ruff format --check . deu 160 files already formatted.
-- backend python -m pytest -q -o addopts= -p no:cacheprovider --basetemp <diret?rio ?nico> deu 600 passed, 3 warnings in 98.61s.
-- frontend npm run typecheck passou.
-- frontend npm test deu 209 passed em 23 ficheiros.
-- git diff --check e ruff check do script passaram.
-- Commit identificado pela mensagem chore: protect event paths during restaurant implementation. O hash ser? registado na entrada seguinte.
+## Testes primeiro
 
-## Regras de recupera??o autorizadas
+- Tarefa 0 com dois testes RED antes do script existir, depois dois GREEN.
+  Cobrem main, untracked, staged, committed e renomeações.
+- Tarefa 2 com RED antes das colunas existirem. O teste novo passou e os
+  testes históricos detetaram as diferenças de esquema descritas abaixo.
+- Tarefa 3 com RED por módulo inexistente, depois quatro testes verdes,
+  incluindo hipótese geradora sobre invariância da área com rotação.
+- Tarefa 4 com RED por módulo inexistente, depois oito testes verdes.
+  Equações primárias consultadas em https://gml.noaa.gov/grad/solcalc/solareqns.PDF.
 
-Se surgirem novas regress?es, confirmar martim/restaurantes-impl e recuperar ?ltimo commit verde com git reset --hard, preservando e repondo este relat?rio. S? a falha conhecida admite rerun isolado. Tarefas sem solu??o ap?s duas tentativas ou decis?o em falta ficam registadas e segue-se a pr?xima tarefa vi?vel.
+## Recuperações autorizadas da tarefa 2
 
-## D?vidas para a manh?
+A primeira tentativa deu 1 failed e 16 passed no subconjunto. O teste
+test_fresh_and_upgraded_databases_have_the_same_shape encontrou ordem
+diferente de colunas. Confirmada a branch e executado git reset --hard
+54f89d7. Seguiram-se as tarefas independentes 3 e 4. Diff preservado em
+C:\Users\marti\AppData\Local\Temp\seatplan-task2-rejected-bcjuacb4\task2.patch.
 
-As 18 quest?es do plano incluem incompatibilidade entre key de quatro elementos e testes atuais de tr?s, ?ndices de migra??o com teste hist?rico limitado a events/guests, permiss?es de geolocaliza??o, privacidade/cache das fotos e reten??o de hist?rico de mesas. As decis?es conservadoras ser?o registadas antes de implementar cada uma.
+A segunda tentativa corrigiu a ordem e isolou published_at como TIMESTAMP
+no esquema migrado e DATETIME no esquema SQLite novo. A diferença foi
+confirmada por inspeção direta das duas bases temporárias. Executado
+git reset --hard 7581213 após confirmar a branch. Diff preservado em
+C:\Users\marti\AppData\Local\Temp\seatplan-task2-second-zbfwlg4e\task2.patch.
 
-## Tarefa 1 ? feita
+Após as duas tentativas, escolheu-se a solução conservadora autorizada por
+Martim, alinhando o DDL SQLite com DATETIME e mantendo TIMESTAMP em Postgres.
+O subconjunto deu 17 passed e 3 warnings em 2,04 s. Ruff passou e formato
+deu 167 ficheiros. Bateria completa pendente antes de aceitar a migração.
+Os testes existentes foram preservados. Os testes novos rejeitados foram
+arquivados com o diff e recuperados na tentativa seguinte.
 
-Depend?ncia do S?rgio executada por autoriza??o do Martim. Contratos de coordenadas, rooms, ambiente, erros e compatibilidade adicionados a docs/CONTRACT.md. Decis?es conservadoras registadas em docs/decisions-log.md. Tarefa 0 conclu?da em ecc6dfc. Verifica??o completa executada. Ruff check passou, ruff format --check deu 160 files already formatted, pytest com diret?rio tempor?rio ?nico e sem cache deu 600 passed, 3 warnings in 112.59s. npm run typecheck passou e npm test deu 209 passed em 23 ficheiros. Guard e git diff --check passaram. Commit documental identificado pela mensagem docs: define restaurant platform compatibility contracts.
+## Decisões e dúvidas para a manhã
 
-## Tarefa 2 ? saltada ap?s recupera??o autorizada
+As decisões estão em docs/decisions-log.md e as 18 questões no plano.
+Incluem chave do optimizador, índices históricos, geolocalização bloqueada
+nos headers, autenticação/cache das fotos, histórico de mesas e publicação
+de configuração inválida. O editor usará preview solar do rascunho guardado
+no servidor. A demo atual é Casa Lumen, chamada Casa Linho no spec.
 
-Depend?ncia do S?rgio tentada. Teste novo RED observado e migra??o nova GREEN, mas o conjunto com testes existentes deu 1 failed, 16 passed. Falhou test_fresh_and_upgraded_databases_have_the_same_shape por ordem diferente de colunas na base nova e migrada. Ruff encontrou duas chamadas dict a converter em literais no teste novo. Nenhum teste existente foi editado. Conforme instru??o de Martim, aplicado git reset --hard 54f89d7 apenas ap?s confirmar martim/restaurantes-impl. ?ltimo commit verde e contrato permanecem 54f89d7.
+Postgres ainda não foi executado porque SEATPLAN_TEST_POSTGRES está ausente.
+O teste conhecido de concorrência dos eventos falhou na linha de base inicial
+e passou isolado com 1 passed em 1,07 s. As baterias seguintes passaram inteiras.
 
-Diff integral da tentativa preservado em C:\Users\marti\AppData\Local\Temp\seatplan-task2-rejected-bcjuacb4\task2.patch. Tarefa seguinte vi?vel ? 3, geometria pura. A migra??o deve ser retomada colocando colunas novas depois das antigas nas classes, com a mesma ordem de NEW_COLUMNS, antes de voltar a verificar. O c?digo rejeitado e os testes novos est?o preservados no patch de diagn?stico.
+O stdin do PowerShell danificou acentos nos primeiros documentos gerados.
+O plano e este relatório foram corrigidos com escrita UTF-8 direta.
 
-## Tarefa 3 ? feita
+### Compatibilidade do editor antigo
 
-Tarefa 1 conclu?da em 54f89d7. Geometria pura implementada com Point imut?vel, contorno circular aproximado, ponto na borda inclu?do, ?rea com sinal, ret?ngulo rodado e rumo/normal. RED por m?dulo inexistente, seguido de 4 passed no teste novo, incluindo hypothesis para invari?ncia da ?rea. Ruff check passou e formato deu 164 files already formatted. Bateria completa passou. Pytest com --basetemp novo e -p no:cacheprovider deu 604 passed, 3 warnings in 99.06s. npm run typecheck passou e npm test deu 209 passed em 23 ficheiros. Guard e git diff --check passaram. Guia do m?dulo criado. Commit identificado pela mensagem feat: add pure restaurant outline geometry.
-
-## Tarefa 4 ? feita
-
-Tarefa 3 conclu?da em 1839a52. solar.py implementado com biblioteca padr?o e equa??es prim?rias NOAA consultadas em https://gml.noaa.gov/grad/solcalc/solareqns.PDF. Testes RED por m?dulo inexistente, depois 8 passed. Lisboa ver?o/inverno, altitude/azimute ao meio-dia, noite, Troms? e valida??o de entradas. Ruff check passou. Bateria completa executada. Ruff check passou, formato com 166 files already formatted, pytest sem cache e com tempor?rio novo com 612 passed, 3 warnings in 105.17s. Typecheck passou, Vitest com 209 passed em 23 ficheiros, build passou em 128ms, contraste com 86 checks e 0 failures, E2E com 23 passed (23.4s). Guard e git diff --check passaram. Commit identificado pela mensagem feat: calculate restaurant solar position and daylight times. Pr?ximo trabalho ? retomar a depend?ncia 2 com a ordem de colunas corrigida antes da tarefa 5.
+A bateria completa da migração deu 1 failed e 612 passed em 99,98 s.
+test_layout_upsert_updates_by_id_and_removes_missing revelou room_id na
+resposta antiga, que esse editor devolvia ao servidor e era rejeitado por
+extra=forbid. Após confirmar a branch, foi executado git reset --hard
+7581213. O diff foi preservado em
+C:\Users\marti\AppData\Local\Temp\seatplan-model-compatibility-1o8ksq13\attempt.patch.
+A opção conservadora mantém os campos do contrato antigo no serializador
+partilhado routers/venues.py. Nenhum ficheiro protegido foi alterado.
+O subconjunto com modelos, migrações e plantas passou com 25 passed e
+3 warnings em 2,78 s. A bateria completa final passou com 613 passed,
+3 warnings em 100,17 s. Ruff check passou e formato com 167 ficheiros.
+Typecheck passou e npm test deu 209 passed em 23 ficheiros. Guard e
+git diff --check passaram. Modelos, migração e testes novos aceites.

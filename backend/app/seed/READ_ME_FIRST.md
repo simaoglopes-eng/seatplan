@@ -2,6 +2,12 @@
 
 ## Purpose
 
+Restaurant platform additions use the same repeatable migration. New columns
+are appended in the same order in models.py and NEW_COLUMNS. Restaurant indexes
+live in RESTAURANT_INDEXES, preserving the historical NEW_INDEXES contract.
+SQLite timestamp additions use DATETIME to match the fresh schema. Existing
+layouts remain untouched and are interpreted as an implicit room by the service.
+
 Two commands, run from `backend/`:
 
 - `python -m app.seed.migrate` creates any missing tables, then adds the

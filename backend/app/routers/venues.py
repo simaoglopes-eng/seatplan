@@ -116,6 +116,10 @@ def _row_dict(row: Zone | VenueTable | Seat) -> dict[str, Any]:
     """Every column of a row, plus key = str(id) so the editor can send it back."""
     data = {column.name: getattr(row, column.name) for column in row.__table__.columns}
     data.pop("venue_id")
+    # The legacy editor must receive exactly the fields it can save back.
+    # Restaurant rooms have their own nested API and validation models.
+    data.pop("room_id", None)
+    data.pop("is_active", None)
     data["key"] = str(row.id)
     return data
 

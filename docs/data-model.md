@@ -1,8 +1,8 @@
 # Data model
 
 All tables live in one file, `backend/app/models.py` (SQLAlchemy 2, typed
-style). There are 26 tables (counted with `len(Base.metadata.tables)` on
-2026-11-10, after guest accounts): 12 shared, 8 for events and 6 for
+style). There are 30 tables after the restaurant platform foundation:
+12 shared, 8 for events and 10 for
 restaurants. The same code runs
 on SQLite (laptop and tests) and Postgres (deployment).
 
@@ -10,7 +10,15 @@ on SQLite (laptop and tests) and Postgres (deployment).
 |---|---|
 | Shared | `organisers`, `venues`, `zones`, `tables`, `seats`, `seat_neighbours`, `live_versions`, `holds`, `email_outbox`, `audit_log`, `rate_limits`, `demo_links` |
 | Events | `events`, `guest_groups`, `guests`, `acquaintances`, `seat_assignments`, `plan_snapshots`, `guest_accounts`, `email_codes` |
-| Restaurants | `service_periods`, `turn_times`, `blackout_dates`, `bookings`, `table_slots`, `waitlist_entries` |
+| Restaurants | `service_periods`, `turn_times`, `blackout_dates`, `bookings`, `table_slots`, `waitlist_entries`, `rooms`, `room_openings`, `room_fixtures`, `venue_photos` |
+
+The restaurant extension adds nullable room references to zones, tables and
+seats, is_active to tables, chosen_seat_id and prefs to bookings, and the public
+profile, slug, status, location, features and layout version to venues. The
+nullable slug has a unique index. Migration preserves existing layout rows
+without creating rooms. Photos store bounded bytes and an optional opening
+reference. The diagram below records the frozen 2026-11-10 baseline. These
+additions follow specification section 11.
 
 ## How the diagram was made
 

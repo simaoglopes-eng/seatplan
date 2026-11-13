@@ -18,6 +18,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     Text,
     Time,
@@ -91,6 +92,29 @@ class Venue(Base):
     width: Mapped[float] = mapped_column(Float)
     height: Mapped[float] = mapped_column(Float)
 
+    __table_args__ = (Index("uq_venues_slug", "slug", unique=True),)
+    slug: Mapped[str | None] = mapped_column(String(60))
+    status: Mapped[str] = mapped_column(
+        String(12), default="published", server_default=text("'published'")
+    )
+    is_demo: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("FALSE"))
+    description: Mapped[str] = mapped_column(String(300), default="", server_default=text("''"))
+    cuisines: Mapped[list[str]] = mapped_column(JSON, default=list, server_default=text("'[]'"))
+    price_level: Mapped[int | None] = mapped_column(Integer)
+    address: Mapped[str] = mapped_column(String(200), default="", server_default=text("''"))
+    lat: Mapped[float | None] = mapped_column(Float)
+    lng: Mapped[float | None] = mapped_column(Float)
+    phone: Mapped[str | None] = mapped_column(String(40))
+    website: Mapped[str | None] = mapped_column(String(200))
+    instagram: Mapped[str | None] = mapped_column(String(30))
+    google_maps_url: Mapped[str | None] = mapped_column(String(200))
+    search_text: Mapped[str] = mapped_column(String(400), default="", server_default=text("''"))
+    features: Mapped[dict[str, bool]] = mapped_column(
+        JSON, default=dict, server_default=text("'{}'")
+    )
+    layout_version: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    published_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
+
 
 class Zone(Base):
     __tablename__ = "zones"
@@ -103,6 +127,8 @@ class Zone(Base):
     y: Mapped[float] = mapped_column(Float)
     w: Mapped[float] = mapped_column(Float)
     h: Mapped[float] = mapped_column(Float)
+
+    room_id: Mapped[int | None] = mapped_column(ForeignKey("rooms.id"))
 
 
 class VenueTable(Base):
@@ -129,6 +155,9 @@ class VenueTable(Base):
     high_chair_ok: Mapped[bool] = mapped_column(Boolean, default=False)
     combine_group: Mapped[str | None] = mapped_column(String(40))
 
+    room_id: Mapped[int | None] = mapped_column(ForeignKey("rooms.id"))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("TRUE"))
+
 
 class Seat(Base):
     __tablename__ = "seats"
@@ -142,6 +171,8 @@ class Seat(Base):
     is_accessible: Mapped[bool] = mapped_column(Boolean, default=False)
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
     reserved_tag: Mapped[str | None] = mapped_column(String(20))
+
+    room_id: Mapped[int | None] = mapped_column(ForeignKey("rooms.id"))
 
 
 class SeatNeighbour(Base):
@@ -466,6 +497,9 @@ class Booking(Base):
     manage_token_hash: Mapped[str] = mapped_column(String(64), index=True)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
 
+    chosen_seat_id: Mapped[int | None] = mapped_column(ForeignKey("seats.id"))
+    prefs: Mapped[list[str]] = mapped_column(JSON, default=list, server_default=text("'[]'"))
+
 
 class TableSlot(Base):
     """One row per table per 15-minute slot a booking occupies. The composite
@@ -490,4 +524,74 @@ class WaitlistEntry(Base):
     name: Mapped[str] = mapped_column(String(120))
     email: Mapped[str] = mapped_column(String(254))
     status: Mapped[str] = mapped_column(String(12), default="waiting")
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)
+
+
+class Room(Base):
+    """A restaurant room, materialised only when the new editor first saves."""
+
+    __tablename__ = "rooms"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    venue_id: Mapped[int] = mapped_column(ForeignKey("venues.id"), index=True)
+    name: Mapped[str] = mapped_column(String(60))
+    is_outdoor: Mapped[bool] = mapped_column(Boolean, default=False)
+    north_deg: Mapped[float | None] = mapped_column(Float)
+    outline: Mapped[dict[str, Any]] = mapped_column(JSON)
+    position: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class RoomOpening(Base):
+    """An opening positioned by arc length along an outline side."""
+
+    __tablename__ = "room_openings"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    room_id: Mapped[int] = mapped_column(ForeignKey("rooms.id"), index=True)
+    side: Mapped[int] = mapped_column(Integer)
+    offset: Mapped[float] = mapped_column(Float)
+    width: Mapped[float] = mapped_column(Float)
+    kind: Mapped[str] = mapped_column(String(20))
+    top_height: Mapped[float] = mapped_column(Float, default=220)
+    is_main_entrance: Mapped[bool] = mapped_column(Boolean, default=False)
+    view_text: Mapped[str] = mapped_column(String(80), default="")
+    view_tags: Mapped[list[str]] = mapped_column(JSON, default=list)
+    night_view_text: Mapped[str] = mapped_column(String(80), default="")
+    sun_rule: Mapped[str] = mapped_column(String(10), default="auto")
+    sun_from: Mapped[time | None] = mapped_column(Time)
+    sun_until: Mapped[time | None] = mapped_column(Time)
+
+
+class RoomFixture(Base):
+    """Non-bookable furniture used for the drawing and ambience."""
+
+    __tablename__ = "room_fixtures"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    room_id: Mapped[int] = mapped_column(ForeignKey("rooms.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(20))
+    shape: Mapped[str] = mapped_column(String(10))
+    x: Mapped[float] = mapped_column(Float)
+    y: Mapped[float] = mapped_column(Float)
+    w: Mapped[float] = mapped_column(Float)
+    h: Mapped[float] = mapped_column(Float)
+    rotation: Mapped[float] = mapped_column(Float, default=0)
+    label: Mapped[str] = mapped_column(String(40), default="")
+
+
+class VenuePhoto(Base):
+    """Bounded restaurant image bytes with a stable public URL."""
+
+    __tablename__ = "venue_photos"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    public_id: Mapped[str] = mapped_column(
+        String(32), default=new_public_id, unique=True, index=True
+    )
+    venue_id: Mapped[int] = mapped_column(ForeignKey("venues.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(10))
+    opening_id: Mapped[int | None] = mapped_column(ForeignKey("room_openings.id"))
+    content_type: Mapped[str] = mapped_column(String(30))
+    data: Mapped[bytes] = mapped_column(LargeBinary)
+    width: Mapped[int] = mapped_column(Integer)
+    height: Mapped[int] = mapped_column(Integer)
+    alt_text: Mapped[str] = mapped_column(String(150), default="")
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    is_cover: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utc_now)

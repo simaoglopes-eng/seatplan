@@ -37,6 +37,29 @@ NEW_COLUMNS: tuple[tuple[str, str, str], ...] = (
     ("guests", "account_id", "INTEGER REFERENCES guest_accounts (id)"),
     ("guests", "source", "VARCHAR(20) NOT NULL DEFAULT 'invited'"),
     ("email_outbox", "image_png", "TEXT"),
+    ("venues", "slug", "VARCHAR(60)"),
+    ("venues", "status", "VARCHAR(12) NOT NULL DEFAULT 'published'"),
+    ("venues", "is_demo", "BOOLEAN NOT NULL DEFAULT FALSE"),
+    ("venues", "description", "VARCHAR(300) NOT NULL DEFAULT ''"),
+    ("venues", "cuisines", "JSON NOT NULL DEFAULT '[]'"),
+    ("venues", "price_level", "INTEGER"),
+    ("venues", "address", "VARCHAR(200) NOT NULL DEFAULT ''"),
+    ("venues", "lat", "FLOAT"),
+    ("venues", "lng", "FLOAT"),
+    ("venues", "phone", "VARCHAR(40)"),
+    ("venues", "website", "VARCHAR(200)"),
+    ("venues", "instagram", "VARCHAR(30)"),
+    ("venues", "google_maps_url", "VARCHAR(200)"),
+    ("venues", "search_text", "VARCHAR(400) NOT NULL DEFAULT ''"),
+    ("venues", "features", "JSON NOT NULL DEFAULT '{}'"),
+    ("venues", "layout_version", "INTEGER NOT NULL DEFAULT 0"),
+    ("venues", "published_at", "TIMESTAMP"),
+    ("tables", "room_id", "INTEGER REFERENCES rooms (id)"),
+    ("tables", "is_active", "BOOLEAN NOT NULL DEFAULT TRUE"),
+    ("seats", "room_id", "INTEGER REFERENCES rooms (id)"),
+    ("zones", "room_id", "INTEGER REFERENCES rooms (id)"),
+    ("bookings", "chosen_seat_id", "INTEGER REFERENCES seats (id)"),
+    ("bookings", "prefs", "JSON NOT NULL DEFAULT '[]'"),
 )
 
 # (index name, statement). Both databases understand "IF NOT EXISTS" here.
@@ -59,6 +82,12 @@ NEW_INDEXES: tuple[tuple[str, str], ...] = (
 )
 
 
+# Kept separate to preserve the historical guest-account index contract.
+RESTAURANT_INDEXES: tuple[tuple[str, str], ...] = (
+    ("uq_venues_slug", "CREATE UNIQUE INDEX IF NOT EXISTS uq_venues_slug ON venues (slug)"),
+)
+
+
 def _add_missing_columns(connection: Connection) -> list[str]:
     """ALTER TABLE ... ADD COLUMN for each NEW_COLUMNS entry the table lacks."""
     changes = []
@@ -69,6 +98,8 @@ def _add_missing_columns(connection: Connection) -> list[str]:
             continue
         # SQLite has no "ADD COLUMN IF NOT EXISTS", hence the check above on
         # both databases. On Postgres the clause is a second guard.
+        if connection.dialect.name == "sqlite" and ddl == "TIMESTAMP":
+            ddl = "DATETIME"
         guard = "IF NOT EXISTS " if connection.dialect.name == "postgresql" else ""
         connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {guard}{column} {ddl}"))
         changes.append(f"Added column {table}.{column}")
@@ -82,7 +113,7 @@ def upgrade_schema(connection: Connection) -> list[str]:
     the guest_accounts table that create_all makes.
     """
     changes = _add_missing_columns(connection)
-    for name, statement in NEW_INDEXES:
+    for name, statement in (*NEW_INDEXES, *RESTAURANT_INDEXES):
         connection.execute(text(statement))
         changes.append(f"Index {name} is ready")
     return changes

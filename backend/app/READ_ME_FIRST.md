@@ -19,6 +19,11 @@ cd backend
 
 ## Key files
 
+Restaurant platform models add rooms, openings, fixtures and image bytes,
+plus optional room references on existing layout objects. Existing venues
+default to published, while owner creation must explicitly use draft.
+Apply seed.migrate to existing databases before serving the new models.
+
 | File | Job |
 |---|---|
 | `main.py` | `create_app()`: database, error handlers, CORS, security headers, all routers under `/api`. Creates tables only on local SQLite |
