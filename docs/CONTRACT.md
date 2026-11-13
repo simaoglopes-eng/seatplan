@@ -403,6 +403,15 @@ Drafts with problems can be saved; publishing is where errors stop. GET
 saved rooms' light for the editor's Light tool (the diner route's shape plus per-table
 detail), for the owner only.
 
+Publishing: GET /api/owner/restaurants/{vid}/publish-check -> {name, slug, status, ready, problems, tips}
+(read only). POST .../publish re-checks everything on the server and answers 200
+{status: "published", url: "/restaurants/<slug>"} or 422 {error: {code, message, problems}, problems}
+where each problem is {code, message, fix_url} (codes: identity, location, hours, no_tables, no_north and the
+room editor's own error codes). Publishing twice changes nothing; `published_at` is set once. POST .../unpublish
+goes back to a draft (200 {status: "draft"}): off the search, no new bookings, existing bookings untouched.
+Diner routes under /api/r/{vid} answer 404 for a restaurant that is not published; manage links (/b/{token}) keep
+working. `venues.features` ({sun, view, accessible, terrace}) is recomputed whenever rooms are saved and on publish.
+
 Owner photos use JSON {kind, opening_key?, content_type, data_base64, alt_text}.
 POST /owner/restaurants/{vid}/photos returns metadata including id/public_id,
 url, actual content_type, width/height, opening_id, position and is_cover.

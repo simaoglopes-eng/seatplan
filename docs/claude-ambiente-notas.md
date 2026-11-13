@@ -343,3 +343,20 @@ de 10 por minuto e os testes novos faziam 429).
   guardar; sem localização ou sem norte explica em vez de mostrar sol.
 - A tarefa 24 pedia a direção solar: o sol aparece na borda da planta, calculado
   de azimute + north_deg (sunDirection, testado).
+
+## Tarefa 19 (era do Sérgio, feita porque bloqueia tudo o resto)
+
+Backend: restaurant_service/publishing.py e features.py (novos), routers/owners.py
+(publish, unpublish, publish-check), venue_access.load_published (rotas dos
+clientes: restaurante em rascunho dá 404; links de gestão /b/{token} continuam),
+rooms.save atualiza `venues.features`. 14 testes em test_publishing.py.
+Frontend: owner/HoursPage.tsx, hoursTemplate.ts, PublishReview.tsx,
+publishChecklist.ts, api/owner.ts, rotas /owner/:id/hours e /owner/:id/review e
+ligações no painel do dono; testes unitários (10) e e2e owner-publish.spec.ts.
+- O 422 do publish leva a lista em `problems` (spec) e dentro de `error`
+  (o cliente lê `details`).
+- Mudança de comportamento: um restaurante em rascunho deixa de aceitar reservas
+  de clientes (mapa, hold, reserva, lista de espera). Os restaurantes que já
+  existiam estão `published` por defeito, por isso nada muda para a demo.
+- Como a tarefa era do Sérgio: está num commit separado para ele poder trocá-la
+  pela versão dele sem mexer no resto.

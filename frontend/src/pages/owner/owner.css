@@ -25,3 +25,10 @@
 .owner-photo-card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-lg); padding: var(--space-4); display: grid; gap: var(--space-3); align-content: start; }
 .owner-photo-thumbnail { display: block; width: 100%; aspect-ratio: 4/3; object-fit: cover; background: var(--c-surface-sunk); border-radius: var(--radius-md); }
 .owner-photo-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+.owner-checklist { list-style: none; padding: 0; margin: var(--space-4) 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.owner-checklist li { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3) var(--space-4); border: 1px solid var(--c-border); border-radius: var(--radius-md); background: var(--c-surface); }
+.owner-check-mark { display: inline-flex; width: 1.75rem; height: 1.75rem; align-items: center; justify-content: center; border-radius: 50%; font-weight: var(--fw-bold); flex: 0 0 auto; border: 2px solid var(--c-border-strong); }
+.owner-check-done .owner-check-mark { background: var(--c-primary-soft); color: var(--c-primary); border-color: var(--c-primary); }
+.owner-check-todo .owner-check-mark { background: var(--c-danger-soft); color: var(--c-danger); border-color: var(--c-danger); }
+.owner-check-word { color: var(--c-text-muted); font-size: var(--fs-sm); }

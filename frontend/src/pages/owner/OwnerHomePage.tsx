@@ -29,7 +29,7 @@ function RestaurantCard({ card }: { card: OwnerCard }) {
       <progress value={card.setup.done} max={card.setup.total} aria-label={`${card.name} setup progress`} />
       <nav className="owner-card-links" aria-label={`Manage ${card.name}`}>
         {card.status === "draft" && <Link to={`${base}/setup`}>Continue setup</Link>}
-        <Link to={`${base}/profile`}>Edit profile</Link><Link to={`${base}/rooms`}>Edit rooms</Link><Link to={`${base}/hours`}>Opening hours</Link><Link to={`${base}/dashboard`}>Dashboard</Link>
+        <Link to={`${base}/profile`}>Edit profile</Link><Link to={`${base}/rooms`}>Edit rooms</Link><Link to={`${base}/hours`}>Opening hours</Link><Link to={`${base}/review`}>{card.status === "published" ? "Publishing" : "Review and publish"}</Link><Link to={`${base}/dashboard`}>Dashboard</Link>
         {card.status === "published" && <Link to={card.slug ? `/restaurants/${encodeURIComponent(card.slug)}` : `/r/${encodeURIComponent(card.public_id)}`}>View public page</Link>}
       </nav>
     </div>

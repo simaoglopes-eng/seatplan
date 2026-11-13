@@ -23,7 +23,7 @@ from app.restaurant_service.alternatives import conflict_response
 from app.restaurant_service.availability import MAX_ONLINE_PARTY, check_party_size, max_party
 from app.restaurant_service.changes import record_change
 from app.restaurant_service.clock import hhmm, is_past, venue_zone
-from app.restaurant_service.venue_access import load_restaurant
+from app.restaurant_service.venue_access import load_published
 from app.security import client_ip, rate_limit
 
 router = APIRouter(tags=["bookings"])
@@ -119,7 +119,7 @@ def join_waitlist(
 ) -> dict[str, Any]:
     """Join the waitlist. Answers with the place in line and an estimated wait."""
     _limit(session, request, "waitlist", WAITLIST_LIMIT)
-    venue = load_restaurant(session, venue_public_id)
+    venue = load_published(session, venue_public_id)
     check_party_size(session, venue, body.party)
     if is_past(venue, body.date, body.time):
         raise ApiError(422, "validation", "This time has already passed.")

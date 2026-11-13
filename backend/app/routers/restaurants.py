@@ -41,7 +41,7 @@ from app.restaurant_service.changes import record_change
 from app.restaurant_service.clock import time_of_slot
 from app.restaurant_service.emails import manage_link
 from app.restaurant_service.schedule_edit import read_schedule
-from app.restaurant_service.venue_access import load_restaurant
+from app.restaurant_service.venue_access import load_published
 from app.security import client_ip, hash_token, rate_limit
 
 router = APIRouter(tags=["restaurants"])
@@ -104,7 +104,7 @@ def _limit(session: db.SessionDep, request: Request, name: str, limit: int) -> N
 def restaurant(venue_public_id: str, request: Request, session: db.SessionDep) -> dict[str, Any]:
     """Name, floor plan and opening hours: everything the booking page draws first."""
     _limit(session, request, "read", READ_LIMIT)
-    venue = load_restaurant(session, venue_public_id)
+    venue = load_published(session, venue_public_id)
     return {
         "public_id": venue.public_id,
         "name": venue.name,
@@ -130,7 +130,7 @@ def slots(
     high_chairs: HighChairs = 0,
 ) -> dict[str, Any]:
     _limit(session, request, "read", READ_LIMIT)
-    venue = load_restaurant(session, venue_public_id)
+    venue = load_published(session, venue_public_id)
     check_party_size(session, venue, party)
     return day_summary(session, venue, date, PartyNeeds(party, accessible, high_chairs))
 
@@ -150,7 +150,7 @@ def table_map(
 ) -> dict[str, Any]:
     """`prefs` is a comma list of wishes, e.g. `sun,view` (spec 8.3)."""
     _limit(session, request, "read", READ_LIMIT)
-    venue = load_restaurant(session, venue_public_id)
+    venue = load_published(session, venue_public_id)
     check_party_size(session, venue, party)
     schedule.check_bookable(session, venue, date, time)
     wishes = clean_prefs([key for key in prefs.split(",") if key])
@@ -175,7 +175,7 @@ def ambience(
     night veil. Maths only: ids, polygons, light names and short sentences.
     """
     _limit(session, request, "read", READ_LIMIT)
-    venue = load_restaurant(session, venue_public_id)
+    venue = load_published(session, venue_public_id)
     check_party_size(session, venue, party)
     schedule.check_bookable(session, venue, date, time)
     return ambience_view.ambience_payload(session, venue, date, time, party=party, moment=moment)
@@ -188,7 +188,7 @@ def table_seats(
     """The chairs of up to three tables, for the optional "where would you like
     to sit?" step (spec 9.4). `table_ids` is a comma list of table ids."""
     _limit(session, request, "read", READ_LIMIT)
-    venue = load_restaurant(session, venue_public_id)
+    venue = load_published(session, venue_public_id)
     try:
         ids = [int(part) for part in table_ids.split(",") if part.strip()]
     except ValueError:
@@ -204,7 +204,7 @@ def hold(
 ) -> dict[str, Any] | JSONResponse:
     """Hold a table for 5 minutes. Without a table, the optimiser picks one."""
     _limit(session, request, "hold", HOLD_LIMIT)
-    venue = load_restaurant(session, venue_public_id)
+    venue = load_published(session, venue_public_id)
     check_party_size(session, venue, body.party)
     wishes = clean_prefs(body.prefs)
     needs = PartyNeeds(body.party, body.needs_accessible, body.high_chairs, body.zone, wishes)
@@ -239,7 +239,7 @@ def release_hold(
     """Give a held table back at once (the diner went back or chose another),
     instead of letting it block other diners for the rest of the 5 minutes."""
     _limit(session, request, "hold", HOLD_LIMIT)
-    venue = load_restaurant(session, venue_public_id)
+    venue = load_published(session, venue_public_id)
     day = holding.release_held_tables(session, venue, hold_id)
     record_change(
         session,
@@ -264,7 +264,7 @@ def book(
     mailbox, 10 attempts per client address per UTC day (booking_caps.py).
     """
     _limit(session, request, "book", BOOK_LIMIT)
-    venue = load_restaurant(session, venue_public_id)
+    venue = load_published(session, venue_public_id)
     held = holding.read_hold(session, venue, body.hold_id)
     # After read_hold, so a dead or made-up hold_id never counts against the
     # daily cap; before confirm_booking, because the cap commits its count.

@@ -5,6 +5,7 @@ from typing import Any, Literal
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 from sqlalchemy.exc import IntegrityError
 
@@ -12,7 +13,7 @@ from app import db
 from app.core.errors import ApiError
 from app.core.text import PlainText
 from app.events_service import accounts
-from app.restaurant_service import owner_accounts, owner_view, profiles
+from app.restaurant_service import owner_accounts, owner_view, profiles, publishing
 from app.routers.venues import TimeZoneName
 from app.security import CurrentOrganiser
 
@@ -190,3 +191,36 @@ def verify(body: VerifyIn, request: Request, session: db.SessionDep) -> dict[str
     return owner_accounts.verify(
         session, accounts.normalise_email(str(body.email)), body.code, body.signup_id
     )
+
+
+@router.post("/restaurants/{vid}/publish", response_model=None)
+def publish_restaurant(
+    vid: str, user: CurrentOrganiser, session: db.SessionDep
+) -> dict[str, Any] | JSONResponse:
+    """Publish after the server checks everything again (spec 5.3 step 6).
+
+    422 carries the problems twice: as `problems` (the spec) and inside `error`
+    (what the client's error handling reads), each with a link to fix it.
+    """
+    venue = profiles.load(session, vid, user)
+    try:
+        return publishing.publish(session, venue, actor=f"organiser:{user.id}")
+    except publishing.PublishRefused as refused:
+        session.rollback()
+        error = {"code": refused.code, "message": refused.message, "problems": refused.problems}
+        return JSONResponse({"error": error, "problems": refused.problems}, status_code=422)
+
+
+@router.post("/restaurants/{vid}/unpublish")
+def unpublish_restaurant(
+    vid: str, user: CurrentOrganiser, session: db.SessionDep
+) -> dict[str, Any]:
+    """Back to a draft: off the search, no new bookings, existing bookings untouched."""
+    venue = profiles.load(session, vid, user)
+    return publishing.unpublish(session, venue, actor=f"organiser:{user.id}")
+
+
+@router.get("/restaurants/{vid}/publish-check")
+def publish_check(vid: str, user: CurrentOrganiser, session: db.SessionDep) -> dict[str, Any]:
+    """What the review step shows: the problems that block publishing and the tips that do not."""
+    return publishing.review(session, profiles.load(session, vid, user))

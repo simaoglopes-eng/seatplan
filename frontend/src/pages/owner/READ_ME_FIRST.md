@@ -37,3 +37,13 @@ same authenticated component. The API lives in api/photos.ts. Uploads and
 gallery reordering work by drag/drop or ordinary keyboard-operable controls.
 Window links are available after the opening has a saved database id; before
 that the owner is told to save the room. Task 17 completes that persistence.
+
+
+## Opening hours and publishing (task 19)
+
+`HoursPage.tsx` (`/owner/:venueId/hours`) wraps the staff schedule editor and, for a restaurant with no services,
+offers "Lunch 12:00-15:00 and Dinner 19:00-23:00, Tuesday to Sunday" (`hoursTemplate.ts`) behind a "Use this"
+button. `PublishReview.tsx` (`/owner/:venueId/review`) shows the seven-row checklist (`publishChecklist.ts`) from
+`GET .../publish-check`: every row says Done, To do or Recommended in words next to its mark, with a link to fix
+it. Publish is off until every required row is done, and the server checks again and may still answer 422 with
+the problems, which the page lists. A published restaurant shows "View public page" and Unpublish.

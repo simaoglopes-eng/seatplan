@@ -27,6 +27,7 @@ from app.models import (
     Zone,
     utc_now,
 )
+from app.restaurant_service.features import refresh_features
 
 MODELS = {
     "rooms": Room,
@@ -314,6 +315,8 @@ def save(session: Session, venue: Venue, body: dict, *, actor: str) -> dict[str,
                 delete(MODELS[name]).where(MODELS[name].id.in_(set(existing[name]) - keep[name]))
             )
         rebuild_neighbours(session, venue.id)
+        session.flush()
+        refresh_features(session, venue)
         audit.record(
             session, actor=actor, action="rooms.save", entity="venue", entity_id=venue.public_id
         )

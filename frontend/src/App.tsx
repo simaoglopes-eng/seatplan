@@ -25,6 +25,8 @@ import PhotoEditorPage from "./pages/owner/PhotoEditor";
 import BookingPage from "./pages/restaurant/BookingPage";
 import ManageBookingPage from "./pages/restaurant/ManageBookingPage";
 import StaffPage from "./pages/restaurant/StaffPage";
+import HoursPage from "./pages/owner/HoursPage";
+import PublishReview from "./pages/owner/PublishReview";
 const RoomEditorPage = lazy(() => import("./pages/room-editor/RoomEditorPage"));
 
 export default function App() {
@@ -38,6 +40,8 @@ export default function App() {
       <Route path="/owner/:venueId/setup" element={<NewRestaurantWizard />} />
       <Route path="/owner/:venueId/profile" element={<ProfilePage />} />
       <Route path="/owner/:venueId/photos" element={<PhotoEditorPage />} />
+      <Route path="/owner/:venueId/hours" element={<HoursPage />} />
+      <Route path="/owner/:venueId/review" element={<PublishReview />} />
       <Route path="/owner/sign-in" element={<Login defaultNext="/owner" />} />
       <Route path="/owner/:venueId/dashboard" element={<StaffPage />} />
       <Route path="/owner/:venueId/rooms" element={<Suspense fallback={<p role="status">Loading room editor…</p>}><RoomEditorPage /></Suspense>} />

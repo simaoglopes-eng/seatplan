@@ -14,6 +14,11 @@ owner_view.py builds private owner cards and setup progress. It reads image
 metadata without loading image bytes. Publication validation remains the
 server's responsibility, independently of the progress indicator.
 
+publishing.py checks and flips a restaurant between draft and published: `problems` (identity, location,
+hours, a table, no room-editor errors, north where there are windows, each with a fix link), `review` (the
+read-only checklist with the photo tip), `publish` (all or nothing, idempotent) and `unpublish`. features.py
+works out sun / view / accessible / terrace from the saved rooms and refreshes them on every room save and on
+publish. venue_access.load_published is what diner routes use: a draft looks like a restaurant that does not exist.
 rooms.py saves the owner's whole room layout (rooms, zones, tables, chairs, openings,
 fixed items) in one transaction behind `PUT /owner/restaurants/{vid}/rooms`: the version
 moves first with an atomic compare (409 `stale_layout`), objects are upserted by id or key,

@@ -18,6 +18,16 @@ def load_restaurant(session: Session, public_id: str) -> Venue:
     return venue
 
 
+def load_published(session: Session, public_id: str) -> Venue:
+    """Diner lookup: only published restaurants. A draft or an unpublished one takes
+    no new bookings and looks exactly like a restaurant that does not exist (404).
+    Bookings that already exist are reached through their own manage links."""
+    venue = load_restaurant(session, public_id)
+    if venue.status != "published":
+        raise ApiError(404, "not_found", "Restaurant not found.")
+    return venue
+
+
 def load_for_staff(session: Session, public_id: str, user: Organiser) -> Venue:
     """Owners see their restaurants, demo staff only demo restaurants.
 
