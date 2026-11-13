@@ -11,6 +11,10 @@ can be consumed once. The session works with the existing /api/auth endpoints.
 Bodies reject unknown fields. Staff access to restaurant endpoints and
 the shared /api/venues endpoints is restricted to is_demo restaurants.
 
+GET /api/owner/restaurants requires an organiser session and lists only that
+owner's restaurants, with public_id, slug, name, status, cover_url and
+setup containing done, total and missing step codes.
+
 The full, exact list of endpoints and request and answer shapes is
 [`openapi.json`](openapi.json). This page is the short version a person can
 read. The design agreement is section 5 of [`CONTRACT.md`](CONTRACT.md).

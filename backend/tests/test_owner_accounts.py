@@ -7,6 +7,30 @@ from app.models import Organiser, Venue
 from app.security import create_session_token
 
 
+def test_owner_restaurant_list_is_private(
+    client: TestClient, session: Session, organiser: Organiser, staff: Organiser
+) -> None:
+    mine = Venue(
+        organiser_id=organiser.id,
+        kind="restaurant",
+        name="Mine",
+        width=1000,
+        height=700,
+        status="draft",
+    )
+    other = Venue(organiser_id=staff.id, kind="restaurant", name="Other", width=1000, height=700)
+    session.add_all([mine, other])
+    session.commit()
+    headers = {"Authorization": f"Bearer {create_session_token(organiser.id)}"}
+    result = client.get("/api/owner/restaurants", headers=headers)
+    assert result.status_code == 200, result.text
+    assert [r["name"] for r in result.json()] == ["Mine"]
+    assert result.json()[0]["setup"]["total"] == 6
+    assert client.get("/api/owner/restaurants").status_code == 401
+    staff_headers = {"Authorization": f"Bearer {create_session_token(staff.id)}"}
+    assert client.get("/api/owner/restaurants", headers=staff_headers).status_code == 403
+
+
 def test_wrong_owner_code_has_only_five_attempts(client: TestClient) -> None:
     sent = client.post("/api/owner/register", json=FORM).json()
     wrong = "000000" if sent["code_shown"] != "000000" else "111111"

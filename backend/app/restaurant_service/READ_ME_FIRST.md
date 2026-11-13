@@ -10,6 +10,10 @@ venue_access limits staff to demo restaurants and owners to their restaurants.
 The shared venues router enforces the same rule for restaurants while keeping
 event access unchanged.
 
+owner_view.py builds private owner cards and setup progress. It reads image
+metadata without loading image bytes. Publication validation remains the
+server's responsibility, independently of the progress indicator.
+
 The database side of the restaurants vertical. The three routers
 (`routers/restaurants.py` for diners, `routers/bookings.py` for manage links
 and the waitlist, `routers/staff.py` for staff) only check the request and

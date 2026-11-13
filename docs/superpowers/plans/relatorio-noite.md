@@ -15,6 +15,8 @@ repositório. Plano com 40 tarefas.
 | 2 — Modelos e migração | Feita | 2f984a4 | 30 tabelas, migração repetível e formato legado preservado |
 | 3 — Geometria | Feita | 1839a52 | Contorno circular, normais, rumos, área e contenção |
 | 4 — Sol | Feita | 7581213 | Posição e horas solares, fusos e casos polares |
+| 5 — Registo e isolamento | Feita | dca8703 | Código, consentimento, concorrência, staff apenas demo |
+| 6 — Área do dono | Feita | Commit desta entrada | Formulários, cartões privados e destino do login |
 
 ## Verificações reais
 
@@ -123,3 +125,25 @@ O subconjunto com modelos, migrações e plantas passou com 25 passed e
 3 warnings em 100,17 s. Ruff check passou e formato com 167 ficheiros.
 Typecheck passou e npm test deu 209 passed em 23 ficheiros. Guard e
 git diff --check passaram. Modelos, migração e testes novos aceites.
+
+## Tarefa 6 — feita
+
+Dependência do Sérgio executada para dar entrada ao editor. Testes RED para
+GET /owner/restaurants inexistente e componente de registo inexistente.
+Depois passaram nove testes backend e um teste do formulário, com fetch na
+fronteira HTTP. Typecheck passou. O login existente mantém o destino original
+e a rota /owner/sign-in usa /owner por defeito.
+
+Dois Playwright novos passaram em 7,9 s, com axe sem violações e ausência
+de scroll horizontal. Capturas desktop e 390x844 inspecionadas visualmente.
+Imagens temporárias em seatplan-owner-signup-390.png e
+seatplan-owner-home-1440.png na pasta temporária do Windows. A lista usa a
+API privada e mostra progresso, estado e links para as etapas seguintes.
+Essas etapas serão implementadas pelas tarefas posteriores do plano.
+
+Verificação final completa com 622 passed, 3 warnings em 112,14 s no backend.
+Ruff check passou e formato com 171 ficheiros. Typecheck passou e Vitest com
+210 passed em 24 ficheiros. Build passou em 124 ms, contraste com 86 checks
+e 0 failures e Playwright com 26 passed em 25,7 s. A captura dos cartões
+foi inspecionada e o cartão único ajustado para manter largura de cartão.
+Guard e diff check passaram. Commit identificado por feat: add owner signup and private restaurant home.

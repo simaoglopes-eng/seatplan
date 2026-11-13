@@ -10,9 +10,15 @@ from app import db
 from app.core.errors import ApiError
 from app.core.text import PlainText
 from app.events_service import accounts
-from app.restaurant_service import owner_accounts
+from app.restaurant_service import owner_accounts, owner_view
+from app.security import CurrentOrganiser
 
 router = APIRouter(prefix="/owner", tags=["owners"])
+
+
+@router.get("/restaurants")
+def restaurants(user: CurrentOrganiser, session: db.SessionDep) -> list[dict[str, Any]]:
+    return owner_view.restaurants(session, user)
 
 
 class RegisterIn(BaseModel):
