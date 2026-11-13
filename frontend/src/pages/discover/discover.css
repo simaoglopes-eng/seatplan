@@ -61,3 +61,4 @@
   .discover-card { grid-template-columns: minmax(0, 1fr); }
   .discover-search { grid-template-columns: minmax(0, 1fr); }
 }
+.discover-more { min-height: var(--touch-target); padding: 0 var(--space-3); border: 0; background: none; color: var(--c-primary); font: inherit; font-weight: var(--fw-bold); text-decoration: underline; cursor: pointer; }

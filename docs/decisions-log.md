@@ -743,8 +743,9 @@ Decisions taken while finishing tasks 17 to 38 of the restaurant plan (Claude's 
     templates stay. One old assertion changed from "table T1" to "Table T1".
 24. **Demo data.** Four invented restaurants in real Lisbon neighbourhoods plus Casa Lumen with a public profile. The photos are drawn by
     `seed/demo_photos.py`, which is their recorded source (no third-party images). The demo organiser now owns five restaurants.
-25. **A tap on a table still holds it at once** (the old flow); spec 9.3 would show the card first. Left as it was to keep holds and live
-    updates untouched. Optimiser service plan and what-if still ignore wishes (they need per-party features). Both are open.
+25. **Choosing a table on the map is two steps** (branch claude/ux-polish): a tap or Enter selects it and shows its card, and "Hold this table"
+    reserves it, so a finger never holds a table by accident (spec 9.3). The list buttons still hold in one step. Holds and live updates are
+    unchanged. Optimiser service plan and what-if still ignore wishes (they need per-party features); that is open.
 ## 2026-11-13 — integration of claude/ambiente
 
 Imported from [Claude's implementation notes](claude-ambiente-notas.md).

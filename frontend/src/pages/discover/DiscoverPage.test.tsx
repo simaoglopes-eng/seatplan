@@ -72,6 +72,20 @@ describe("DiscoverPage", () => {
     expect(screen.getByText("2 restaurants")).toBeTruthy();
   });
 
+  it("shows the common cuisines first, the rest on More cuisines, and keeps a chosen one visible", async () => {
+    server(() => ({ items: [card(1)], total: 1 }));
+    renderPage();
+    await screen.findByRole("heading", { name: "Casa 1" });
+    expect(screen.queryByRole("button", { name: "Korean" })).toBeNull();
+    const more = screen.getByRole("button", { name: "More cuisines" });
+    expect(more.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(more);
+    fireEvent.click(screen.getByRole("button", { name: "Korean" }));
+    fireEvent.click(screen.getByRole("button", { name: "Fewer cuisines" }));
+    expect(screen.getByRole("button", { name: "Korean" }).getAttribute("aria-pressed")).toBe("true"); // still there while chosen
+    expect(screen.queryByRole("button", { name: "Thai" })).toBeNull();
+  });
+
   it("links the header to the owners page and to the demo", async () => {
     server(() => ({ items: [], total: 0 }));
     renderPage();

@@ -16,6 +16,8 @@ import "./discover.css";
 
 const ResultsMap = lazy(() => import("../../maps/ResultsMap"));
 const PAGE = 20;
+// The cuisines shown before "More cuisines": the first ones of the list are the most common.
+const FIRST_CUISINES = 8;
 const PARTIES = Array.from({ length: 10 }, (_, i) => ({ value: String(i + 1), label: i === 0 ? "1 person" : `${i + 1} people` }));
 
 type Results = { status: "loading" } | { status: "error"; message: string } | { status: "ready"; items: Card[]; total: number };
@@ -58,6 +60,7 @@ export default function DiscoverPage() {
   const [party, setParty] = useState("2");
   const [availableOnly, setAvailableOnly] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [allCuisines, setAllCuisines] = useState(false);
   const [view, setView] = useState<"list" | "map">("list");
   const [highlighted, setHighlighted] = useState<string | null>(null);
   const [results, setResults] = useState<Results>({ status: "loading" });
@@ -216,11 +219,14 @@ export default function DiscoverPage() {
         </div>
         <div id="discover-filters" className={`discover-filters${filtersOpen ? " is-open" : ""}`}>
           <Chips label="Cuisine">
-            {CUISINES.map((key) => (
+            {CUISINES.filter((key, index) => allCuisines || index < FIRST_CUISINES || cuisines.includes(key)).map((key) => (
               <Chip key={key} pressed={cuisines.includes(key)} onClick={() => setCuisines(toggle(cuisines, key))}>
                 {cuisineLabel(key)}
               </Chip>
             ))}
+            <button type="button" className="discover-more" aria-expanded={allCuisines} onClick={() => setAllCuisines(!allCuisines)}>
+              {allCuisines ? "Fewer cuisines" : "More cuisines"}
+            </button>
           </Chips>
           <Chips label="Price">
             {[1, 2, 3, 4].map((level) => (

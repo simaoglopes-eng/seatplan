@@ -51,33 +51,36 @@ interface AmbienceCardProps {
   table: DinerTable;
   heldId: number | null;
   busy: boolean;
+  /** The diner chose this table on the map: show the card even when no ambience is known. */
+  chosen?: boolean;
   onTake: (tableId: number) => void;
 }
 
 /**
  * What one table is like for the stay: the light, the view with its photo, what
  * is near, and a button to hold it. It describes the table under the pointer or
- * keyboard cursor, else the held one, else our suggestion. Only drawn for a
- * table whose ambience is known; otherwise nothing is claimed.
+ * keyboard cursor, else the held one, else our suggestion. Without ambience it
+ * is only drawn for a table the diner chose; it never claims anything then.
  */
-export function AmbienceCard({ table, heldId, busy, onTake }: AmbienceCardProps) {
+export function AmbienceCard({ table, heldId, busy, chosen = false, onTake }: AmbienceCardProps) {
   const ambience = table.ambience;
-  if (!ambience) return null;
+  // Without a location there is no ambience to tell, so the card only appears for a table the diner chose: it still lets them hold it.
+  if (!ambience && !chosen) return null;
   const reason = unavailableReason(table);
   return (
     <section className="rb-card rb-ambience" aria-label={`Table ${table.label}, ${partyRange(table)}`}>
-      <p className="rb-eyebrow">{lightWords(ambience.light)}</p>
+      {ambience && <p className="rb-eyebrow">{lightWords(ambience.light)}</p>}
       <h3 className="rb-suggestion-title">
         Table {table.label} <span className="rb-muted">· {partyRange(table)}</span>
       </h3>
-      {ambience.phrases.length > 0 && (
+      {ambience && ambience.phrases.length > 0 && (
         <ul className="rb-reasons">
           {ambience.phrases.map((phrase) => (
             <li key={phrase}>{phrase}</li>
           ))}
         </ul>
       )}
-      {ambience.view?.photo_url && <img className="rb-view-photo" src={ambience.view.photo_url} alt={ambience.view.text || "The view from this table"} loading="lazy" />}
+      {ambience?.view?.photo_url && <img className="rb-view-photo" src={ambience.view.photo_url} alt={ambience.view.text || "The view from this table"} loading="lazy" />}
       {table.id === heldId && table.state !== "taken" ? (
         <Badge tone="success">Held for you</Badge>
       ) : reason ? (

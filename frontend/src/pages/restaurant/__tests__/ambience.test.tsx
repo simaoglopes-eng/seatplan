@@ -217,3 +217,41 @@ describe("Map key", () => {
     expect(within(screen.getByRole("list", { name: "Map key" })).queryByText("Direct sun")).toBeNull();
   });
 });
+
+describe("Choosing a table on the map", () => {
+  it("a tap only chooses the table and shows its card; holding is a second, deliberate step", async () => {
+    const calls = mockApi({
+      [`GET ${API}`]: () => INFO,
+      [`GET ${API}/slots`]: () => SLOTS,
+      [`GET ${API}/map`]: () => roomsMap(),
+      [`POST ${API}/hold`]: () => heldTable(8, "8"),
+    });
+    await reachTableStep();
+    fireEvent.click(screen.getByRole("option", { name: /Table 8,/ }));
+    expect(callsTo(calls, "POST", `${API}/hold`)).toHaveLength(0);
+    expect(await screen.findByText(/Table 8 selected\. Use Hold this table to reserve it\./)).toBeTruthy();
+    const card = screen.getByRole("region", { name: /Table 8/ });
+    fireEvent.click(within(card).getByRole("button", { name: "Hold this table" }));
+    expect(await screen.findByRole("timer")).toBeTruthy();
+    expect(callsTo(calls, "POST", `${API}/hold`)[0]?.body).toMatchObject({ table_id: 8 });
+  });
+
+  it("still lets the diner hold a chosen table when the restaurant has no ambience to tell", async () => {
+    const plain = roomsMap();
+    plain.tables = plain.tables.map((t) => ({ ...t, ambience: null }));
+    const calls = mockApi({
+      [`GET ${API}`]: () => INFO,
+      [`GET ${API}/slots`]: () => SLOTS,
+      [`GET ${API}/map`]: () => plain,
+      [`POST ${API}/hold`]: () => heldTable(7, "7"),
+    });
+    await reachTableStep();
+    expect(screen.queryByRole("region", { name: /Table 7/ })).toBeNull();
+    fireEvent.click(screen.getByRole("option", { name: /Table 7,/ }));
+    const card = await screen.findByRole("region", { name: /Table 7/ });
+    expect(within(card).queryByText(/sun|shade|dark/i)).toBeNull(); // nothing is claimed about the light
+    fireEvent.click(within(card).getByRole("button", { name: "Hold this table" }));
+    expect(await screen.findByRole("timer")).toBeTruthy();
+    expect(callsTo(calls, "POST", `${API}/hold`)).toHaveLength(1);
+  });
+});

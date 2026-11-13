@@ -46,7 +46,7 @@ Looked at the discovery page, a public restaurant page and the booking table ste
 - **Map tiles.** The maps load tiles from tile.openstreetmap.org (CSP and referrer policy are set, see decisions 15 and the spec). Not checked on the
   real deployment; with no network the lists still work and the map says tiles are unavailable.
 - **Demo photos are drawings** (`seed/demo_photos.py`), 400 x 225, so they look soft in the large cover. Replace them with licensed photos before showing real venues.
-- **Discovery filters are tall on desktop** (24 cuisine chips), which pushes the results down; a "show more cuisines" fold would help.
-- **Tap on a table holds it at once**, not a card first (spec 9.3). Service plan and what-if ignore ambience wishes. The staff map has no "marked chair" pattern.
+- ~~Discovery filters were tall on desktop~~ Fixed: eight cuisines show first, the rest sit behind "More cuisines" (a chosen one always stays visible).
+- ~~Tap on a table held it at once~~ Fixed: a tap or Enter on the map now chooses the table and shows its card; "Hold this table" there reserves it (announced to screen readers). Service plan and what-if ignore ambience wishes. The staff map has no "marked chair" pattern.
 - **Concurrency of two owner tabs** is covered (`room-editor.spec.ts`); two staff changing a booking's chair at once is not (last write wins, it is only a wish).
 - **Flaky tests not from this work:** see `docs/test-report.md`.

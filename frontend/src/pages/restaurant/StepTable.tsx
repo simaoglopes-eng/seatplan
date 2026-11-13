@@ -141,10 +141,23 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
   const roomId = tabs.length === 0 ? undefined : tabs.some((tab) => tab.id === chosenRoom) ? (chosenRoom as number | null) : defaultRoom(map, tabs);
   const roomTables = tablesInRoom(tablesForMap(map, heldId), roomId);
 
+  // A tap or Enter on the map only chooses a table to look at: its card tells the light and the view,
+  // and "Hold this table" there reserves it. Nobody holds a table by accident with a finger.
   const [pointed, setPointed] = useState<number | null>(null);
-  const cardTable = map.tables.find((t) => t.id === (pointed ?? heldId ?? map.recommended?.table_ids[0]));
-
+  const [looking, setLooking] = useState<number | null>(null);
+  const [picked, setPicked] = useState("");
   const pickable = new Set(map.tables.filter(isPickable).map((t) => t.id));
+  // The table we were looking at may be booked by someone else, or held by us: either way stop looking.
+  useEffect(() => {
+    if (looking !== null && (!pickable.has(looking) || looking === heldId)) setLooking(null);
+  }, [looking, heldId, map]);
+  const lookAt = (id: number): void => {
+    setLooking(id);
+    const table = map.tables.find((t) => t.id === id);
+    setPicked(table ? `Table ${table.label} selected. Use Hold this table to reserve it.` : "");
+  };
+  const cardTable = map.tables.find((t) => t.id === (looking ?? pointed ?? heldId ?? map.recommended?.table_ids[0]));
+
   const highlight = new Set(map.recommended?.table_ids ?? []);
   const nothingFree = pickable.size === 0 && heldId === null;
   return (
@@ -155,6 +168,9 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
           {problem}
         </p>
       )}
+      <span className="visually-hidden" role="status" aria-live="polite">
+        {picked}
+      </span>
       {hold && secondsLeft !== null && <HoldCountdown tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />}
       {tabs.length > 0 && <RoomTabs tabs={tabs} current={roomId as number | null} onChange={setChosenRoom} />}
       <div className="rb-map-layout">
@@ -168,11 +184,11 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
           activeRoomId={roomId}
           onActiveChange={setPointed}
           selectable={(id) => pickable.has(id)}
-          selectedId={heldId}
+          selectedId={looking ?? heldId}
           ownId={heldId}
           highlight={highlight}
           describe={describeDinerTables(map)}
-          onSelect={onTake}
+          onSelect={lookAt}
         />
         <div className="rb-map-side">
           {nothingFree ? (
@@ -180,7 +196,18 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
           ) : (
             <SuggestionCard map={map} busy={busy} onTake={onTake} onChooseForMe={() => onTake(null)} />
           )}
-          {cardTable && <AmbienceCard table={cardTable} heldId={heldId} busy={busy} onTake={onTake} />}
+          {cardTable && (
+            <AmbienceCard
+              table={cardTable}
+              heldId={heldId}
+              busy={busy}
+              chosen={looking === cardTable.id}
+              onTake={(id) => {
+                setLooking(null);
+                onTake(id);
+              }}
+            />
+          )}
           <MapKey entries={DINER_KEY} scenes={map.rooms ? ROOM_KEY : []} />
         </div>
       </div>
