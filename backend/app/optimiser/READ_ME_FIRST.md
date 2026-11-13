@@ -120,6 +120,18 @@ be placed is reported as unseated, never forced.
    always wins over any number of zone wishes. That is the strict priority
    order of the contract, with no weights to tune.
 
+   **Ambience wishes (spec 8).** A party may wish for `sun`, `shade`, `view`,
+   `quiet` or `away_from_wc` (`PartySpec.prefs`); tables carry the matching
+   `TableSpec.features`, worked out by `app.ambience.table` for that service
+   time. Joined tables meet a wish only if every table does. Wishes are the
+   very last tie-breaker: `ScoreBreakdown.ranking_key()` is `key()` plus
+   wishes met, and the heuristic search uses it, while `key()` itself keeps its
+   three parts (the exact check, the staff "is it better?" test and the gap
+   report compare `key()`). In `recommend_table` a wish may beat up to two
+   spare seats (`WISH_WASTE_MARGIN`), never more, so a couple who wants sun
+   does not get the table for eight. Reasons say "Sunny, as you asked", "Not in
+   the sun", or "No sunny table is free at 13:00".
+
 2. **Why is the same service always planned the same way?**
    All randomness comes from one `random.Random(seed)` created in
    `assign_service`, the parties are sorted by id before anything else, and the

@@ -35,6 +35,9 @@ class TableSpec:
     combine_group: str | None
     # What people call the table ("T5"). Only used in reasons; empty means "use the id".
     label: str = ""
+    # Ambience facts for this service time, from ambience.table ("sun", "shade",
+    # "view", "quiet", "away_from_wc"). Empty means "nothing known".
+    features: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -49,6 +52,9 @@ class PartySpec:
     fixed_tables: tuple[int, ...] | None
     # Who the party is ("Ana Costa"). Only used in reasons; empty means "use the id".
     label: str = ""
+    # Ambience wishes (spec 8.1), the same words as TableSpec.features. Wishes
+    # only break ties; they never outrank a hard rule, a guest or a seat.
+    prefs: frozenset[str] = frozenset()
 
     def slots(self) -> range:
         return range(self.start_slot, self.end_slot)
@@ -73,6 +79,8 @@ class ScoreBreakdown:
     wasted_seats: int
     zone_prefs_met: int
     zone_prefs_wanted: int
+    prefs_met: int = 0
+    prefs_wanted: int = 0
 
     def key(self) -> tuple[int, int, int]:
         """Lexicographic objective: bigger is better, compare tuples left to right.
@@ -82,6 +90,16 @@ class ScoreBreakdown:
         exactly a strict priority order.
         """
         return (self.covers_seated, -self.wasted_seats, self.zone_prefs_met)
+
+    def ranking_key(self) -> tuple[int, int, int, int]:
+        """key() plus ambience wishes met, as the very last tie-breaker.
+
+        key() stays the contract's three-part objective (the exact check, the
+        staff "is it better?" test and the gap report compare it); the
+        heuristic search ranks plans with this longer key, so among plans with
+        the same key() it keeps the one that meets more wishes.
+        """
+        return (*self.key(), self.prefs_met)
 
 
 @dataclass(frozen=True)
@@ -136,6 +154,13 @@ def zone_met(tables: list[TableSpec], party: PartySpec) -> bool:
     if party.zone_pref is None:
         return False
     return all(table.zone == party.zone_pref for table in tables)
+
+
+def prefs_met(tables: list[TableSpec], party: PartySpec) -> frozenset[str]:
+    """The party's wishes these tables meet; joined tables must all meet a wish."""
+    return frozenset(
+        wish for wish in party.prefs if tables and all(wish in t.features for t in tables)
+    )
 
 
 def _size_problem(tables: list[TableSpec], party: PartySpec) -> str | None:
@@ -320,10 +345,12 @@ def score_plan(
     seated = [party for party in parties if party.id in assignment]
     waste = 0
     zone_hits = 0
+    wish_hits = 0
     for party in seated:
         chosen = [by_id[table_id] for table_id in assignment[party.id]]
         waste += capacity(chosen) - party.size
         zone_hits += 1 if zone_met(chosen, party) else 0
+        wish_hits += len(prefs_met(chosen, party))
     return ScoreBreakdown(
         covers_seated=sum(party.size for party in seated),
         covers_total=sum(party.size for party in parties),
@@ -332,6 +359,8 @@ def score_plan(
         wasted_seats=waste,
         zone_prefs_met=zone_hits,
         zone_prefs_wanted=sum(1 for party in parties if party.zone_pref is not None),
+        prefs_met=wish_hits,
+        prefs_wanted=sum(len(party.prefs) for party in parties),
     )
 
 

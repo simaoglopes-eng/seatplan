@@ -96,6 +96,23 @@ together), and a cover is worth W x (Wmax + 1), where Wmax is the largest
 possible total waste. Each level then outweighs everything below it, so the
 weighted sum orders plans exactly like the tuple (`_objective_weights`).
 
+### Ambience wishes (fourth, tie-breaking level)
+
+A party may wish for `sun`, `shade`, `view`, `quiet` or `away_from_wc`
+(`PartySpec.prefs`). Each table carries the facts for that service time
+(`TableSpec.features`, from `app.ambience.table`). For a choice c, the wish
+term a(p, c) counts the wishes that every table in c meets.
+
+4. then maximise wishes met: sum of a(p, c) x(p, c).
+
+The heuristic ranks plans with `ScoreBreakdown.ranking_key() = (covers, -waste,
+zones, wishes)`. `key()` keeps its three levels: the exact search, the staff
+"is the new plan better?" test and the gap report compare `key()`, so wishes
+never change what counts as the optimum; they only choose among equally good
+plans. In `recommend_table`, a wish may beat up to two spare seats
+(`WISH_WASTE_MARGIN`): choices that waste at most two seats are ordered by
+wishes met first, and the rest keep "fewer spare seats first".
+
 ## 2. Complexity (stated carefully)
 
 What we can say with confidence:

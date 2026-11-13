@@ -59,3 +59,38 @@ Decisões (conservadoras):
   só se estiver a menos de 3 m; sem isso devolve None (não afirmar).
 - "near" inclui host_stand e a porta marcada como entrada principal
   ("entrance"); "quiet" ignora lareira e host_stand, como no spec.
+
+## Tarefa 30: preferências puras do optimizador (spec 8)
+
+Ficheiros: backend/app/optimiser/restaurant_model.py, restaurant_assign.py,
+READ_ME_FIRST.md, docs/optimiser-restaurant.md,
+backend/tests/test_optimiser_ambience.py. O restaurant_exact.py não precisou
+de mudanças: recebe as preferências dentro do PartySpec e o score_plan conta-as.
+
+Testes primeiro: 13 testes escritos antes do código; RED com 13 falhas
+(TypeError: features/prefs inexistentes), depois GREEN. Os testes existentes
+do optimizador (assign, exact, properties, rules) passam sem alterações.
+
+Verificação:
+- ruff check . → All checks passed!
+- ruff format --check . → 178 files already formatted
+- pytest -q (completo) → 687 passed, 3 warnings
+- check_forbidden_paths --base main → Protected event paths unchanged.
+
+DESVIO AO SPEC (para registar no decisions-log ao fazer merge):
+- Spec 8.2 dizia key() = (covers, -waste, zonas, prefs_met). Mas um teste
+  existente exige key() == (6, -2, 1) e o exact check, o service_plan ("o
+  plano novo é melhor?") e o gap report comparam key() de 3 partes. Para não
+  alterar testes nem comportamento existente: key() fica com 3 partes e há um
+  ranking_key() = key() + prefs_met, usado só pela heurística (busca local)
+  para desempatar. As preferências nunca mudam o que conta como ótimo.
+
+Outras decisões:
+- recommend_table só reordena quando o grupo tem desejos; ordenação estável
+  por (desperdício <= 2 ? 0 : 1, -desejos cumpridos), mantendo a ordem antiga
+  (desperdício, zona, menos mesas, ids) dentro de cada grupo.
+- Mesas juntas cumprem um desejo só se todas o cumprirem.
+- Razões: "Sunny, as you asked" (cumprido), "Not in the sun" (outra opção
+  livre cumpre), "No sunny table is free at 13:00" (nenhuma livre cumpre). A
+  hora vem do start_slot (grelha de 15 min de clock.py), sem importar o
+  restaurant_service, para o optimizador continuar puro.

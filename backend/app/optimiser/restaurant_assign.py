@@ -29,6 +29,7 @@ from app.optimiser.restaurant_model import (
     capacity,
     party_name,
     place_fixed,
+    prefs_met,
     score_plan,
     table_name,
     zone_met,
@@ -38,6 +39,31 @@ DEFAULT_ITERATIONS = 5000
 # Ends well before the 30 s Vercel limit (vercel.json), with room for the
 # exact check that may run after it in the same request.
 SAFETY_TIME_LIMIT_S = 15.0
+# A wish may win over up to this many spare seats, never more (spec 8.2): a
+# couple who wants sun gets a sunny table for four, not the table for eight.
+WISH_WASTE_MARGIN = 2
+
+WISH_MET = {
+    "sun": "Sunny, as you asked",
+    "shade": "In the shade, as you asked",
+    "view": "Has a view, as you asked",
+    "quiet": "Quiet corner, as you asked",
+    "away_from_wc": "Away from the toilets, as you asked",
+}
+WISH_NOT_HERE = {
+    "sun": "Not in the sun",
+    "shade": "Not in the shade",
+    "view": "No view from this table",
+    "quiet": "Not a quiet spot",
+    "away_from_wc": "Within 5 m of the toilets",
+}
+WISH_NOWHERE = {
+    "sun": "No sunny table is free at {time}",
+    "shade": "No shaded table is free at {time}",
+    "view": "No table with a view is free at {time}",
+    "quiet": "No quiet table is free at {time}",
+    "away_from_wc": "No table away from the toilets is free at {time}",
+}
 
 
 def tables_text(choice: tuple[int, ...], tables_by_id: dict[int, TableSpec]) -> str:
@@ -57,11 +83,34 @@ def _free_in_busy(choice: tuple[int, ...], busy: dict[int, set[int]], party: Par
     )
 
 
+def _slot_time(slot: int) -> str:
+    """Slot 52 -> "13:00": the same 15-minute grid as restaurant_service.clock."""
+    hours, minutes = divmod(slot * 15, 60)
+    return f"{hours % 24:02d}:{minutes:02d}"
+
+
+def _wish_reasons(
+    party: PartySpec, chosen: list[TableSpec], met_somewhere: frozenset[str]
+) -> list[str]:
+    met = prefs_met(chosen, party)
+    reasons = []
+    for wish in sorted(party.prefs):
+        if wish in met:
+            reasons.append(WISH_MET.get(wish, f"{wish} as you asked"))
+        elif wish in met_somewhere:
+            reasons.append(WISH_NOT_HERE.get(wish, f"Not {wish}"))
+        else:
+            template = WISH_NOWHERE.get(wish, "No table like that is free at {time}")
+            reasons.append(template.format(time=_slot_time(party.start_slot)))
+    return reasons
+
+
 def _explain(
     choice: tuple[int, ...],
     party: PartySpec,
     by_id: dict[int, TableSpec],
     largest_free: int,
+    met_somewhere: frozenset[str] = frozenset(),
 ) -> TableChoice:
     chosen = [by_id[table_id] for table_id in choice]
     seats = capacity(chosen)
@@ -82,6 +131,7 @@ def _explain(
         reasons.append(
             f"{zone} zone as requested" if met else f"Outside the {party.zone_pref} zone"
         )
+    reasons.extend(_wish_reasons(party, chosen, met_somewhere))
     return TableChoice(table_ids=choice, waste=waste, zone_met=met, reasons=tuple(reasons))
 
 
@@ -92,7 +142,9 @@ def recommend_table(
 
     Hard needs (size, accessibility, high chairs) are already filtered out by
     candidate_choices. Combined tables are offered only when no single table
-    fits, because joining tables is extra work for the staff.
+    fits, because joining tables is extra work for the staff. Ambience wishes
+    (party.prefs) reorder only the choices that waste at most
+    WISH_WASTE_MARGIN seats; beyond that, fewer spare seats still wins.
     """
     by_id = {table.id: table for table in tables}
     free = [
@@ -100,9 +152,25 @@ def recommend_table(
     ]
     singles = [choice for choice in free if len(choice) == 1]
     shortlist = singles if singles else free
+    met_somewhere: frozenset[str] = frozenset()
+    if party.prefs:
+
+        def wish_order(choice: tuple[int, ...]) -> tuple[int, int]:
+            chosen = [by_id[table_id] for table_id in choice]
+            spare = capacity(chosen) - party.size
+            return (0 if spare <= WISH_WASTE_MARGIN else 1, -len(prefs_met(chosen, party)))
+
+        # A stable sort keeps the old order (waste, zone, fewer tables, ids)
+        # inside each group, so wishes only ever break ties.
+        shortlist = sorted(shortlist, key=wish_order)
+        met_somewhere = frozenset().union(
+            *(prefs_met([by_id[t] for t in choice], party) for choice in shortlist)
+        )
     # Used for the "protects a bigger table" reason: the biggest free table that would also fit.
     largest_free = max((by_id[choice[0]].max_party for choice in singles), default=0)
-    return [_explain(choice, party, by_id, largest_free) for choice in shortlist[:top]]
+    return [
+        _explain(choice, party, by_id, largest_free, met_somewhere) for choice in shortlist[:top]
+    ]
 
 
 # ---------------------------------------------------------------- service plan
@@ -252,8 +320,9 @@ _MOVES: tuple[Callable[[_Problem, Floor, random.Random], Floor | None], ...] = (
 )
 
 
-def _key(problem: _Problem, floor: Floor) -> tuple[int, int, int]:
-    return score_plan(problem.tables, problem.parties, floor.assignment()).key()
+def _key(problem: _Problem, floor: Floor) -> tuple[int, int, int, int]:
+    # ranking_key = key() + wishes met: wishes only break ties between plans.
+    return score_plan(problem.tables, problem.parties, floor.assignment()).ranking_key()
 
 
 def _local_search(
