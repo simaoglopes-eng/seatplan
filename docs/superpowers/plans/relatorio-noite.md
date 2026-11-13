@@ -1,7 +1,7 @@
 # Relatório da noite — 13 de novembro de 2026
 
 Trabalho em curso na branch martim/restaurantes-impl. Último commit verde
-antes da tarefa 10, 3e6e651. Spec e plano aprovados por Martim, commit 880624b
+antes da tarefa 11, 2fc9ea5. Spec e plano aprovados por Martim, commit 880624b
 na branch martim/restaurantes-spec. Identidade Git configurada apenas neste
 repositório. Plano com 40 tarefas.
 
@@ -20,7 +20,8 @@ repositório. Plano com 40 tarefas.
 | 7 — Modelo do editor | Feita | 2587840 | Geometria TS e operações imutáveis |
 | 8 — Estrutura e formas | Feita | 8abad49 | Salas retangulares, em L e desenho livre |
 | 9 — Curvas e cantos | Feita | 3e6e651 | Arcos circulares, arrasto e propriedades acessíveis |
-| 10 — Aberturas e norte | Feita | commit desta entrada | Janelas, portas, vidro, normais em arcos e bússola |
+| 10 — Aberturas e norte | Feita | 2fc9ea5 | Janelas, portas, vidro, normais em arcos e bússola |
+| 11 — Elementos e zonas | Feita | commit desta entrada | Paletas, colocação, arrasto, campos e desfazer |
 
 ## Verificações reais
 
@@ -238,3 +239,34 @@ formato passaram (171 ficheiros). Typecheck e 230 Vitest em 31 ficheiros
 passaram; build final em 133 ms. Contraste: 86 checks, 0 failures. Guard e
 diff check passaram. Última corrida completa Playwright: 36 passed em 32,2 s.
 Commit identificado por feat: add room openings and north orientation.
+
+## Tarefa 11 — feita
+
+Elementos fixos e zonas com modelo imutável, ícone/nome, dimensões, forma,
+rotação e posição por campos. Paleta por arrasto, toque seguido de colocação
+e botão de colocação. Arrastar objetos mantém um passo de desfazer por gesto.
+Ao apagar zona, só se limpa a ligação das respetivas mesas; mesas preservadas.
+Zonas legadas stage continuam legíveis/editáveis, sem alargar a paleta do spec.
+
+RED observado antes de existir roomObjects e para operações de zonas em falta.
+Depois três testes passaram, cobrindo os onze elementos e sete zonas, círculos,
+ids, limites dos campos, remoção de ligação e imutabilidade. RED de navegador
+com ferramentas ainda desativadas, depois dois testes passaram em 8,5 s a
+1440/390 com edição, desfazer/refazer, axe sem violações e sem scroll lateral.
+Capturas inspecionadas. Contenção e avisos de sobreposição pertencem à tarefa
+16; esta etapa ainda permite colocação fora do contorno, como documentado.
+
+O teste novo de arrasto da paleta falhou inicialmente porque o painel comprido
+deslocava a página durante o gesto. Corrigido com scroll independente do painel
+no desktop; os três testes passaram em 9,2 s, incluindo drop real e desfazer
+de movimento. Captura desktop final inspecionada. Teste RED adicional garante
+que nomes legados de zona com 80 caracteres continuam editáveis/movíveis.
+Limite preservado em vez de o reduzir. Primeira bateria: 233 Vitest e 39 E2E
+verdes. Verificação final após este ajuste de compatibilidade em curso.
+
+Verificação final: Ruff check e formato passaram (171 ficheiros), pytest
+622 passed, 3 warnings em 121,93 s; typecheck passou, Vitest 234 passed em 32
+ficheiros, build em 137 ms, contraste 86 checks e 0 failures; Playwright
+39 passed em 36,2 s. Variante pytest com --basetemp novo, -o addopts= e
+-p no:cacheprovider. Guard e git diff --check verdes. Sem bibliotecas novas.
+Commit identificado por feat: add fixed room elements and zones.

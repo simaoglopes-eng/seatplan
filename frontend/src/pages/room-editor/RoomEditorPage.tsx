@@ -18,6 +18,9 @@ import type { ShapeSelection } from "./ShapeTools";
 import { RoomCanvas } from "./RoomCanvas";
 import { WallTools } from "./WallTools";
 import { NorthTools } from "./NorthTools";
+import { FixtureTools } from "./FixtureTools";
+import { ZoneTools } from "./ZoneTools";
+import { addFixture, addZone, FIXTURE_KINDS, removeZone, ZONE_KINDS } from "./roomObjects";
 import "./room-editor.css";
 
 export default function RoomEditorPage() {
@@ -39,6 +42,8 @@ function RoomSession({ info }: { info: VenueDetail }) {
   const [selection, setSelection] = useState<ShapeSelection>(null);
   const [tool, setTool] = useState("Shape");
   const [opening, setOpening] = useState<string | null>(null);
+  const [object, setObject] = useState<string | null>(null);
+  const [placement, setPlacement] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [grid, setGrid] = useState(true);
   const [pointX, setPointX] = useState("0"), [pointY, setPointY] = useState("0");
@@ -59,12 +64,26 @@ function RoomSession({ info }: { info: VenueDetail }) {
     try { const changed = finishOutline(room); if (changed !== room) changeRoom(changed); setDrawingRoom(null); }
     catch (caught) { setError(caught instanceof Error ? caught.message : "Check the corners."); }
   };
+  const placeObject = (point: Point, value: string) => {
+    if (drawing) return;
+    const [category, kind] = value.split(":");
+    const fixed = FIXTURE_KINDS.find(k => k === kind), zone = ZONE_KINDS.find(k => k === kind);
+    if (category === "fixture" && fixed) {
+      const next = addFixture(room, fixed, point); changeRoom(next); setObject(next.fixtures.at(-1)!.key); setTool("Fixed");
+    } else if (category === "zone" && zone) {
+      const next = addZone(room, zone, point); changeRoom(next); setObject(next.zones.at(-1)!.key); setTool("Zones");
+    } else return;
+    setPlacement(null);
+  };
+  const placeCentre = () => { if (placement) { const points = room.outline.points; placeObject({ x: (Math.min(...points.map(p => p.x)) + Math.max(...points.map(p => p.x))) / 2, y: (Math.min(...points.map(p => p.y)) + Math.max(...points.map(p => p.y))) / 2 }, placement); } };
   const area = room.outline.points.length >= 3 ? polygonArea(outlineToPolygon(room.outline)) / 10000 : 0;
   return <section className="room-editor" aria-label="Restaurant room editor" onKeyDown={event => {
     const target = event.target as HTMLElement;
     if (target.closest("input, textarea, select, [contenteditable=true]")) return;
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") { event.preventDefault(); if (event.shiftKey) history.redo(); else history.undo(); }
     else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") { event.preventDefault(); history.redo(); }
+    else if (event.key === "Escape") { setPlacement(null); setObject(null); setSelection(null); }
+    else if (event.key === "Delete" && object && (tool === "Fixed" || tool === "Zones")) { event.preventDefault(); changeRoom(tool === "Fixed" ? { ...room, fixtures: room.fixtures.filter(f => f.key !== object) } : removeZone(room, object)); setObject(null); }
     else if (event.key === "Delete" && tool === "Walls" && opening) { event.preventDefault(); changeRoom({ ...room, openings: room.openings.filter(o => o.key !== opening) }); setOpening(null); }
     else if (event.key === "Delete" && tool === "Shape" && selection?.kind === "corner") {
       event.preventDefault();
@@ -77,8 +96,8 @@ function RoomSession({ info }: { info: VenueDetail }) {
     </header>
     <div className="room-tabs"><Select label="Room" value={room.key} onChange={e => { setSelectedRoom(e.target.value); setDrawingRoom(null); setSelection(null); }} options={history.present.rooms.map(r => ({ value: r.key, label: r.name }))} /><Button variant="secondary" disabled={history.present.rooms.length >= 5} onClick={() => setAdding(true)}>Add room</Button></div>
     {error && <p role="alert" className="room-error">{error}</p>}
-    <div className="room-workspace"><nav className="room-tools" aria-label="Room tools">{["Shape", "Walls", "North", "Fixed", "Zones", "Tables", "Light", "Preview"].map(name => <button key={name} type="button" aria-pressed={tool === name} disabled={!["Shape", "Walls", "North"].includes(name) || (drawing && name !== "Shape")} onClick={() => { setTool(name); setError(""); }}>{name}</button>)}</nav>
-      <RoomCanvas room={room} drawing={drawing} grid={grid} onPoint={addPoint} onCloseShape={closeShape} selection={selection} onSelect={setSelection} onChange={changeRoom} onDragStart={history.checkpoint} onError={setError} tool={tool} opening={opening} onOpening={setOpening} />
+    <div className="room-workspace"><nav className="room-tools" aria-label="Room tools">{["Shape", "Walls", "North", "Fixed", "Zones", "Tables", "Light", "Preview"].map(name => <button key={name} type="button" aria-pressed={tool === name} disabled={!["Shape", "Walls", "North", "Fixed", "Zones"].includes(name) || (drawing && name !== "Shape")} onClick={() => { setTool(name); setPlacement(null); setError(""); }}>{name}</button>)}</nav>
+      <RoomCanvas room={room} drawing={drawing} grid={grid} onPoint={addPoint} onCloseShape={closeShape} selection={selection} onSelect={setSelection} onChange={changeRoom} onDragStart={history.checkpoint} onError={setError} tool={tool} opening={opening} onOpening={setOpening} placement={placement} object={object} onObject={setObject} onPlace={placeObject} />
       <aside className="room-properties"><h2>Room properties</h2><div className="room-form">
         <Field label="Selected room name" value={room.name} maxLength={60} onChange={e => history.commit(replaceRoom(history.present, { ...room, name: e.target.value }))} />
         <Checkbox label="Show 50 cm grid" checked={grid} onChange={e => setGrid(e.target.checked)} />
@@ -87,6 +106,8 @@ function RoomSession({ info }: { info: VenueDetail }) {
         {!drawing && tool === "Shape" && <RoomProperties key={`${room.key}:${selection?.kind}:${selection?.index}`} room={room} selection={selection} onSelect={setSelection} onChange={changeRoom} onError={setError} />}
         {!drawing && tool === "Walls" && <WallTools room={room} selection={selection} selected={opening} onSelect={setOpening} onSide={setSelection} onChange={changeRoom} onError={setError} />}
         {!drawing && tool === "North" && <NorthTools key={room.key} room={room} onChange={changeRoom} />}
+        {!drawing && tool === "Fixed" && <FixtureTools room={room} selected={object} placement={placement} onSelect={setObject} onArm={setPlacement} onCentre={placeCentre} onChange={changeRoom} onError={setError} />}
+        {!drawing && tool === "Zones" && <ZoneTools room={room} selected={object} placement={placement} onSelect={setObject} onArm={setPlacement} onCentre={placeCentre} onChange={changeRoom} />}
       </div></aside>
     </div><footer className="room-status">{area.toLocaleString("pt-PT", { maximumFractionDigits: 1 })} m² · {grid ? "Grid on" : "Grid off"}</footer>
     {adding && <NewRoomDialog onClose={() => setAdding(false)} onCreate={(created, draw) => { history.commit(addRoom(history.present, created)); setSelectedRoom(created.key); setDrawingRoom(draw ? created.key : null); setSelection(null); setTool("Shape"); setAdding(false); }} />}

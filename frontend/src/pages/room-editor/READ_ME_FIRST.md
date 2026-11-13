@@ -59,3 +59,20 @@ Manual controls remain available when no sensor reading arrives. API reference:
 https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent and
 https://www.w3.org/TR/orientation-event/ . Physical iOS/Android hardware has
 not been tested in this Windows session.
+
+roomObjects.ts owns immutable fixed-element and zone creation/editing. The
+eleven fixture kinds and seven new zone kinds are listed there. Existing
+stage zones remain readable/editable for compatibility. Circles keep equal
+dimensions; changes preserve ids and keys. Removing a zone clears that link
+on affected tables and preserves every table. FixtureTools/ZoneTools expose
+palettes, placement in the room and position/size/name fields. Palette drag
+uses a private MIME type; tap-then-place and the placement button also work.
+ObjectLayer draws neutral icons/names and allows one-step drag undo. Zone
+rectangles are behind fixtures and tables and are selectable in Zones mode.
+Tables are still read-only until their own editing tasks. Outline containment
+and overlap warnings are added by task 16; placement can currently be outside.
+All values use centimetres and clockwise screen rotation.
+
+Desktop properties scroll independently within the canvas height, so dragging
+from a long palette does not scroll the page out from under the pointer.
+Zone names retain the historical 80-character limit, including during moves.

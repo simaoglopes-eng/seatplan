@@ -45,6 +45,16 @@
 .room-north-dial circle { fill: var(--c-surface); stroke: var(--c-border-strong); stroke-width: 2; }
 .room-north-dial path { fill: var(--c-primary); }
 .room-north-dial text { fill: var(--c-text); font-size: 18px; font-weight: var(--fw-bold); }
+.room-object-palette { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.room-object-palette button { font: inherit; min-height: 44px; background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-border-strong); border-radius: var(--radius-md); padding: var(--space-2); cursor: grab; }
+.room-object-palette button[aria-pressed="true"] { background: var(--c-primary-soft); border-color: var(--c-primary); }
+.room-fixture > rect, .room-fixture > circle { fill: var(--c-surface-strong); stroke: var(--c-border-strong); stroke-width: 2; }
+.room-zone > rect { fill: var(--c-info-soft); fill-opacity: .4; stroke: var(--c-info); stroke-width: 2; stroke-dasharray: 10 6; }
+.room-fixture.selected > rect, .room-fixture.selected > circle, .room-zone.selected > rect { stroke: var(--c-primary); stroke-width: 4; }
+.room-fixture text, .room-zone text { fill: var(--c-text); pointer-events: none; }
+@media (min-width: 1024px) {
+  .room-properties { max-height: 34rem; overflow-y: auto; }
+}
 @media (max-width: 1023px) {
   .room-workspace { grid-template-columns: minmax(0, 1fr); }
   .room-editor { padding-bottom: 4rem; }
