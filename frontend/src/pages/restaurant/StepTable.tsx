@@ -1,7 +1,7 @@
 // Step 3: the floor map for the chosen time. Tapping a free table holds it
 // for 5 minutes; "Choose for me" lets the optimiser pick. Live updates
 // redraw the map within about 2 seconds when someone else books a table.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { applyAmbience, cursorSteps, defaultRoom, roomTabs, seatsInRoom, tablesInRoom } from "./ambienceView";
 import { useLightCursor } from "./useLightCursor";
 import { ApiError } from "../../api/client";
@@ -54,6 +54,11 @@ function holdFailure(error: unknown, tableId: number | null, label: string | nul
   if (!lost) return errorMessage(error, "We could not hold that table. Please try again.");
   const message = label ? `Table ${label} was just taken by someone else.` : "The last table for your party was just taken.";
   return { message, failedId: tableId };
+}
+
+/** Today's sunset at the restaurant, from the first room that has one. */
+function sunsetOf(map: DinerMap): string | null {
+  return (map.rooms ?? []).find((room) => room.sun?.sunset)?.sun?.sunset ?? null;
 }
 
 export function StepTable(props: StepTableProps) {
@@ -145,18 +150,38 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
   // and "Hold this table" there reserves it. Nobody holds a table by accident with a finger.
   const [pointed, setPointed] = useState<number | null>(null);
   const [looking, setLooking] = useState<number | null>(null);
+  // Whether the table in front of the diner is one they chose, or only the one we suggested on arrival.
+  const [chosenByDiner, setChosenByDiner] = useState(false);
+  const suggested = useRef(false);
   const [picked, setPicked] = useState("");
   const pickable = new Set(map.tables.filter(isPickable).map((t) => t.id));
   // The table we were looking at may be booked by someone else, or held by us: either way stop looking.
   useEffect(() => {
-    if (looking !== null && (!pickable.has(looking) || looking === heldId)) setLooking(null);
+    if (looking !== null && (!pickable.has(looking) || looking === heldId)) {
+      setLooking(null);
+      suggested.current = false; // the table is gone: a fresh suggestion may take its place
+    }
   }, [looking, heldId, map]);
+  // The plan opens with our best table already selected (outlined in green, with a tick) and its card
+  // showing why, so reserving is one tap; the diner can pick anything else freely.
+  const bestId = map.recommended?.table_ids[0];
+  useEffect(() => {
+    if (suggested.current || looking !== null || heldId !== null || bestId === undefined || !pickable.has(bestId)) return;
+    suggested.current = true;
+    setLooking(bestId);
+    setChosenByDiner(false);
+    const table = map.tables.find((t) => t.id === bestId);
+    if (table) setPicked(`Table ${table.label} is suggested for you and already selected. Use Hold this table to reserve it.`);
+  }, [looking, heldId, bestId, map]);
   const lookAt = (id: number): void => {
+    setChosenByDiner(true);
     setLooking(id);
     const table = map.tables.find((t) => t.id === id);
     setPicked(table ? `Table ${table.label} selected. Use Hold this table to reserve it.` : "");
   };
-  const cardTable = map.tables.find((t) => t.id === (looking ?? pointed ?? heldId ?? map.recommended?.table_ids[0]));
+  // A table the diner chose stays in front of them; our own suggestion gives way to whatever they point at.
+  const focusId = chosenByDiner ? (looking ?? pointed) : (pointed ?? looking);
+  const cardTable = map.tables.find((t) => t.id === (focusId ?? heldId ?? map.recommended?.table_ids[0]));
 
   const highlight = new Set(map.recommended?.table_ids ?? []);
   const nothingFree = pickable.size === 0 && heldId === null;
@@ -201,7 +226,7 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
               table={cardTable}
               heldId={heldId}
               busy={busy}
-              chosen={looking === cardTable.id}
+              chosen={looking === cardTable.id && chosenByDiner}
               onTake={(id) => {
                 setLooking(null);
                 onTake(id);
@@ -211,7 +236,7 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
           <MapKey entries={DINER_KEY} scenes={map.rooms ? ROOM_KEY : []} />
         </div>
       </div>
-      {canShowLight && <LightCursorControl steps={steps} index={cursor.index} onChange={cursor.setIndex} failed={cursor.failed} />}
+      {canShowLight && <LightCursorControl steps={steps} index={cursor.index} onChange={cursor.setIndex} failed={cursor.failed} bookingTime={time} sunset={sunsetOf(map)} />}
       <TableList tables={map.tables} map={map} heldId={heldId} busy={busy} onTake={onTake} />
       <div className="rb-actions rb-actions-sticky">
         <Button variant="secondary" onClick={onBack}>

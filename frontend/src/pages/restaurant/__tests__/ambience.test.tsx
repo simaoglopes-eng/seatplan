@@ -163,7 +163,7 @@ describe("Light cursor", () => {
     await screen.findByRole("timer");
     const mapCalls = callsTo(calls, "GET", `${API}/map`).length;
 
-    const slider = screen.getByRole("slider", { name: /light changes during your meal/i }) as HTMLInputElement;
+    const slider = screen.getByRole("slider", { name: /Preview room light.*does not change booking time/i }) as HTMLInputElement;
     expect([slider.min, slider.max, slider.step]).toEqual(["0", "6", "1"]); // 13:00 ... 14:30 in 15-minute steps
     expect(slider.getAttribute("aria-valuetext")).toContain("13:00");
     expect(document.querySelector(".room-night")).toBeNull();
@@ -253,5 +253,55 @@ describe("Choosing a table on the map", () => {
     fireEvent.click(within(card).getByRole("button", { name: "Hold this table" }));
     expect(await screen.findByRole("timer")).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/hold`)).toHaveLength(1);
+  });
+});
+
+
+describe("Step 2: suggested table already selected, and an unambiguous light preview", () => {
+  it("opens with the best table selected, ticked and announced, and its card showing why", async () => {
+    mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => roomsMap() });
+    await reachTableStep();
+    const suggested = screen.getByRole("option", { name: /Table 7,/ });
+    expect(suggested.getAttribute("aria-selected")).toBe("true");
+    expect(suggested.querySelector(".selected-tick")).not.toBeNull(); // outlined and ticked, not drawn as held
+    expect(screen.getByRole("option", { name: /Table 8,/ }).getAttribute("aria-selected")).toBe("false");
+    expect(await screen.findByText(/Table 7 is suggested for you and already selected\. Use Hold this table to reserve it\./)).toBeTruthy();
+    expect(screen.queryByRole("timer")).toBeNull(); // nothing is held until the diner says so
+  });
+
+  it("reserves the suggested table in one tap on the card, and gives way to whatever the diner points at", async () => {
+    const calls = mockApi({
+      [`GET ${API}`]: () => INFO,
+      [`GET ${API}/slots`]: () => SLOTS,
+      [`GET ${API}/map`]: () => roomsMap(),
+      [`POST ${API}/hold`]: () => heldTable(7, "7"),
+    });
+    await reachTableStep();
+    fireEvent.pointerEnter(screen.getByRole("option", { name: /Table 8,/ }));
+    expect(screen.getByRole("region", { name: /Table 8/ })).toBeTruthy();
+    fireEvent.pointerLeave(screen.getByRole("option", { name: /Table 8,/ }));
+    fireEvent.click(within(screen.getByRole("region", { name: /Table 7/ })).getByRole("button", { name: "Hold this table" }));
+    expect(await screen.findByRole("timer")).toBeTruthy();
+    expect(callsTo(calls, "POST", `${API}/hold`)[0]?.body).toMatchObject({ table_id: 7 });
+  });
+
+  it("keeps a table the diner chose, even when the pointer leaves for another", async () => {
+    mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => roomsMap() });
+    await reachTableStep();
+    fireEvent.click(screen.getByRole("option", { name: /Table 8,/ }));
+    fireEvent.pointerEnter(screen.getByRole("option", { name: /Table 7,/ }));
+    expect(screen.getByRole("region", { name: /Table 8/ })).toBeTruthy();
+    expect(screen.getByRole("option", { name: /Table 8,/ }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("option", { name: /Table 7,/ }).getAttribute("aria-selected")).toBe("false");
+  });
+
+  it("says the preview does not change the booking time, shows the booked stay and where the sun sets", async () => {
+    mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => roomsMap(), [`GET ${API}/ambience`]: () => answer() });
+    await reachTableStep();
+    const slider = screen.getByRole("slider", { name: "Preview room light (does not change booking time)" }) as HTMLInputElement;
+    expect(screen.getByText("Your booking 13:00 → 14:30")).toBeTruthy();
+    expect(screen.getByText(/Showing the room at 13:00\. Your booking is at 19:30\./)).toBeTruthy();
+    fireEvent.change(slider, { target: { value: "3" } });
+    expect(screen.getByText(/Previewing the room at 13:45\. Your booking is at 19:30\./)).toBeTruthy();
   });
 });

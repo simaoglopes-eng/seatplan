@@ -903,3 +903,9 @@ were retained and the report restored before the next verification.
     under it summarises where and when, and the drawer also holds where, when and the quick filters. Picking a date fills the time with 20:00. Cards
     show four things: photo (16:10), name, cuisines, price and distance, one line about the room from the three booleans the restaurant already
     has (nothing is worked out per search), and up to three free times. Wheelchair access is a filter, not card clutter.
+
+31b. **Booking step 3: the suggestion is already selected, and the light preview says what it does** (claude/ux-v2, step 2). The table step opens with our
+    best table selected: outlined in green with a tick (never drawn as held; a held table keeps its own glyph) and its card showing why, announced to
+    screen readers. A tap on another table replaces it; hovering shows another card and gives way back; a table the diner chose stays. The light slider's
+    label is "Preview room light (does not change booking time)", its track is the booked stay drawn in brass ("Your booking 19:15 -> 20:45"), the
+    sunset is a tick on it when it falls inside the stay, and a line says "Previewing the room at 13:45. Your booking is at 19:30."

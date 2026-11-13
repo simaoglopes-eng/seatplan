@@ -884,6 +884,20 @@
   gap: var(--space-2);
 }
 
+/* The track is the booked stay, in brass; the sunset is a tick on it. */
+.rb-light-track { display: flex; flex-direction: column; gap: var(--space-1); }
+.rb-light-stay { align-self: flex-start; padding: 0 var(--space-3); border-radius: 999px; background: var(--c-accent-soft); color: var(--c-accent); font-size: var(--fs-sm); font-weight: var(--fw-medium); }
+.rb-light-range { position: relative; flex: 1 1 auto; display: flex; align-items: center; }
+.rb-light-range input[type="range"] { flex: 1 1 auto; accent-color: var(--c-accent); }
+.rb-light-sunset { position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+.rb-light-sunset-mark { width: 2px; height: 0.6rem; background: var(--c-accent); }
+.rb-light-sunset-label { margin-top: calc(var(--touch-target) - 0.6rem - 0.2rem); font-size: var(--fs-xs); color: var(--c-accent); white-space: nowrap; }
+
+/* A table the diner is looking at (chosen or suggested) is outlined in green with a tick, so it never reads as held. */
+.rb-map-layout .ring-selected { stroke: var(--c-primary); stroke-width: 3; }
+.selected-tick-disc { fill: var(--c-primary); }
+.selected-tick-mark { fill: none; stroke: var(--c-on-primary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
 .legend-scene-sun {
   stroke: var(--c-border-strong);
   stroke-width: 1;

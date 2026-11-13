@@ -114,6 +114,13 @@ export const TableNode = memo(function TableNode({ table, seats, ...flags }: Tab
         <g className="target-inner" data-motion={flags.motion}>
           <Rings radius={radius} flags={flags} />
         </g>
+        {/* A tick on the top-left of a table that is selected but not yet held ("mine" draws its own tick). */}
+        {flags.selected && state !== "mine" && (
+          <g transform={`translate(${-radius * 0.75} ${-radius * 0.75})`} className="selected-tick" aria-hidden="true">
+            <circle r="7" className="selected-tick-disc" />
+            <path d="M-3.2 0.2 L-1 2.6 L3.4 -2.4" className="selected-tick-mark" />
+          </g>
+        )}
       </g>
       <TableShape table={table} className={`glyph-${state} glyph-body`} fill={bodyFill(state, flags.prefix)} />
       <g transform={`translate(${centre.x} ${centre.y - 7}) scale(1.2)`}>
