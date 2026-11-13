@@ -149,7 +149,9 @@ def _card(
 
 def search_restaurants(session: Session, search: Search) -> dict[str, Any]:
     venues = session.scalars(
-        select(Venue).where(Venue.kind == "restaurant", Venue.status == "published")
+        select(Venue).where(
+            Venue.kind == "restaurant", Venue.status == "published", Venue.slug.is_not(None)
+        )
     ).all()
     found = [(venue, _distance(venue, search)) for venue in venues if _matches(venue, search)]
     # Nearest first when we know where the diner is; restaurants without a pin go last.

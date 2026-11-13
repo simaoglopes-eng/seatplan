@@ -18,10 +18,17 @@ async function expectNoViolations(page: Page, what: string): Promise<void> {
   expect(summary, `axe found problems on ${what}`).toEqual([]);
 }
 
-test("home page", async ({ page }) => {
+test("discovery page", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: "Find a table you will love" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Near me" })).toBeVisible();
+  await expectNoViolations(page, "the discovery page");
+});
+
+test("demo page (the old home page)", async ({ page }) => {
+  await page.goto("/demo");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expectNoViolations(page, "the home page");
+  await expectNoViolations(page, "the demo page");
 });
 
 test("sign-in page", async ({ page }) => {

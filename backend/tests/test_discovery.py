@@ -382,3 +382,13 @@ def test_the_page_names_the_slug_not_the_internal_id_in_its_url_fields(
     body = client.get("/api/restaurants/link-house").json()
     assert body["slug"] == "link-house" and body["book_url"] == f"/r/{body['public_id']}"
     assert body["maps_url"].startswith("https://www.google.com/maps/search/")
+
+
+def test_a_published_restaurant_without_a_slug_has_no_public_page_so_it_is_not_listed(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    # Old demo data was published before slugs existed; a card with no link would be a dead end.
+    row = venue(session, organiser, "No Slug", "temp")
+    row.slug = None
+    session.commit()
+    assert names(search(client)) == []

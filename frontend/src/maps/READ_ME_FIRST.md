@@ -16,3 +16,7 @@ this component.
 Sources: https://leafletjs.com/reference-1.9.4.html and
 https://operations.osmfoundation.org/policies/tiles/ . The actual hosted
 Referer/CSP behavior still needs a deployment check; no deployment is authorized.
+
+ResultsMap (discovery page) shows one pin per search result and a bigger pin for the card the diner points at. It is a
+second small component beside LeafletMap, built the same way (map made in an effect, removed on unmount, tiles from the
+standard OSM URL with attribution, no react-leaflet). The list beside it is the keyboard route to every restaurant.

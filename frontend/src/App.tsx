@@ -11,6 +11,7 @@ import GuestSignInPage from "./pages/account/GuestSignInPage";
 import MyEventsPage from "./pages/account/MyEventsPage";
 import MySeatPage from "./pages/account/MySeatPage";
 import ResetPage from "./pages/account/ResetPage";
+import DiscoverPage from "./pages/discover/DiscoverPage";
 import Home from "./pages/Home";
 import JoinPage from "./pages/join/JoinPage";
 import JoinSignInPage from "./pages/join/JoinSignInPage";
@@ -32,7 +33,9 @@ const RoomEditorPage = lazy(() => import("./pages/room-editor/RoomEditorPage"));
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<DiscoverPage />} />
+      {/* The original SeatPlan home page, with the demo links, moved here (spec 4.1). */}
+      <Route path="/demo" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/owner" element={<OwnerHomePage />} />
       <Route path="/owner/sign-up" element={<OwnerSignUpPage />} />
