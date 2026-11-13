@@ -21,6 +21,7 @@ self-check are in `docs/ux-restaurant.md`.
 | `api/restaurant.ts` (in `src/api`) | Typed calls for every restaurant endpoint. "Server..." types copy the backend; small "to..." functions turn them into screen shapes |
 | `useBookingFlow.ts` | The diner's answers so far and the current step; gives a hold back (`releaseQuietly`) when the diner goes back |
 | `StepParty.tsx`, `StepTime.tsx`, `StepTable.tsx`, `StepDetails.tsx`, `Confirmation.tsx` | The five booking steps |
+| `RoomTabs.tsx`, `LightCursor.tsx`, `useLightCursor.ts`, `ambienceView.ts` | The table step with rooms (spec 9.3): a tab per room with its free tables; the ambience card in `TablePanels.tsx` for the table under the pointer, else the held one, else our suggestion (only when its ambience is known); and the light cursor over the stay, which asks `GET /r/{vid}/ambience` 250 ms after the last move and repaints only sun, night and sentences, never the tables, holds or live updates. `ambienceView.ts` is the pure part (tabs, steps, merging the answer) |
 | `tableView.ts` | Pure rules for the diner map: the state each table shows, its spoken name, alternatives after a conflict |
 | `ChangeBookingForm.tsx`, `BookingSummary.tsx` | The manage page's form and the summary shared with the confirmation |
 | `StaffFloor.tsx`, `FloorLists.tsx`, `SelectionPanel.tsx`, `MoveDialog.tsx`, `WalkinDialog.tsx`, `WhatIf.tsx` | The live floor and its actions |

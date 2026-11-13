@@ -2,6 +2,8 @@
 // for 5 minutes; "Choose for me" lets the optimiser pick. Live updates
 // redraw the map within about 2 seconds when someone else books a table.
 import { useEffect, useState } from "react";
+import { applyAmbience, cursorSteps, defaultRoom, roomTabs, seatsInRoom, tablesInRoom } from "./ambienceView";
+import { useLightCursor } from "./useLightCursor";
 import { ApiError } from "../../api/client";
 import { getDinerMap, holdTable, venueDayScope } from "../../api/restaurant";
 import type { DinerMap, PartyNeeds } from "../../api/restaurant";
@@ -10,9 +12,11 @@ import { Button, ErrorState, Skeleton } from "../../design/components";
 import { SeatMap } from "../../seatmap/SeatMap";
 import { errorMessage, formatDate, people } from "./format";
 import { HoldCountdown } from "./HoldCountdown";
-import { DINER_KEY, MapKey } from "./MapKey";
+import { LightCursorControl } from "./LightCursor";
+import { DINER_KEY, MapKey, ROOM_KEY } from "./MapKey";
+import { RoomTabs } from "./RoomTabs";
 import { StepHeading } from "./StepHeading";
-import { ConflictNotice, SuggestionCard, TableList } from "./TablePanels";
+import { AmbienceCard, ConflictNotice, SuggestionCard, TableList } from "./TablePanels";
 import { alternatives, describeDinerTables, isPickable, tablesForMap } from "./tableView";
 import { releaseQuietly } from "./useBookingFlow";
 import { useLoad } from "./useLoad";
@@ -117,8 +121,27 @@ interface BodyProps extends StepTableProps {
   onTake: (tableId: number | null) => void;
 }
 
-function TableStepBody({ map, hold, secondsLeft, busy, conflict, problem, onTake, onNext, onBack, needs, time }: BodyProps) {
+function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict, problem, onTake, onNext, onBack, needs, time }: BodyProps) {
   const heldId = hold && secondsLeft !== 0 ? hold.tableId : null;
+  // The light cursor only repaints the light; the tables, holds and live updates stay as they are.
+  const steps = cursorSteps(loaded.stay_start, loaded.stay_end);
+  const cursor = useLightCursor(venueId, needs, time, steps);
+  const map = cursor.answer ? applyAmbience(loaded, cursor.answer) : loaded;
+  const canShowLight = steps.length > 1 && (map.rooms ?? []).some((room) => room.sun !== null);
+
+  const tabs = roomTabs(map);
+  const [chosenRoom, setChosenRoom] = useState<number | null | undefined>(undefined);
+  const heldRoom = heldId === null ? undefined : (map.tables.find((t) => t.id === heldId)?.room_id ?? null);
+  // A table held from the list can be in another room: show that room, so the diner sees their table.
+  useEffect(() => {
+    if (heldRoom !== undefined) setChosenRoom(heldRoom);
+  }, [heldRoom]);
+  const roomId = tabs.length === 0 ? undefined : tabs.some((tab) => tab.id === chosenRoom) ? (chosenRoom as number | null) : defaultRoom(map, tabs);
+  const roomTables = tablesInRoom(tablesForMap(map, heldId), roomId);
+
+  const [pointed, setPointed] = useState<number | null>(null);
+  const cardTable = map.tables.find((t) => t.id === (pointed ?? heldId ?? map.recommended?.table_ids[0]));
+
   const pickable = new Set(map.tables.filter(isPickable).map((t) => t.id));
   const highlight = new Set(map.recommended?.table_ids ?? []);
   const nothingFree = pickable.size === 0 && heldId === null;
@@ -131,13 +154,17 @@ function TableStepBody({ map, hold, secondsLeft, busy, conflict, problem, onTake
         </p>
       )}
       {hold && secondsLeft !== null && <HoldCountdown tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />}
+      {tabs.length > 0 && <RoomTabs tabs={tabs} current={roomId as number | null} onChange={setChosenRoom} />}
       <div className="rb-map-layout">
         <SeatMap
           label={`Floor plan for ${time}`}
           mode="tables"
-          tables={tablesForMap(map, heldId)}
-          seats={map.seats}
+          tables={roomTables}
+          seats={seatsInRoom(map.seats, roomTables)}
           zones={map.zones}
+          rooms={map.rooms}
+          activeRoomId={roomId}
+          onActiveChange={setPointed}
           selectable={(id) => pickable.has(id)}
           selectedId={heldId}
           ownId={heldId}
@@ -151,9 +178,11 @@ function TableStepBody({ map, hold, secondsLeft, busy, conflict, problem, onTake
           ) : (
             <SuggestionCard map={map} busy={busy} onTake={onTake} onChooseForMe={() => onTake(null)} />
           )}
-          <MapKey entries={DINER_KEY} />
+          {cardTable && <AmbienceCard table={cardTable} heldId={heldId} busy={busy} onTake={onTake} />}
+          <MapKey entries={DINER_KEY} scenes={map.rooms ? ROOM_KEY : []} />
         </div>
       </div>
+      {canShowLight && <LightCursorControl steps={steps} index={cursor.index} onChange={cursor.setIndex} failed={cursor.failed} />}
       <TableList tables={map.tables} map={map} heldId={heldId} busy={busy} onTake={onTake} />
       <div className="rb-actions rb-actions-sticky">
         <Button variant="secondary" onClick={onBack}>

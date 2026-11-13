@@ -61,6 +61,8 @@ export interface SeatMapProps {
   activeRoomId?: number | null;
   /** Draw the sun patches (default true). */
   showSun?: boolean;
+  /** Called with the id under the pointer or the keyboard cursor, and null when there is none. */
+  onActiveChange?: (id: number | null) => void;
 }
 
 /** Everything the map needs to know about one pickable thing. */
@@ -242,6 +244,11 @@ export function SeatMap(props: SeatMapProps) {
   const recommended = model.targets.find((t) => highlight.has(t.id));
   const focusControl = recommended ? { label: `Zoom to the recommended ${noun}`, onClick: () => zoomTo(panZoom, recommended) } : null;
   const captionId = hoverId ?? activeId;
+  const reportActive = props.onActiveChange;
+  useEffect(() => {
+    reportActive?.(captionId);
+    // Only a change of target is news; a new callback each render is not.
+  }, [captionId]);
   const caption = captionId === null ? null : captionFor(captionId, props, model, highlight, selectedId);
   const { view } = panZoom;
   // Map text reads this to stay legible when zoomed out (seatmap.css, .table-label).

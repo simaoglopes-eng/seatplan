@@ -3,7 +3,8 @@
 // the map, for people who prefer a list or cannot use the map).
 import type { DinerMap, DinerTable } from "../../api/restaurant";
 import { Badge, Button } from "../../design/components";
-import { tableFeatures, unavailableReason } from "./tableView";
+import { lightWords } from "./ambienceView";
+import { partyRange, tableFeatures, unavailableReason } from "./tableView";
 
 interface SuggestionProps {
   map: DinerMap;
@@ -43,6 +44,50 @@ export function SuggestionCard({ map, busy, onTake, onChooseForMe }: SuggestionP
         Choose for me
       </Button>
     </div>
+  );
+}
+
+interface AmbienceCardProps {
+  table: DinerTable;
+  heldId: number | null;
+  busy: boolean;
+  onTake: (tableId: number) => void;
+}
+
+/**
+ * What one table is like for the stay: the light, the view with its photo, what
+ * is near, and a button to hold it. It describes the table under the pointer or
+ * keyboard cursor, else the held one, else our suggestion. Only drawn for a
+ * table whose ambience is known; otherwise nothing is claimed.
+ */
+export function AmbienceCard({ table, heldId, busy, onTake }: AmbienceCardProps) {
+  const ambience = table.ambience;
+  if (!ambience) return null;
+  const reason = unavailableReason(table);
+  return (
+    <section className="rb-card rb-ambience" aria-label={`Table ${table.label}, ${partyRange(table)}`}>
+      <p className="rb-eyebrow">{lightWords(ambience.light)}</p>
+      <h3 className="rb-suggestion-title">
+        Table {table.label} <span className="rb-muted">· {partyRange(table)}</span>
+      </h3>
+      {ambience.phrases.length > 0 && (
+        <ul className="rb-reasons">
+          {ambience.phrases.map((phrase) => (
+            <li key={phrase}>{phrase}</li>
+          ))}
+        </ul>
+      )}
+      {ambience.view?.photo_url && <img className="rb-view-photo" src={ambience.view.photo_url} alt={ambience.view.text || "The view from this table"} loading="lazy" />}
+      {table.id === heldId && table.state !== "taken" ? (
+        <Badge tone="success">Held for you</Badge>
+      ) : reason ? (
+        <span className="rb-muted">{reason}</span>
+      ) : (
+        <Button busy={busy} onClick={() => onTake(table.id)}>
+          Hold this table
+        </Button>
+      )}
+    </section>
   );
 }
 
@@ -105,6 +150,7 @@ export function TableList({ tables, map, heldId, busy, onTake }: TableListProps)
                   </Badge>
                 ))}
               </div>
+              {table.ambience && table.ambience.phrases.length > 0 && <p className="rb-muted rb-table-light">{table.ambience.phrases.join(" · ")}</p>}
             </div>
             <TableRowAction table={table} heldId={heldId} busy={busy} onTake={onTake} />
           </li>
@@ -120,9 +166,8 @@ function TableRowAction({ table, heldId, busy, onTake }: { table: DinerTable; he
   const reason = unavailableReason(table);
   if (reason) return <span className="rb-muted">{reason}</span>;
   return (
-    <Button variant="secondary" busy={busy} onClick={() => onTake(table.id)}>
+    <Button variant="secondary" busy={busy} onClick={() => onTake(table.id)} aria-label={`Hold table ${table.label}`}>
       Hold
-      <span className="visually-hidden"> table {table.label}</span>
     </Button>
   );
 }

@@ -106,6 +106,8 @@ def test_old_fields_stay_and_a_plain_restaurant_gets_an_implicit_room(
         assert table["room_id"] is None
         assert table["is_active"] is True
         assert table["ambience"] is None  # no coordinates: no claims about the sun
+    # Two hours is the default stay of this restaurant's turn times for a party of two: 90 min.
+    assert (body["stay_start"], body["stay_end"]) == ("13:00", "14:30")
     (room,) = body["rooms"]
     assert room["id"] is None
     assert (room["width"], room["height"]) == (800, 600)

@@ -10,7 +10,7 @@
 //   difference between server and screen is visible in this one file.
 // Field names are snake_case, exactly as the Python backend sends them.
 import { api } from "./client";
-import type { MapTable, MapZone, SeatMapPayload, SeatState } from "./types";
+import type { MapRoomSun, MapTable, MapZone, RoomLight, SeatMapPayload, SeatState } from "./types";
 
 // ---------- Shared small shapes ----------
 
@@ -94,6 +94,22 @@ export interface Recommendation {
 export interface DinerMap extends SeatMapPayload {
   tables: DinerTable[];
   recommended: Recommendation | null;
+  /** The stay, "13:00" to "14:30": where the light cursor starts and ends. */
+  stay_start?: ClockTime;
+  stay_end?: ClockTime;
+}
+
+/** GET /r/{vid}/ambience: only what the light cursor needs to redraw (spec 7.6). */
+export interface AmbienceAnswer {
+  date: IsoDate;
+  time: ClockTime;
+  stay_start: ClockTime;
+  stay_end: ClockTime;
+  /** False when the restaurant has no coordinates: then nothing is said about the sun. */
+  located: boolean;
+  sun: MapRoomSun | null;
+  rooms: { id: number | null; sun_patches: { x: number; y: number }[][]; night: boolean }[];
+  tables: { id: number; light: RoomLight; phrases: string[] }[];
 }
 
 export interface HeldTable {
@@ -382,6 +398,8 @@ export interface ServerDinerTable extends Omit<DinerTable, "state"> {
 export interface ServerDinerMap extends Omit<SeatMapPayload, "tables"> {
   date: IsoDate;
   time: ClockTime;
+  stay_start?: ClockTime;
+  stay_end?: ClockTime;
   party: number;
   slot_status: SlotStatus;
   tables: ServerDinerTable[];
@@ -603,6 +621,12 @@ export async function getSlots(vid: string, date: IsoDate, party: number): Promi
 export async function getDinerMap(vid: string, needs: PartyNeeds, time: ClockTime): Promise<DinerMap> {
   const params = query({ date: needs.date, time, party: needs.party, accessible: needs.needs_accessible, high_chairs: needs.high_chairs });
   return toDinerMap(await api.get<ServerDinerMap>(`${diner(vid)}/map?${params}`));
+}
+
+/** The light of every room and table. `moment` is the cursor; `time` stays the start of the stay. */
+export async function getAmbience(vid: string, needs: PartyNeeds, time: ClockTime, moment?: ClockTime): Promise<AmbienceAnswer> {
+  const params = query({ date: needs.date, time, party: needs.party, ...(moment ? { moment } : {}) });
+  return api.get<AmbienceAnswer>(`${diner(vid)}/ambience?${params}`);
 }
 
 /** Without `tableId` the optimiser picks the table ("Choose for me"). */

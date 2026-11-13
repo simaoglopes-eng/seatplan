@@ -240,3 +240,27 @@ is_active, ambience opcionais; SeatMapPayload ganha rooms opcional).
 - Falta (tarefa 28): StepTable com separadores de salas, contagens, cartão de
   ambiente e o cursor de hora (250 ms) ligado a GET /api/r/{vid}/ambience;
   MapKey com sol/noite/vista. Também passar `rooms` do build_map ao SeatMap.
+
+## Tarefa 28: passo "Table" com salas, cartão de ambiente e cursor de luz
+
+Ficheiros: pages/restaurant/{RoomTabs,LightCursor}.tsx, useLightCursor.ts,
+ambienceView.ts (novos), StepTable.tsx, TablePanels.tsx, MapKey.tsx,
+restaurant.css, api/restaurant.ts (AmbienceAnswer, getAmbience, stay_start/end),
+seatmap/SeatMap.tsx (prop onActiveChange); backend: o mapa passa a trazer
+`stay_start` e `stay_end`. Testes: ambienceView.test.ts (14), ambience.test.tsx (12).
+Verificação: 286 testes, typecheck, build, contraste (86/0) e e2e 45/45; olhado
+no Chromium (desktop).
+- Sem `rooms` na resposta nada muda; com uma só sala não há separadores.
+- O cartão só aparece se a mesa tiver ambiente (sem coordenadas não se afirma nada).
+- Tocar numa mesa continua a segurá-la logo (comportamento antigo e testes
+  mantidos); o cartão descreve a mesa sob o ponteiro/teclado, senão a segurada,
+  senão a sugerida, com o botão "Hold this table". Se o Martim preferir
+  "tocar = ver cartão, botão = segurar" como na letra do spec, é uma mudança
+  pequena em StepTable (e nos testes do booking), mas muda o fluxo atual.
+- Segurar uma mesa de outra sala (pela lista) muda o separador para essa sala.
+- O cursor só aparece se alguma sala tiver `sun` (há coordenadas) e a estadia
+  tiver mais de um passo; erro de rede: mensagem e mantém a última imagem.
+- Corrigido de passagem: os botões "Hold" da lista liam-se "Holdtable 8"
+  (nome acessível); agora aria-label "Hold table 8".
+- Falta ainda a prop `prefs` (tarefa 31, StepParty) e a conta das preferências
+  no pedido do mapa/hold.

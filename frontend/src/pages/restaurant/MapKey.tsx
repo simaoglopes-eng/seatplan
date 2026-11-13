@@ -6,6 +6,7 @@ import { useId } from "react";
 import type { SeatState } from "../../api/types";
 import { SEAT_RADIUS } from "../../seatmap/geometry";
 import { PatternDefs, SeatGlyph, safeId } from "../../seatmap/glyphs";
+import { RoomDefs } from "../../seatmap/RoomLayers";
 
 export interface KeyEntry {
   state: SeatState;
@@ -16,7 +17,42 @@ export interface KeyEntry {
   halo?: boolean;
 }
 
-export function MapKey({ entries, label = "Map key" }: { entries: KeyEntry[]; label?: string }) {
+/** What the room layers add to the map: sun, darkness and a window with a view. */
+export interface SceneEntry {
+  scene: "sun" | "night" | "view";
+  name: string;
+  hint: string;
+}
+
+function SceneSwatch({ scene, id }: { scene: SceneEntry["scene"]; id: string }) {
+  if (scene === "sun") {
+    return (
+      <svg className="legend-swatch" viewBox="-14 -14 28 28" aria-hidden="true">
+        <RoomDefs prefix={id} />
+        <rect x="-12" y="-12" width="24" height="24" rx="3" fill={`url(#${id}-sun)`} className="legend-scene-sun" />
+      </svg>
+    );
+  }
+  if (scene === "night") {
+    return (
+      <svg className="legend-swatch" viewBox="-14 -14 28 28" aria-hidden="true">
+        <rect x="-12" y="-12" width="24" height="24" rx="3" className="legend-scene-floor" />
+        <rect x="-12" y="-12" width="24" height="24" rx="3" className="legend-scene-night" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="legend-swatch" viewBox="-14 -14 28 28" aria-hidden="true">
+      <g className="room-view-icon">
+        <circle r="11" />
+        <path d="M-7 0Q0 -6 7 0Q0 6 -7 0Z" />
+        <circle r="2.2" className="room-view-pupil" />
+      </g>
+    </svg>
+  );
+}
+
+export function MapKey({ entries, scenes = [], label = "Map key" }: { entries: KeyEntry[]; scenes?: SceneEntry[]; label?: string }) {
   const prefix = safeId(useId());
   const half = SEAT_RADIUS + 6;
   return (
@@ -37,6 +73,18 @@ export function MapKey({ entries, label = "Map key" }: { entries: KeyEntry[]; la
           </li>
         );
       })}
+      {scenes.map((entry) => {
+        const id = `${prefix}-scene-${entry.scene}`;
+        return (
+          <li key={id} className="legend-item">
+            <SceneSwatch scene={entry.scene} id={id} />
+            <span>
+              <strong className="legend-name">{entry.name}</strong>
+              <span className="legend-hint">{entry.hint}</span>
+            </span>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -50,4 +98,11 @@ export const DINER_KEY: KeyEntry[] = [
   { state: "blocked", name: "Does not suit", hint: "Too small, too big or missing a need" },
   { state: "free", name: "Accessible", hint: "Step-free, room for a wheelchair", accessible: true },
   { state: "free", name: "Suggested", hint: "Our best match for your party", halo: true },
+];
+
+/** Added to the key when the map shows rooms. */
+export const ROOM_KEY: SceneEntry[] = [
+  { scene: "sun", name: "Direct sun", hint: "Striped areas: the sun reaches the floor" },
+  { scene: "night", name: "After dark", hint: "The room is shaded dark blue once the sun has set" },
+  { scene: "view", name: "View", hint: "A window with a view worth looking at" },
 ];

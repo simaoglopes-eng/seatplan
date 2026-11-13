@@ -179,6 +179,9 @@ def build_map(
         "tables": [_table_dict(t, kinds, states[t.id], needs, per_table.get(t.id)) for t in tables],
         "seats": seats_payload(session, venue, states),
         "recommended": recommended,
+        # The stay, so the page can offer the light cursor from start to end.
+        "stay_start": light["stay_start"],
+        "stay_end": light["stay_end"],
         "rooms": _rooms_payload(rooms, light),
     }
 
