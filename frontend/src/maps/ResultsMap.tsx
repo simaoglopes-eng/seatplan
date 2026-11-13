@@ -45,6 +45,8 @@ export default function ResultsMap({ pins, highlightedId, onSelect, center }: Pr
     tiles.on("tileerror", () => setFailed(true));
     const pinsOnMap = markers.current;
     return () => {
+      // A pan or zoom still animating when the map is removed throws inside Leaflet.
+      view.stop();
       view.remove();
       map.current = null;
       pinsOnMap.clear();
@@ -68,8 +70,8 @@ export default function ResultsMap({ pins, highlightedId, onSelect, center }: Pr
     }
     const points: L.LatLngExpression[] = pins.map((pin) => [pin.lat, pin.lng]);
     if (center) points.push([center.lat, center.lng]);
-    if (points.length > 1) view.fitBounds(L.latLngBounds(points), { padding: [30, 30], maxZoom: 15 });
-    else if (points.length === 1) view.setView(points[0], 14);
+    if (points.length > 1) view.fitBounds(L.latLngBounds(points), { padding: [30, 30], maxZoom: 15, animate: false });
+    else if (points.length === 1) view.setView(points[0], 14, { animate: false });
   }, [pins, center?.lat, center?.lng]);
 
   // The pin of the hovered card gets a bigger, darker look.

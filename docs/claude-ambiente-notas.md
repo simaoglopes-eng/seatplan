@@ -387,3 +387,12 @@ ligações no painel do dono; testes unitários (10) e e2e owner-publish.spec.ts
 - Demo photos are drawn by `seed/demo_photos.py` (that file is the recorded source; no third-party images). Replace with real
   free-licence photos before showing it as a real restaurant.
 - Casa Lumen (the old demo) now has a slug, so `/r/<id>` for it forwards to `/restaurants/casa-lumen` (see the e2e note below).
+
+## Tasks 37, 38 (e2e and performance)
+- Performance tests: map with ambience for 60 tables < 300 ms (best of 5), light route likewise, discovery over 100 restaurants < 500 ms
+  with filters/distance and with free times for the 20 on the page (`test_restaurant_performance.py`, `test_discovery_performance.py`).
+- New e2e: `restaurant-ambience.spec.ts` (two-room restaurant, chair, change seat, stale linked time), `discovery.spec.ts` (search, filters,
+  city, When?, axe with real cards, public page, forwarding of /r/), `owner.spec.ts` (publish -> found -> unpublish). The editor on a phone and
+  the two-tab conflict were already covered by `room-editor.spec.ts`.
+- The discovery e2e found a real bug: Leaflet threw when the map was removed during a pan/zoom animation. `ResultsMap` now stops the view
+  before removing it and does not animate the fit.
