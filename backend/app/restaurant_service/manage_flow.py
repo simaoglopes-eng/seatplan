@@ -16,7 +16,14 @@ from app.core.holds import commit_or_seat_taken
 from app.models import Booking, Venue, WaitlistEntry
 from app.optimiser.restaurant_assign import recommend_table
 from app.optimiser.restaurant_model import choice_problem
-from app.restaurant_service import booking_rows, emails, occupancy, schedule, waitlist
+from app.restaurant_service import (
+    booking_rows,
+    chosen_seat,
+    emails,
+    occupancy,
+    schedule,
+    waitlist,
+)
 from app.restaurant_service.availability import PartyNeeds, check_covers_cap, table_specs_for
 from app.restaurant_service.changes import record_change
 from app.restaurant_service.clock import is_past, venue_zone
@@ -77,6 +84,7 @@ def change_booking(
     minutes = schedule.turn_minutes(session, venue, change.party_size)
     window = schedule.window_for(change.at, minutes)
     table_ids = _pick_tables(session, venue, booking, change, window)
+    chosen_seat.keep_seat_if_still_valid(session, booking, table_ids)
     old_day = booking.date
     emails.drop_reminder(session, booking)
     old_tables = booking_rows.release_slots(session, booking)

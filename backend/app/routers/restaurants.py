@@ -91,6 +91,8 @@ class BookingIn(Strict):
     needs_accessible: bool = False
     high_chairs: int = Field(default=0, ge=0, le=6)
     prefs: list[str] = Field(default_factory=list, max_length=10)  # kept for the staff
+    # The chair the diner would like (spec 9.4): indicative, the whole table is booked.
+    seat_id: int | None = Field(default=None, ge=1)
 
 
 def _limit(session: db.SessionDep, request: Request, name: str, limit: int) -> None:
@@ -254,12 +256,14 @@ def book(
     )
     contact = diner_flow.Contact(body.name, str(body.email), body.phone, body.notes)
     try:
-        booking, token = diner_flow.confirm_booking(session, venue, held, needs, contact)
+        booking, token = diner_flow.confirm_booking(
+            session, venue, held, needs, contact, seat_id=body.seat_id
+        )
     except SeatTaken as taken:
         at = time_of_slot(held.window[0])
         return conflict_response(session, venue, held.day, at, needs, taken.message)
     return {
-        "booking": describe(session, venue, booking),
+        "booking": describe(session, venue, booking, with_phrase=True),
         "manage_token": token,
         "manage_path": f"/b/{token}",
         "manage_link": manage_link(token),

@@ -16,7 +16,7 @@ from app.core.errors import ApiError, SeatTaken
 from app.core.holds import commit_or_seat_taken
 from app.models import Booking, Organiser, TableSlot, Venue, VenueTable
 from app.optimiser.restaurant_assign import recommend_table
-from app.restaurant_service import booking_rows, map_view, occupancy, schedule
+from app.restaurant_service import booking_rows, chosen_seat, map_view, occupancy, schedule
 from app.restaurant_service.availability import PartyNeeds, table_specs_for
 from app.restaurant_service.changes import record_change
 from app.restaurant_service.clock import booking_window, hhmm, slot_of
@@ -228,6 +228,7 @@ def move_booking(
         raise SeatTaken("Those tables are not free for the whole stay.")
     old_tables = booking_rows.release_slots(session, booking)
     booking_rows.write_slots(session, booking, tuple(sorted(table_ids)), window)
+    chosen_seat.keep_seat_if_still_valid(session, booking, tuple(sorted(table_ids)))
     record_change(
         session,
         venue,

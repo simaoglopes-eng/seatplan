@@ -52,6 +52,7 @@ never touches the database; this package turns rows into its dataclasses.
 | `map_view.py` | The diner map: state of every table plus the recommended tables, and (new) the rooms with sun patches and each table's `ambience`. Tables the owner switched off (`is_active` false) are never sent |
 | `holding.py` | 5-minute table holds: one `holds` row per table per slot; caps per client and per slot; release |
 | `booking_caps.py` | Fair caps on diner bookings: upcoming bookings per email, bookings per address per day (S8) |
+| `chosen_seat.py` | The diner's optional chair (spec 9.4): `check_chosen_seat` (422 unless a usable chair at one of the booking's tables), `keep_seat_if_still_valid` (a change that moves the booking drops a chair that is no longer there), `seat_payload` (with the "Facing the window" sentence only when asked) |
 | `booking_rows.py` | Write and release `table_slots`, load by manage token, describe a booking |
 | `diner_flow.py` | Hold a table, then confirm the booking |
 | `manage_flow.py` | Change or cancel a booking |

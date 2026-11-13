@@ -200,3 +200,23 @@ minuto de calendário; se os 12 pedidos atravessarem a virada do minuto (mais
 provável com a bateria toda a correr) o contador recomeça e o teste falha.
 Passa isolado. Não mexi (código de segurança e teste de outro). O meu teste do
 limite de leituras do /ambience foi escrito a contar com isto (2 x limite + 1).
+
+## Tarefa 32 (parte backend): cadeira escolhida
+
+Ficheiros: restaurant_service/chosen_seat.py (novo), ambience_view.seat_sentence,
+diner_flow (seat_id), booking_rows.describe (seat, with_phrase), manage_flow e
+staff_floor (largam a cadeira se as mesas mudam), routers/restaurants.py
+(BookingIn.seat_id), routers/bookings.py (GET /b/{token} com a frase);
+tests/test_chosen_seat.py (9).
+- A cadeira é só indicativa: sem hold nem verificação contra outras reservas.
+- 422 (mesma mensagem) para cadeira desconhecida, de outro restaurante, de
+  outra mesa ou bloqueada; a validação acontece ANTES de gastar o hold, por isso
+  o cliente não perde a mesa por escolher mal a cadeira.
+- describe() devolve `seat` {id, label, table_id} e, com with_phrase (confirmação
+  e página de gestão), `phrase`. A lista do staff não calcula a frase (uma
+  reserva por linha seria N consultas).
+- Mudar a hora mantém a cadeira; se as mesas mudam (o optimizador escolhe
+  outras, ou o staff move a reserva) a cadeira é largada em vez de apontar
+  para uma mesa que já não é da reserva. A tarefa 33 (Sérgio) fará o
+  PATCH seat_id ("Change seat") e pode reutilizar check_chosen_seat.
+- Falta o frontend (ChooseSeat, SelectionPanel, Confirmation) e o email (34/35).

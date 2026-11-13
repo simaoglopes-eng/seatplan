@@ -25,11 +25,12 @@ from app.ambience.models import (
     AmbienceFixture,
     AmbienceOpening,
     AmbienceRoom,
+    AmbienceSeat,
     AmbienceTable,
 )
 from app.ambience.solar import sun_position, sun_times
-from app.ambience.table import TableAmbience, table_ambience
-from app.models import Room, RoomFixture, RoomOpening, Venue, VenuePhoto, VenueTable
+from app.ambience.table import TableAmbience, seat_facing, table_ambience
+from app.models import Room, RoomFixture, RoomOpening, Seat, Venue, VenuePhoto, VenueTable
 from app.restaurant_service import schedule
 from app.restaurant_service.clock import hhmm, local_datetime, venue_zone
 
@@ -280,6 +281,17 @@ def table_features(
     """
     answer = ambience_payload(session, venue, day, start, party=party, detail=True)
     return {row["id"]: frozenset(row["features"]) for row in answer["tables"]}
+
+
+def seat_sentence(session: Session, venue: Venue, seat: Seat) -> str | None:
+    """ "Facing the window" / "Back to the window" / "Side-on to the window" for a
+    chair, or None when no window is near enough to say (spec 7.5)."""
+    for loaded in load_rooms(session, venue):
+        for row, engine_table in loaded.tables:
+            if row.id == seat.table_id:
+                chair = AmbienceSeat(seat.id, row.id, seat.label, seat.x, seat.y)
+                return seat_facing(loaded.room, engine_table, chair)
+    return None
 
 
 def ambience_payload(

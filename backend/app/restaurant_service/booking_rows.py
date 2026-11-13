@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from app.core.errors import ApiError, SeatTaken
 from app.models import Booking, TableSlot, Venue, VenueTable
 from app.optimiser.restaurant_model import choice_problem
-from app.restaurant_service import occupancy
+from app.restaurant_service import chosen_seat, occupancy
 from app.restaurant_service.availability import PartyNeeds, table_specs_for
 from app.restaurant_service.clock import booking_window, hhmm, slot_moment, venue_zone
 from app.security import hash_token
@@ -89,8 +89,14 @@ def table_labels(session: Session, table_ids: tuple[int, ...]) -> list[str]:
     return [labels[table_id] for table_id in table_ids]
 
 
-def describe(session: Session, venue: Venue, booking: Booking) -> dict[str, Any]:
-    """A booking as the diner or staff sees it. No token, no hash."""
+def describe(
+    session: Session, venue: Venue, booking: Booking, with_phrase: bool = False
+) -> dict[str, Any]:
+    """A booking as the diner or staff sees it. No token, no hash.
+
+    `with_phrase` adds the sentence about the chosen chair ("Facing the window");
+    lists of bookings leave it out to stay light.
+    """
     zone = venue_zone(venue)
     table_ids = occupancy.tables_of(session, booking)
     start, end = booking_window(venue, booking)
@@ -107,6 +113,7 @@ def describe(session: Session, venue: Venue, booking: Booking) -> dict[str, Any]
         "needs_accessible": booking.needs_accessible,
         "high_chairs": booking.high_chairs,
         "prefs": list(booking.prefs or []),
+        "seat": chosen_seat.seat_payload(session, venue, booking, with_phrase),
         "status": booking.status,
         "source": booking.source,
         "table_choice": booking.table_choice,

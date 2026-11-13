@@ -67,7 +67,7 @@ def view_booking(manage_token: str, request: Request, session: db.SessionDep) ->
     _limit(session, request, "manage", MANAGE_LIMIT)
     booking = booking_rows.load_by_token(session, manage_token)
     venue = _venue_of(session, booking.venue_id)
-    detail = booking_rows.describe(session, venue, booking)
+    detail = booking_rows.describe(session, venue, booking, with_phrase=True)
     local_start = booking.start_at.astimezone(venue_zone(venue)).time()
     detail["can_change"] = booking.status == "confirmed" and not is_past(
         venue, booking.date, local_start

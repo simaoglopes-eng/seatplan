@@ -16,7 +16,7 @@ from app.core.errors import ApiError, SeatTaken
 from app.core.holds import commit_or_seat_taken
 from app.models import Booking, Venue
 from app.optimiser.restaurant_assign import recommend_table
-from app.restaurant_service import booking_rows, emails, occupancy, schedule
+from app.restaurant_service import booking_rows, chosen_seat, emails, occupancy, schedule
 from app.restaurant_service.availability import (
     PREF_KEYS,
     PartyNeeds,
@@ -134,7 +134,12 @@ def _check_hold_fits(session: Session, venue: Venue, held: HeldTables, needs: Pa
 
 
 def confirm_booking(
-    session: Session, venue: Venue, held: HeldTables, needs: PartyNeeds, contact: Contact
+    session: Session,
+    venue: Venue,
+    held: HeldTables,
+    needs: PartyNeeds,
+    contact: Contact,
+    seat_id: int | None = None,
 ) -> tuple[Booking, str]:
     """Turn a hold (see holding.read_hold) into a booking.
 
@@ -142,6 +147,10 @@ def confirm_booking(
     the table_slots rows, HoldExpired if the hold ran out.
     """
     _check_hold_fits(session, venue, held, needs)
+    # Checked before the hold is used up, so a bad chair keeps the diner's table.
+    seat = None
+    if seat_id is not None:
+        seat = chosen_seat.check_chosen_seat(session, venue, seat_id, held.table_ids)
     consume_hold(session, venue, held)
     token = new_token()
     booking = Booking(
@@ -158,6 +167,7 @@ def confirm_booking(
         table_choice=held.table_choice,
         manage_token_hash=hash_token(token),
         prefs=sorted(needs.prefs, key=PREF_KEYS.index),
+        chosen_seat_id=seat.id if seat else None,
     )
     booking_rows.set_times(venue, booking, held.day, held.window)
     session.add(booking)
