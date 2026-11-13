@@ -65,3 +65,34 @@ export function outlineToPolygon(outline: Outline, segmentsPerArc = 16): Point[]
     return Array.from({ length: count }, (_, step) => sidePoint(outline, side, step / count));
   });
 }
+
+export function sideLength(outline: Outline, side: number): number {
+  const a = outline.points[side], b = outline.points[(side + 1) % outline.points.length];
+  const chord = Math.hypot(b.x - a.x, b.y - a.y), s = a.curve;
+  if (!s) return chord;
+  return Math.abs((chord * chord / 4 + s * s) / (2 * s) * 4 * Math.atan(2 * s / chord));
+}
+
+export function outlinePath(outline: Outline): string {
+  if (!outline.points.length) return "";
+  const start = outline.points[0];
+  const parts = [`M ${start.x} ${start.y}`];
+  outline.points.forEach((a, i) => {
+    const b = outline.points[(i + 1) % outline.points.length];
+    if (!a.curve) parts.push(`L ${b.x} ${b.y}`);
+    else {
+      const chord = Math.hypot(b.x - a.x, b.y - a.y);
+      const radius = Math.abs((chord * chord / 4 + a.curve * a.curve) / (2 * a.curve));
+      parts.push(`A ${radius} ${radius} 0 0 ${a.curve > 0 ? 1 : 0} ${b.x} ${b.y}`);
+    }
+  });
+  return `${parts.join(" ")} Z`;
+}
+
+export function sidePath(outline: Outline, side: number): string {
+  const a = outline.points[side], b = outline.points[(side + 1) % outline.points.length];
+  if (!a.curve) return `M ${a.x} ${a.y} L ${b.x} ${b.y}`;
+  const chord = Math.hypot(b.x - a.x, b.y - a.y);
+  const radius = Math.abs((chord * chord / 4 + a.curve * a.curve) / (2 * a.curve));
+  return `M ${a.x} ${a.y} A ${radius} ${radius} 0 0 ${a.curve > 0 ? 1 : 0} ${b.x} ${b.y}`;
+}

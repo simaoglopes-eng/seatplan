@@ -28,6 +28,11 @@
 .room-fields { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
 .room-fields .field { min-width: 0; }
 .room-status { padding: var(--space-3); font-size: var(--fs-sm); }
+.room-wall-hit { fill: none; stroke: transparent; pointer-events: stroke; cursor: pointer; }
+.room-handle-hit { fill: transparent; cursor: grab; }
+.room-handle { fill: var(--c-surface); stroke: var(--c-primary); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }
+.room-handle.selected { fill: var(--c-primary); stroke: var(--c-text); }
+.room-error { color: var(--c-danger); }
 @media (max-width: 1023px) {
   .room-workspace { grid-template-columns: minmax(0, 1fr); }
   .room-editor { padding-bottom: 4rem; }

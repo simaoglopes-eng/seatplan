@@ -27,3 +27,16 @@ gesture for adding a corner also has x/y fields and a button. The legacyRoom
 adapter reads the existing flat restaurant layout into an implicit Main room
 without changing any database id. The later persistence tasks replace that
 bootstrap with the dedicated versioned room API.
+
+shapeEditing.ts edits corners and circular sides without changing prior history.
+Splitting an arc keeps both halves on the original circle. A split across an
+opening or a removal beside an opening is refused until the opening is moved.
+The owner sees that explanation rather than losing window data. Drawing ignores
+repeat taps and finishOutline normalises winding and remaps opening offsets.
+
+ShapeHandles provides 44px pointer targets independent of zoom. One drag is one
+history step. A single midpoint tap adds a corner after the double-tap interval;
+a double tap straightens the wall. RoomProperties exposes the same edits as
+forms, with decimal comma or point and visible validation errors. SVG paths use
+true circular A segments. The properties heading receives focus without
+scrolling the canvas away during a drag.

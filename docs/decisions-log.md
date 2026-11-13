@@ -683,3 +683,20 @@ Approved by Martim through the restaurant spec and autonomous overnight implemen
 11. Restaurant foundation compatibility: append added columns after existing model columns, in migration order. SQLite uses DATETIME for published_at to match SQLAlchemy; Postgres retains TIMESTAMP. The shared legacy venue serializer omits room_id and is_active so the existing editor can round-trip its strict payload. This preserves the event API behavior while rooms use their own API. Frozen 2026-11-13 fixtures precede all restaurant schema changes.
 
 12. Owner registration returns code_shown as a six-digit string only in the established safe demo conditions, including a dummy value for existing accounts so the response shape does not reveal account existence. Owner email codes use purpose owner and their own consumption path. Existing staff-flow fixtures explicitly mark their restaurant is_demo; new isolation tests prove real restaurants are inaccessible, including through the shared venues router. No existing assertion is removed or weakened.
+
+13. Room wall topology edits preserve openings. Adding a corner through an
+opening, or deleting a corner with openings on either adjoining side, asks the
+owner to move those openings first. This conservative choice avoids silently
+moving or resizing windows. Removing an unoccupied corner joins its neighbours
+with a straight side. Splitting a circular side preserves its exact circle.
+Room drawing ignores repeated taps at the first or most recent corner and
+normalises winding when closed. Midpoint insertion waits 350 ms so a double
+tap can straighten the side without also inserting a corner.
+
+14. Geometry browser tests reuse real authenticated owner sessions, avoiding
+repeated login UI actions that exhaust the production login limiter. Dedicated
+login UI tests and the limiter remain unchanged. The existing staff walk-in
+test now waits for the 20:00 API counts before recording its initial count;
+the slider label changes earlier than the floor data. Its final increment
+assertion is preserved. Both failures were diagnosed and recovered from the
+last green commit before taking these conservative test setup corrections.

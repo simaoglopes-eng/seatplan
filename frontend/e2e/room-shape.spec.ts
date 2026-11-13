@@ -1,14 +1,14 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { demoLinks, expect, lastPart, ORGANISER, signIn, test } from "./fixtures";
+import { demoLinks, expect, lastPart, test } from "./fixtures";
+import { openOwnerRoom } from "./room-session";
 
 for (const width of [1440, 390]) {
   test(`owner creates an L-shaped room and can undo at ${width}px`, async ({ page, request }) => {
     const links = await demoLinks(request);
     const venue = lastPart(links.restaurant_booking);
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
-    await signIn(page, ORGANISER, `/owner/${venue}/rooms`);
-    await page.getByRole("button", { name: "Dismiss message" }).click();
+    await openOwnerRoom(page, request, venue);
     await expect(page.getByRole("heading", { name: "Casa Lumen · Rooms" })).toBeVisible();
     await page.getByRole("button", { name: "Add room", exact: true }).click();
     await page.getByLabel("Room name", { exact: true }).fill("L-shaped terrace");
@@ -28,8 +28,7 @@ for (const width of [1440, 390]) {
 test("owner draws a room by tapping corners", async ({ page, request }) => {
   const links = await demoLinks(request);
   await page.setViewportSize({ width: 390, height: 844 });
-  await signIn(page, ORGANISER, `/owner/${lastPart(links.restaurant_booking)}/rooms`);
-  await page.getByRole("button", { name: "Dismiss message" }).click();
+  await openOwnerRoom(page, request, lastPart(links.restaurant_booking));
   await page.getByRole("button", { name: "Add room", exact: true }).click();
   await page.getByLabel("Room name", { exact: true }).fill("Drawn room");
   await page.getByLabel("Initial shape").selectOption("draw");

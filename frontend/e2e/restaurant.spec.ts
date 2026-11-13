@@ -44,9 +44,19 @@ test("staff seat a walk-in from the live floor", async ({ page, request }) => {
   await expect(page.getByRole("heading", { name: "Service floor" })).toBeVisible();
 
   // Move the floor to 20:00 (dinner), so the test does not depend on the clock.
-  await page.getByRole("slider", { name: /^Floor at/ }).fill(String(20 * 60));
-  await expect(page.locator(".st-scrubber-time")).toHaveText("20:00");
+  const slider = page.getByRole("slider", { name: /^Floor at/ });
   const seated = page.locator(".st-count-seated .st-count-number");
+  if (await slider.inputValue() !== String(20 * 60)) {
+    const dinner = page.waitForResponse(response => {
+      const url = new URL(response.url());
+      return url.pathname.endsWith("/floor") && url.searchParams.get("time") === "20:00" && response.ok();
+    });
+    await slider.fill(String(20 * 60));
+    const floor = await (await dinner).json() as { tables: { status: string }[] };
+    // The label changes before the response arrives; wait for the dinner counts too.
+    await expect(seated).toHaveText(String(floor.tables.filter(table => table.status === "seated").length));
+  }
+  await expect(page.locator(".st-scrubber-time")).toHaveText("20:00");
   const seatedBefore = Number(await seated.innerText());
 
   await page.getByRole("button", { name: "New walk-in" }).click();

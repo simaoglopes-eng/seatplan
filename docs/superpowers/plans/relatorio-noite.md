@@ -1,7 +1,7 @@
 # Relatório da noite — 13 de novembro de 2026
 
 Trabalho em curso na branch martim/restaurantes-impl. Último commit verde
-antes da migração, 7581213. Spec e plano aprovados por Martim, commit 880624b
+antes da tarefa 9, 8abad49. Spec e plano aprovados por Martim, commit 880624b
 na branch martim/restaurantes-spec. Identidade Git configurada apenas neste
 repositório. Plano com 40 tarefas.
 
@@ -18,7 +18,8 @@ repositório. Plano com 40 tarefas.
 | 5 — Registo e isolamento | Feita | dca8703 | Código, consentimento, concorrência, staff apenas demo |
 | 6 — Área do dono | Feita | d4eefca | Formulários, cartões privados e destino do login |
 | 7 — Modelo do editor | Feita | 2587840 | Geometria TS e operações imutáveis |
-| 8 — Estrutura e formas | Feita | Commit desta entrada | Salas retangulares, em L e desenho livre |
+| 8 — Estrutura e formas | Feita | 8abad49 | Salas retangulares, em L e desenho livre |
+| 9 — Curvas e cantos | Feita | commit desta entrada | Arcos circulares, arrasto e propriedades acessíveis |
 
 ## Verificações reais
 
@@ -177,3 +178,35 @@ no backend, Ruff verde e formato com 171 ficheiros. Typecheck passou,
 Vitest com 219 passed em 27 ficheiros, build em 130 ms, contraste com
 86 checks e 0 failures e Playwright com 29 passed em 29,6 s. Guard e
 diff check passaram. Commit identificado por feat: build room editor shell and initial shapes.
+
+## Tarefa 9 — feita
+
+Curvas circulares em SVG, seleção e arrasto de cantos e meios das paredes,
+campos acessíveis de comprimento, flecha e posição. Inserir cantos preserva
+o círculo original. Remover mantém pelo menos três cantos. Desenho livre
+ignora toques repetidos e normaliza o sentido horário. Cada arrasto cria
+um único passo de histórico. Ctrl+Z, Ctrl+Y e Delete disponíveis fora de inputs.
+
+RED por módulo de edição inexistente, depois cinco testes puros verdes com
+retângulos, semicírculo e quarto de círculo. Passaram 14 testes do editor.
+Quatro Playwright de paredes passaram em 8,6 s, incluindo arrasto a 1440 e
+390 px, formulários no ecrã de telefone e duplo clique sem criar um canto.
+Os três testes anteriores de criação de salas também passaram. Axe sem
+violações no editor. Captura de parede curva em 390x844 inspecionada.
+Decisão conservadora sobre aberturas registada.
+
+Recuperações: a bateria ampliada atingiu o limitador real de login nos testes
+de geometria; a segunda corrida revelou leitura antecipada da contagem do staff
+ao mudar para as 20:00 (esperava 6, recebeu 1: a contagem inicial ainda era a da
+hora anterior). Em ambos os casos foi confirmada a branch impl e executado
+git reset --hard 8abad49, preservando patch e diagnóstico na pasta temporária.
+Segundo diagnóstico: seatplan-task9-floor-race-s_klqnou. Opção conservadora:
+sessão real reutilizada nos testes de geometria e espera explícita pelos dados
+das 20:00 no teste do staff. Asserções finais e limitador preservados.
+
+Verificação após essas correções: Playwright 33 passed em 33,8 s; typecheck
+passou, Vitest 224 passed em 28 ficheiros, build em 156 ms, contraste 86 checks
+e 0 failures. Guard e diff check passaram. Ruff passou e formato com 171
+ficheiros. Pytest final: 622 passed, 3 warnings em 114,67 s, com --basetemp
+novo, -o addopts= e -p no:cacheprovider, tal como nas tarefas anteriores.
+Commit identificado por feat: edit curved room walls and corners.
