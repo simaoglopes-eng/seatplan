@@ -14,6 +14,12 @@ owner_view.py builds private owner cards and setup progress. It reads image
 metadata without loading image bytes. Publication validation remains the
 server's responsibility, independently of the progress indicator.
 
+rooms.py saves the owner's whole room layout (rooms, zones, tables, chairs, openings,
+fixed items) in one transaction behind `PUT /owner/restaurants/{vid}/rooms`: the version
+moves first with an atomic compare (409 `stale_layout`), objects are upserted by id or key,
+what is missing is deleted, chair neighbours are rebuilt, and a table with bookings, a live
+hold or a chosen chair is protected (409 with the tables, "make it unavailable instead").
+`view` shows a restaurant without rooms as one implicit "Main room".
 profiles.py creates owner-only restaurant drafts and loads/patches their profile.
 Slugs use ASCII transliteration and a unique database index; concurrent insert
 collisions retry in savepoints, with a bounded number of actual races. Published

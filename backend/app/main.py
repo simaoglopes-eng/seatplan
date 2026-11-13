@@ -33,6 +33,7 @@ from app.routers import (
     guest_accounts,
     guest_events,
     health,
+    owner_rooms,
     owners,
     photos,
     restaurants,
@@ -134,6 +135,7 @@ def _register_routers(app: FastAPI) -> None:
     for module in (
         health,
         owners,
+        owner_rooms,
         photos,
         auth,
         venues,

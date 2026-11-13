@@ -388,6 +388,21 @@ Geolocation permission is self-only; camera/microphone remain disabled. Image
 CSP permits self, OSM tiles and data images used internally by Leaflet when
 cancelling tiles. No script or style policy relaxation is required.
 
+Owner rooms: GET/PUT /api/owner/restaurants/{vid}/rooms read and replace the whole
+layout in one transaction ({base_version, rooms: [{id, key, name, is_outdoor, north_deg,
+outline, position, openings, fixtures, zones, tables: [{..., seats}]}]}). Objects are
+matched by id (404 for an id that is not this restaurant's) and inserted by key; what is
+missing is deleted. The version moves atomically: a stale base_version is 409
+stale_layout and nothing changes. A table that has (or had) bookings, a live hold or a
+chosen chair cannot be deleted: 409 with {error: {tables: [{id, label}]}}; the owner sets
+is_active false instead. Chair neighbours are rebuilt on every save. A restaurant whose
+tables have no room is shown as one implicit "Main room" (id null) and the first save
+creates it. The answer carries the new version, real ids and `problems` (spec 6.9).
+Drafts with problems can be saved; publishing is where errors stop. GET
+/api/owner/restaurants/{vid}/ambience-preview?date=&time=&moment=&party= answers the
+saved rooms' light for the editor's Light tool (the diner route's shape plus per-table
+detail), for the owner only.
+
 Owner photos use JSON {kind, opening_key?, content_type, data_base64, alt_text}.
 POST /owner/restaurants/{vid}/photos returns metadata including id/public_id,
 url, actual content_type, width/height, opening_id, position and is_cover.

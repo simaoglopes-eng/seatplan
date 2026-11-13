@@ -299,3 +299,17 @@ confirmação. Frontend: 299 testes, typecheck, build, contraste e e2e.
 - Falta: cadeira marcada no mapa do staff (padrão "marked"), "Change seat" na
   página de gestão (tarefa 33, Sérgio; o backend já tem check_chosen_seat) e o
   email (34/35/36).
+
+## Continuação do trabalho do Codex (limite esgotado): tarefa 17 e rota de pré-visualização
+
+O Codex ficou com a tarefa 17 por commitar (rooms.py, routers/owner_rooms.py,
+tests/test_owner_rooms.py, main.py) na pasta principal. Copiei esses ficheiros
+(sem os alterar na pasta principal) para a claude/ambiente, formatei com ruff,
+acrescentei 5 testes (isolamento entre donos, ids alheios, atomicidade,
+vizinhos, problemas na resposta; 8 no total) e fechei a tarefa 17. A pasta
+principal fica com esses 4 ficheiros por commitar: ao fazer o merge de
+claude/ambiente na martim/restaurantes-impl convém apagá-los/descartá-los lá
+primeiro (git checkout -- backend/app/main.py e remover os 3 novos), senão o
+merge recusa por ficheiros não rastreados.
+Também a rota GET /owner/restaurants/{vid}/ambience-preview (tarefa 23):
+tests/test_ambience_api.py (5).
