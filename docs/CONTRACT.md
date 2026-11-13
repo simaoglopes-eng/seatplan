@@ -356,3 +356,20 @@ missing columns and indexes named in its own fixed lists (`NEW_COLUMNS`,
 SQLite and Postgres. No new environment variable is needed for guest
 accounts; `EMAIL_ALLOWLIST` still decides who really receives email,
 including sign-up codes (`docs/guest-accounts.md`, D7).
+
+
+## 10. Restaurant platform extension (approved 2026-11-13)
+
+The detailed restaurant specification is docs/superpowers/specs/2026-11-13-restaurantes-plataforma-design.md. Existing event contracts remain the compatibility baseline. New restaurant routes live under /api/owner, /api/restaurants and /api/photos. Owner identity uses organisers with role organiser and the existing signed session. Missing and inaccessible resources use the same 404.
+
+Room coordinates are centimetres, x right and y down. Table x/y remain the unrotated bounding box origin, with rotation around its centre. Each outline has 3-60 points and each point carries the signed sagitta of its outgoing circular side. Clockwise screen winding is canonical. Reverse winding remaps opening side and arc offset as well as curve signs. Geometry polygon approximation uses 16 segments per curved side for validation. Each room holds up to 200 tables, 1000 seats, 60 openings, 100 fixtures and 50 zones. A venue holds at most five rooms.
+
+GET/PUT owner rooms use the nested payload of specification 6.10 with stable ids and temporary keys. PUT uses base_version against venues.layout_version in one conditional write and transaction. Success returns version, rooms and problems. A stale write returns HTTP 409 with error.code stale_layout. Structurally valid drafts may carry geometric problems. Invalid references, cross-owner ids and malformed numeric input are refused. Publication repeats validation. Layout persistence preserves table and seat ids referenced by bookings.
+
+The map retains width, height, zones, tables, seats, recommended and slot_status. Additive restaurant fields include rooms and table room_id/is_active/ambience. Room drawing fields include outline, openings, fixtures, sun, sun_patches and night. Inactive tables are excluded from public availability and new assignment, while historical staff display remains possible. Existing rooms with null room_id are exposed as one implicit rectangular Main room until first save.
+
+Ambience inputs are frozen dataclasses and have no database or network dependencies. Public results follow specification 7.5. Computation samples the half-open stay interval every 15 minutes. Missing location or north never produces an affirmative sunlight claim. Date conversion uses the venue time zone and UTC-aware instants. The editor previews the last saved draft through the server endpoint. Instant browser solar calculation is optional and deferred.
+
+New JSON bodies reject unknown fields and constrain free text with PlainText. Existing error envelope error/code/message remains mandatory. Publication may add problems containing code/message/fix_url to that envelope. Room version conflicts may add problem details without replacing the existing envelope. Public responses carry no diner names, email addresses or notes.
+
+Only leaflet@1.9.4 and @types/leaflet are allowed additions. Shared file edits are serial. The overnight plan and report record task dependencies, verification results and conservative deviations.

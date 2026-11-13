@@ -34,3 +34,7 @@ Se surgirem novas regress?es, confirmar martim/restaurantes-impl e recuperar ?lt
 ## D?vidas para a manh?
 
 As 18 quest?es do plano incluem incompatibilidade entre key de quatro elementos e testes atuais de tr?s, ?ndices de migra??o com teste hist?rico limitado a events/guests, permiss?es de geolocaliza??o, privacidade/cache das fotos e reten??o de hist?rico de mesas. As decis?es conservadoras ser?o registadas antes de implementar cada uma.
+
+## Tarefa 1 ? feita
+
+Depend?ncia do S?rgio executada por autoriza??o do Martim. Contratos de coordenadas, rooms, ambiente, erros e compatibilidade adicionados a docs/CONTRACT.md. Decis?es conservadoras registadas em docs/decisions-log.md. Tarefa 0 conclu?da em ecc6dfc. Verifica??o completa executada. Ruff check passou, ruff format --check deu 160 files already formatted, pytest com diret?rio tempor?rio ?nico e sem cache deu 600 passed, 3 warnings in 112.59s. npm run typecheck passou e npm test deu 209 passed em 23 ficheiros. Guard e git diff --check passaram. Commit documental identificado pela mensagem docs: define restaurant platform compatibility contracts.

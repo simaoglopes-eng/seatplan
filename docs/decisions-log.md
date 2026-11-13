@@ -663,3 +663,19 @@ section 9 and `guest-accounts.md` section 2.1):
    `email_codes`, which no deployed database has yet, so `create_all` makes
    them and `NEW_COLUMNS` did not need to grow. A database that ran the
    pre-review migrate would lack them; none exists outside test machines.
+
+
+## 2026-11-13 ? restaurant platform foundation decisions
+
+Approved by Martim through the restaurant spec and autonomous overnight implementation instruction. The detailed plan records open issues and the night report records actual completion.
+
+1. Keep the historical NEW_INDEXES collection limited to its existing guest-account migration scope. Add a separately named restaurant index collection, executed by the same migration function, with new tests for the complete schema. The existing migration tests enumerate historical indexes on events/guests and remain intact.
+2. Preserve the public three-element ScoreBreakdown.key used by existing callers and exact-oracle tests. A separate comparison method will append preference satisfaction for new restaurant planning. Document this compatibility deviation from specification 8 before implementing the optimiser extension.
+3. Keep the existing API error envelope. Publication problems and stale-layout details are additive fields. New clients handle them explicitly.
+4. Use the saved-draft server endpoint for editor sunlight preview. No duplicated solar algorithm in TypeScript is required.
+5. Preserve the current Casa Lumen demo name. The specification's Casa Linho reference describes that existing demo.
+6. Use independent restaurant code-consumption logic where the guest account helper couples to event-only purposes. Reuse public normalization/password/rate-limit helpers where safe. Event code files remain protected, including the known concurrent-code race.
+7. Geolocation requires the approved first-party policy in both API and hosting headers. Draft photo preview requires authenticated fetch and an object URL. Private photo responses must use private/no-store caching. Previously public immutable photos cannot be revoked from existing browser caches.
+8. A published venue with newly invalid configuration must stop accepting new bookings until repaired. Existing booking-management links remain available. The complete publication policy will be checked during that task.
+9. Do not invent view descriptions at night, or solar predictions without required inputs. Omit uncertain claims. Polar daylight/night decisions use solar altitude when rise/set instants are absent.
+10. Martim authorized recovery of the last verified green commit using git reset --hard only on martim/restaurantes-impl. Preserve and restore the report around recovery and continue with the next feasible task. The sole known guest-register concurrency failure may be rerun in isolation.
