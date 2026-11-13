@@ -25,6 +25,9 @@ temporary folder, never into the repository.
 | `guest-account.spec.ts` | The shared link, in order: a visitor sees the map but cannot hold; creates an account with the demo code; holds and confirms a seat; the outbox has one seat email with the picture; signs out and back in; a second visitor cannot take the seat; the organiser switches the link off (and on again for the files after it) |
 | `organiser.spec.ts` | Auto-fill preview, apply, undo |
 | `restaurant.spec.ts` | Diner books and cancels through the manage link; staff seat a walk-in |
+| `restaurant-ambience.spec.ts` | Real isolated restaurants: rooms, daylight/night cursor, optional chair through confirmation/manage at 1440/390 px; simultaneous real holds yield 201/409 and the loser can take an alternative |
+| `restaurant-fixture.ts` | Prepares owned profile, hours and two rooms via real APIs; no mocked server responses or mutation of shared demo |
+| `room-editor.spec.ts` | Full 10 x 7 m room workflow with touch enabled, save/reload, two-tab stale-layout recovery and saved daylight/night preview |
 | `accessibility.spec.ts` | axe-core scan (WCAG 2.1 A and AA) of nine pages, including the visitor page, the create-account form and the guest sign-in page |
 | `fixtures.ts` | Demo links, sign-in, and the rule that fails a test on a page error or a CSP violation |
 | `attendee-steps.ts` | Attendee steps shared by the desktop and phone tests |

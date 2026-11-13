@@ -22,6 +22,8 @@ async function open(page: Page, token: string, venue: string): Promise<void> {
   await expect(page.getByRole("heading", { name: /· Rooms$/ })).toBeVisible();
 }
 
+test.describe("touch room persistence", () => {
+test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
 test("an owner builds a room on a phone, saves, reloads and sees the same", async ({ page, request }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const token = await ownerToken(request);
@@ -74,6 +76,7 @@ test("an owner builds a room on a phone, saves, reloads and sees the same", asyn
   await expect(page.getByLabel("Selected fixed element").locator("option")).toHaveCount(2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+});
 });
 
 test("a second tab that saved first makes the next save a conflict, and the work is kept", async ({ browser, request }) => {

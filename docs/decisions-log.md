@@ -717,3 +717,95 @@ chair is selected, Delete asks the owner to use the chair-count controls rather
 than unexpectedly deleting its table. Geometry edits use one history step per
 gesture. Table bodies take hit priority over expanded chair hit areas inside the
 body, avoiding invisible chair targets stealing a phone's hold on the table.
+
+## 2026-11-13 — integration of claude/ambiente
+
+Imported from [Claude's implementation notes](claude-ambiente-notas.md).
+These describe the implementation merged at 31cc829; missing work is tracked
+in the night report rather than inferred complete from these decisions.
+
+17. **Optimiser compatibility (spec 8.2).** `ScoreBreakdown.key()` keeps its
+three-part `(covers, -waste, zones)` interface. `ranking_key()` appends
+`prefs_met` for heuristic tie-breaking. The exact oracle, service-plan
+comparison and gap report retain the existing definition of optimality.
+Preferences never override hard constraints or the original objectives.
+Recommendation ordering only changes for parties with wishes: avoid wasting
+more than two seats, then prefer more wishes met, then retain the old stable
+ordering. Combined tables meet a wish only when all their tables meet it.
+Staff service planning/what-if still do not evaluate time-specific wishes.
+
+18. **Publication boundary.** Draft restaurants return 404 to diner reads,
+holds, booking creation and waitlist entry. Existing `/b/{token}` management
+links remain usable after unpublication. Existing venues default to published,
+preserving the old demo. Publication rechecks profile, location, service,
+active tables, geometric errors and window-room north on the server; photos
+remain recommended. Publication 422 includes `problems` both at the top level
+and inside the normal error envelope. `features` is derived from saved rooms.
+
+19. **Sunlight rules.** Doors never admit sun. A `between` rule is half-open
+`[start,end)`; the engine supports a range across midnight, and missing times
+mean no sun. Curved windows use 16 segments with independent orientations.
+Outdoor daytime outside awnings is `daylight` when direct sun is absent.
+Polar night is determined by solar altitude, not missing sunrise/sunset.
+Table-to-window distance uses edges; round tables use a 16-sided approximation.
+
+20. **Ambience wording.** Sunset-from-seat requires a window bearing 200–340°
+within 3 m, or an outdoor room; otherwise report when it gets dark. Night uses
+`night_view_text` if present, falling back to the owner's daytime text. This
+supersedes the earlier provisional omission rule in foundation decision 9:
+the fallback is declared text, not a new inferred description. Remove an
+initial “The ” when forming “View of the …”. An outdoor shade phrase is “In
+the shade”. Seat-facing wording uses a view window, else the nearest window,
+within 3 m; otherwise omit it. Nearness includes host stand/main entrance;
+quietness ignores fireplaces and host stands.
+
+21. **Preview and API inputs.** A legacy restaurant gets an implicit rectangle
+without north/windows. Without coordinates the ambience response says
+`located:false`, `sun:null`, no table claims or patches. Stay start/end govern
+the phrases and durations; the optional cursor `moment` changes light scenery.
+Public ambience is rate-limited and contains no personal data or photo bytes.
+Detailed owner/map responses add metrics, features and view-photo metadata.
+
+22. **Optional client features preserve existing journeys.** No `rooms` prop
+keeps the old SeatMap rendering; one room needs no tabs. A table tap still
+holds it immediately, preserving the existing booking flow (deviation from
+the spec's tap-to-inspect wording). The ambience card describes the active,
+held or recommended table. The light cursor debounces 250 ms and preserves
+the last scenery on network errors. Wishes are omitted from requests when
+empty; choosing sun clears shade and conversely. The seat step remains inside
+Table, is optional, and skips when usable seats cannot be loaded.
+
+23. **Seat choice.** It is indicative and adds no hold. Unknown, foreign,
+wrong-table or blocked seats return the same 422 before consuming the table
+hold. A time change keeps the seat; changing assigned tables clears it.
+Changing a seat on the management page and marking it on the staff map are
+still pending. Staff text already shows the choice and wishes.
+
+24. **Editor persistence.** Preview uses the saved draft and warns about
+unsaved work. Local recovery offers only a layout differing from the server;
+restoring uses the current server version as the base, while server ownership
+and object checks still apply. A stale save retains the local work and offers
+explicit reload/overwrite choices. Booking-history protection is conservative
+when a legacy booking's released slots no longer identify its old table.
+
+25. **Email picture boundary.** The standalone restaurant PNG renderer accepts
+only room/table/seat dataclasses, with no person fields; it draws the booked
+room only, curves, fixtures and the optional seat. Unsupported/oversized text
+falls back to shorter headings. Wiring this renderer, profile/photo and
+ambience into outgoing restaurant mail remains pending; the event renderer
+was only imported, never edited.
+
+26. **Verification exceptions authorized by Martim.** In addition to the known
+concurrent guest-code verification race, only
+`test_redteam::test_s1_forged_forwarded_for_cannot_dodge_the_login_limit` may
+be rerun alone after a full-suite failure: it can cross a calendar-minute
+rate-limit boundary. Neither production limiter nor either test is weakened.
+
+27. **Local latency measurement.** The 60-table HTTP benchmark runs against
+the real test database in a fresh API process with normal garbage collection.
+It includes the first and two subsequent requests, requires every response
+below 300 ms, and checks room, chair and ambience payloads. Full-suite probes
+identified 237–296 ms GC pauses scanning prior tests' object graphs; isolating
+the API process measures the requested operation without that test-order
+artifact. No warmup, retry, GC disabling, response mocking or budget increase.
+This is a local response budget, not a production cold-start/network guarantee.

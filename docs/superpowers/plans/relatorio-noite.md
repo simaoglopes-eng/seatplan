@@ -1,5 +1,68 @@
 # Relatório da noite — 13 de novembro de 2026
 
+## Integração e nova ordem — instrução mais recente do Martim
+
+Descartadas apenas as alterações não commitadas da tarefa 17: main.py e os
+três ficheiros novos rooms.py, owner_rooms.py e test_owner_rooms.py. O trabalho
+equivalente já estava no Claude. Merge de claude/ambiente em
+martim/restaurantes-impl por fast-forward, d1411d2 → 31cc829, sem conflitos.
+Não se repetem as tarefas já integradas. Nova ordem: bateria completa do merge,
+decisões das notas para decisions-log, tarefas 37, 38 e 39 e relatório final.
+Sem push/PR. Caminhos dos eventos intactos pelo guard.
+
+O pedido atual também permite rerun isolado do teste redteam S1 se falhar por
+viragem do minuto, além da corrida conhecida do guest-register. Regra anterior
+de parar antes da tarefa 23 foi substituída pela autorização explícita do merge.
+
+Primeiro inventário: faltam descoberta e página por slug (25/26/29), Change
+seat na gestão (33), integração do email/seed com novas demos (34/36). O PNG
+puro de 35 está implementado. Estes pontos não serão declarados concluídos
+apenas por existir o motor. Bateria inicial do merge verde: Ruff check/formato
+(200 ficheiros), pytest 821 passed/3 warnings em 134,61 s; typecheck, Vitest
+350 passed/48 ficheiros, build 324 ms, contraste 86/0, Playwright 54 passed
+em 58,5 s. Nenhum rerun necessário. Decisões importadas para decisions-log.
+
+## Tarefa 37 — feita
+
+Não repetida a implementação do editor/ambiente do Claude. Acrescentado teste
+HTTP real com 60 mesas/120 cadeiras, duas salas, quatro janelas e coordenadas:
+três respostas de mapa completas em 199,68 / 209,21 / 137,88 ms. Inclui a
+primeira chamada, sem cache nem mocks. Limite de 300 ms verificado em todas.
+
+Playwright novo a 1440/390: duas salas, luz de dia, cursor até noite sem
+segurar mesa, cadeira 2 na confirmação e gestão. Concorrência sincroniza só
+a saída dos pedidos reais de dois browsers; respostas 201/409 e alternativa
+utilizável pelo perdedor. Fixture cria restaurante próprio pelas APIs; demo
+não alterada. Teste completo do editor existente agora tem hasTouch/isMobile,
+mantendo todas as asserções. Seis dirigidos passaram em 16,3 s. Primeira
+execução dos novos testes tinha seletor CSS errado (.room-scene-sun); corrigido
+para a classe real .room-sun, sem alterar comportamento nem expectativas.
+
+Capturas de dia/noite 1440/390 inspecionadas; axe nos estados de mapa/cadeira
+sem violações. O cartão ainda pode descrever a sugestão de outra sala ao trocar
+de separador, comportamento a avaliar na revisão. Faltam requisitos de email
+e gestão de cadeira das dependências 33/34/36; não cobertos por esta tarefa.
+Verificação completa da tarefa em curso; Playwright 57 passed, restante
+frontend verde (350 Vitest, contraste 86/0, build 315 ms).
+
+Novo critério de desempenho ficou RED na bateria, embora os 821 testes
+anteriores passassem: 499,52/148,72/419,06 ms. Diagnóstico com skill
+diagnosing-bugs: segunda bateria 492,47/148,64/394,94 ms, com CPU semelhante
+ao tempo de parede e pausas GC de 295,74 e 237,39 ms. Não era contenção do
+Playwright. Após duas tentativas escolheu-se a medição conservadora num processo
+API novo: mesma BD real, 60 mesas, todos os dados de ambiente, três chamadas,
+incluindo a primeira, GC normal e mesmo máximo estrito <300 ms. Isto separa
+a latência HTTP da recolha dos grafos deixados por centenas de testes anteriores;
+não altera o algoritmo nem aumenta tolerâncias. Instrumentação temporária
+retirada. Verificação voltou a ser a bateria inteira, sem rerun isolado do
+teste de desempenho. Não foi regressão da linha de base de 821 testes.
+
+Bateria final verde: Ruff check/formato (201 ficheiros), pytest 822 passed,
+3 warnings em 131,76 s; medições HTTP 218,50 / 196,76 / 142,10 ms no processo
+API novo. Typecheck, Vitest 350/48, build 315 ms, contraste 86/0 e Playwright
+57 passed em 1,1 min. Guard e diff check verdes. Commit identificado por
+test: verify restaurant ambience journeys concurrency and map latency.
+
 ## Coordenação atualizada por Martim
 
 Claude trabalha em C:\Users\marti\seatplan-claude, branch claude/ambiente,
