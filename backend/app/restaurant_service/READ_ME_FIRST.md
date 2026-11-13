@@ -14,6 +14,13 @@ owner_view.py builds private owner cards and setup progress. It reads image
 metadata without loading image bytes. Publication validation remains the
 server's responsibility, independently of the progress indicator.
 
+profiles.py creates owner-only restaurant drafts and loads/patches their profile.
+Slugs use ASCII transliteration and a unique database index; concurrent insert
+collisions retry in savepoints, with a bounded number of actual races. Published
+links cannot change. The owner router validates PlainText, cuisine choices,
+coordinate pairs, timezone and contact links, rejecting unknown fields. Profile
+reads/updates match owner id, restaurant kind and public id before returning data.
+
 The database side of the restaurants vertical. The three routers
 (`routers/restaurants.py` for diners, `routers/bookings.py` for manage links
 and the waitlist, `routers/staff.py` for staff) only check the request and

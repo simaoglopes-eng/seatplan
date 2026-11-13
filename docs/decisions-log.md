@@ -700,3 +700,11 @@ test now waits for the 20:00 API counts before recording its initial count;
 the slider label changes earlier than the floor data. Its final increment
 assertion is preserved. Both failures were diagnosed and recovered from the
 last green commit before taking these conservative test setup corrections.
+
+15. Leaflet 1.9.4 uses a data GIF internally when cancelling tile requests.
+Browser tests caught its CSP rejection on map unmount. Allow data: only in
+img-src alongside self and the approved OSM host; scripts/styles stay self.
+Tile images set strict-origin-when-cross-origin to satisfy OSM's Referer rule
+without exposing personal paths. Geolocation is self-only and explicit.
+Keep the wizard keyed by the loaded profile id so stale loading data cannot
+reset the new restaurant's identity while navigating to its persisted URL.

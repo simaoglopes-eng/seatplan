@@ -1,7 +1,20 @@
 # Relatório da noite — 13 de novembro de 2026
 
+## Coordenação atualizada por Martim
+
+Claude trabalha em C:\Users\marti\seatplan-claude, branch claude/ambiente,
+a partir de martim/restaurantes-impl. Ficam com ele as tarefas 21, 22 e 30:
+backend/app/ambience/light.py, models.py, table.py, phrases.py e optimizador
+restaurant_*.py. Codex não altera esses módulos. A referência models.py nesta
+lista é backend/app/ambience/models.py.
+
+Codex segue 12, 13, 14, 15, 16, 17, 18, 19 e 20, com commit verificado por
+tarefa e sem parar entre tarefas. Antes de começar 23, pára para Martim
+confirmar que claude/ambiente está pronta. Só depois faz merge dessa branch
+na impl e corre a bateria completa antes de prosseguir. Sem push nem PR.
+
 Trabalho em curso na branch martim/restaurantes-impl. Último commit verde
-antes da tarefa 11, 2fc9ea5. Spec e plano aprovados por Martim, commit 880624b
+antes da tarefa 12, 022fd28. Spec e plano aprovados por Martim, commit 880624b
 na branch martim/restaurantes-spec. Identidade Git configurada apenas neste
 repositório. Plano com 40 tarefas.
 
@@ -21,7 +34,8 @@ repositório. Plano com 40 tarefas.
 | 8 — Estrutura e formas | Feita | 8abad49 | Salas retangulares, em L e desenho livre |
 | 9 — Curvas e cantos | Feita | 3e6e651 | Arcos circulares, arrasto e propriedades acessíveis |
 | 10 — Aberturas e norte | Feita | 2fc9ea5 | Janelas, portas, vidro, normais em arcos e bússola |
-| 11 — Elementos e zonas | Feita | commit desta entrada | Paletas, colocação, arrasto, campos e desfazer |
+| 11 — Elementos e zonas | Feita | 022fd28 | Paletas, colocação, arrasto, campos e desfazer |
+| 12 — Perfil e localização | Feita | commit desta entrada | Slug, Identity/Location persistidos, Leaflet e geolocalização explícita |
 
 ## Verificações reais
 
@@ -270,3 +284,41 @@ ficheiros, build em 137 ms, contraste 86 checks e 0 failures; Playwright
 39 passed em 36,2 s. Variante pytest com --basetemp novo, -o addopts= e
 -p no:cacheprovider. Guard e git diff --check verdes. Sem bibliotecas novas.
 Commit identificado por feat: add fixed room elements and zones.
+
+## Tarefa 12 — feita
+
+Dependência do Sérgio executada por autorização de Martim: identidade, perfil,
+slug e localização. API cria rascunhos privados, valida cozinhas/contactos/URLs,
+coordenadas/fusos, preserva slug publicado e resolve nomes simultâneos com
+índice único e savepoints. GET canónico /owner/restaurants/{vid}, com alias
+/profile. Assistente guarda Identity/Location e retoma os valores do servidor.
+Cartões de rascunho têm Continue setup. Próximos passos ligam-se nas tarefas
+13/19. Sem alterações aos módulos reservados ao Claude.
+
+RED inicial com POST em falta (405), depois dois testes passaram. A bateria
+dirigida final deu 28 passed em 3,26 s, incluindo três criações simultâneas,
+isolamento, colisão de slug, links publicados fixos, URLs enganadores e campos
+inválidos. Geolocalização só após clique confirmada no componente e no browser.
+Leaflet 1.9.4 e @types/leaflet instalados; @types/geojson é dependência transitiva
+de tipos. npm audit reportou 0 vulnerabilidades na instalação.
+
+Teste novo do assistente detetou estado inicial antigo ao mudar da URL nova
+para a persistida; escolha conservadora: chavear pelo perfil carregado. Também
+detetou o GIF data: interno do Leaflet ao cancelar mosaicos. Decisão 15 regista
+a adição apenas a img-src, sem relaxar scripts/estilos. Mapa carregado por
+importação dinâmica, com atribuição OSM e referer só da origem. Fontes primárias:
+https://leafletjs.com/reference-1.9.4.html e
+https://operations.osmfoundation.org/policies/tiles/ .
+
+Playwright dirigido final: 1 passed em 8,2 s, com criar, guardar, recarregar,
+retomar, pin por clique/arrasto, geolocalização e edição de slug. Axe sem
+violações na localização. Capturas de perfil/localização desktop e 390x844
+inspecionadas. Verificação no deploy fica pendente porque não foi autorizado
+deploy. Bateria completa em curso.
+
+Bateria completa final: Ruff check e formato passaram (173 ficheiros), pytest
+650 passed, 3 warnings em 114,46 s; typecheck passou, Vitest 235 passed em 33
+ficheiros, build em 299 ms (Leaflet em chunk separado), contraste 86 checks
+e 0 failures; Playwright 40 passed em 38,8 s. Guard e diff check passaram.
+Pytest com --basetemp novo, -o addopts= e -p no:cacheprovider. Commit identificado
+por feat: add owner profiles and resumable restaurant location setup.

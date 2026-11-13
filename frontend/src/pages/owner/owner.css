@@ -13,3 +13,8 @@
 .owner-card-links a { display: inline-flex; align-items: center; min-height: 44px; }
 .owner-demo { padding: var(--space-3); background: var(--c-accent-soft); border-radius: var(--radius-md); }
 .owner-error { color: var(--c-danger); }
+.owner-cuisines { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--space-3); min-width: 0; border: 1px solid var(--c-border); padding: var(--space-4); }
+.owner-location-fields, .owner-profile-tabs { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.owner-location-fields .field { flex: 1 1 10rem; min-width: 0; }
+.owner-steps { display: flex; flex-wrap: wrap; gap: var(--space-3); padding: 0; list-style: none; }
+.owner-steps [aria-current="step"] { font-weight: var(--fw-bold); color: var(--c-primary); }

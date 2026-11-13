@@ -16,3 +16,14 @@ and applies the same 404 rule at resource endpoints. The UI only displays it.
 
 When is a demo code shown? Only when the server's existing demo checks permit
 it. The UI renders code_shown if present and always supports emailed codes.
+
+NewRestaurantWizard saves identity before switching to location. The setup URL
+uses the new public id, and a reload resumes from persisted identity. ProfilePage
+edits identity/location for existing restaurants. Draft cards offer Continue setup.
+The wizard session key follows the loaded profile id, avoiding stale initial
+state when /owner/new changes to the saved URL. Slugs are editable only in drafts.
+The next upload/hours/room/review steps join this flow in their own plan tasks.
+
+ProfileForms contains explicit geolocation and coordinate fields; Leaflet is
+lazy loaded. Server validation is authoritative for URLs, cuisines and timezones.
+Client controls prevent over three cuisines and count description characters.

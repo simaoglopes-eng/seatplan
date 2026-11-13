@@ -373,3 +373,15 @@ Ambience inputs are frozen dataclasses and have no database or network dependenc
 New JSON bodies reject unknown fields and constrain free text with PlainText. Existing error envelope error/code/message remains mandatory. Publication may add problems containing code/message/fix_url to that envelope. Room version conflicts may add problem details without replacing the existing envelope. Public responses carry no diner names, email addresses or notes.
 
 Only leaflet@1.9.4 and @types/leaflet are allowed additions. Shared file edits are serial. The overnight plan and report record task dependencies, verification results and conservative deviations.
+
+Owner profiles: POST /api/owner/restaurants {name} creates an owned draft at
+1000x700 cm and returns public_id/slug. GET/PATCH
+/api/owner/restaurants/{vid}/profile reads or partially updates identity and
+location (the canonical read URL is /api/owner/restaurants/{vid}; /profile is
+also accepted for reads). Coordinates are supplied as a pair; known timezones and 1–3 distinct
+fixed-list cuisines are required when supplied. Conflicting slugs and attempts
+to change a published slug return 409. Missing and inaccessible profiles return
+the same 404. Unknown fields return 422. Setup uses these persisted values.
+Geolocation permission is self-only; camera/microphone remain disabled. Image
+CSP permits self, OSM tiles and data images used internally by Leaflet when
+cancelling tiles. No script or style policy relaxation is required.
