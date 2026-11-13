@@ -38,3 +38,13 @@ As 18 quest?es do plano incluem incompatibilidade entre key de quatro elementos 
 ## Tarefa 1 ? feita
 
 Depend?ncia do S?rgio executada por autoriza??o do Martim. Contratos de coordenadas, rooms, ambiente, erros e compatibilidade adicionados a docs/CONTRACT.md. Decis?es conservadoras registadas em docs/decisions-log.md. Tarefa 0 conclu?da em ecc6dfc. Verifica??o completa executada. Ruff check passou, ruff format --check deu 160 files already formatted, pytest com diret?rio tempor?rio ?nico e sem cache deu 600 passed, 3 warnings in 112.59s. npm run typecheck passou e npm test deu 209 passed em 23 ficheiros. Guard e git diff --check passaram. Commit documental identificado pela mensagem docs: define restaurant platform compatibility contracts.
+
+## Tarefa 2 ? saltada ap?s recupera??o autorizada
+
+Depend?ncia do S?rgio tentada. Teste novo RED observado e migra??o nova GREEN, mas o conjunto com testes existentes deu 1 failed, 16 passed. Falhou test_fresh_and_upgraded_databases_have_the_same_shape por ordem diferente de colunas na base nova e migrada. Ruff encontrou duas chamadas dict a converter em literais no teste novo. Nenhum teste existente foi editado. Conforme instru??o de Martim, aplicado git reset --hard 54f89d7 apenas ap?s confirmar martim/restaurantes-impl. ?ltimo commit verde e contrato permanecem 54f89d7.
+
+Diff integral da tentativa preservado em C:\Users\marti\AppData\Local\Temp\seatplan-task2-rejected-bcjuacb4\task2.patch. Tarefa seguinte vi?vel ? 3, geometria pura. A migra??o deve ser retomada colocando colunas novas depois das antigas nas classes, com a mesma ordem de NEW_COLUMNS, antes de voltar a verificar. O c?digo rejeitado e os testes novos est?o preservados no patch de diagn?stico.
+
+## Tarefa 3 ? feita
+
+Tarefa 1 conclu?da em 54f89d7. Geometria pura implementada com Point imut?vel, contorno circular aproximado, ponto na borda inclu?do, ?rea com sinal, ret?ngulo rodado e rumo/normal. RED por m?dulo inexistente, seguido de 4 passed no teste novo, incluindo hypothesis para invari?ncia da ?rea. Ruff check passou e formato deu 164 files already formatted. Bateria completa passou. Pytest com --basetemp novo e -p no:cacheprovider deu 604 passed, 3 warnings in 99.06s. npm run typecheck passou e npm test deu 209 passed em 23 ficheiros. Guard e git diff --check passaram. Guia do m?dulo criado. Commit identificado pela mensagem feat: add pure restaurant outline geometry.
