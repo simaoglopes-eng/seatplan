@@ -7,6 +7,46 @@ it. The historical sections below describe runs on 2026-11-10 on macOS
 
 Run every command from the repository root unless it starts with `cd`.
 
+## UX integration at 5b45d31 — 2026-11-13
+
+The clean worktree was on `martim/restaurantes-impl` at b977e1c.
+`git merge --ff-only claude/ux-polish` advanced it to 5b45d31 without conflicts.
+Claude implemented the UX changes in 7e4eb67 and updated the decision text in
+5b45d31. Tapping a map table or pressing Enter selects it and displays its card.
+"Hold this table" then acquires the hold. This closes the card-first item from
+decision 25 and specification 9.3. Discovery folds the remaining cuisine options
+behind "More cuisines".
+
+Verification runs sequentially. Frontend checks passed with typecheck,
+400 Vitest tests in 54 files (13.69 s), build in 357 ms, 86 contrast checks
+with zero failures and 70 Playwright tests (1.4m) on ports 18765/14317.
+Earlier integration counts remain under their own snapshot headings below.
+
+Final verification at 5b45d31 is green.
+
+| Check | Final result |
+|---|---|
+| Ruff check and format | Passed, 213 files |
+| Complete pytest rerun | 877 passed, 3 warnings in 144.52 s |
+| Typecheck | Passed |
+| Vitest | 400 passed in 54 files, 13.69 s |
+| Build | Passed in 357 ms |
+| Contrast | 86 checks, 0 failures |
+| Playwright | 70 passed (1.4m) |
+| Protected event paths and diff check | Passed |
+
+No isolated rerun was used. The final three-request map benchmark measured
+209.98/184.49/125.24 ms, all below 300 ms. The card-first item in decision 25
+is closed.
+
+The first backend run had 876 passing tests and one performance failure,
+3 warnings in 184.93 s. The strict 60-table map benchmark measured
+339.06/374.41/261.02 ms against its 300 ms limit. No isolated test was rerun.
+Following the authorized recovery, the documentation patch was preserved,
+the impl branch returned to b977e1c, and the fast-forward to 5b45d31 was
+reapplied with the reports restored. The complete backend rerun passed after
+the frontend checks with the original performance assertion.
+
 ## Combined verification at 7e0f699 — 2026-11-13
 
 The clean main worktree was on `martim/restaurantes-impl` at 8549d49.

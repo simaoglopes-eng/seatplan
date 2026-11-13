@@ -1,5 +1,52 @@
 # Relatório da noite — 13 de novembro de 2026
 
+## Integração UX da Claude — 5b45d31
+
+Confirmadas árvore limpa e branch martim/restaurantes-impl em b977e1c.
+git merge --ff-only claude/ux-polish avançou para 5b45d31 sem conflitos.
+As melhorias foram feitas pela Claude na worktree C:\Users\marti\seatplan-claude,
+com implementação em 7e4eb67 e documentação final em 5b45d31.
+
+O toque ou Enter numa mesa do mapa seleciona a mesa e mostra o cartão.
+O botão "Hold this table" faz a reserva temporária. Fica fechada a pendência
+de "primeiro o cartão", conforme decisão 25 de docs/decisions-log.md e spec 9.3.
+Na descoberta, "More cuisines" expande as restantes cozinhas.
+
+Verificação em sequência. Frontend confirmado com typecheck verde, Vitest
+400 passed em 54 ficheiros (13,69 s), build em 357 ms, contraste 86 checks e
+0 failures, Playwright 70 passed (1.4m) nas portas 18765/14317. Os resultados
+das integrações anteriores ficam nas secções históricas abaixo.
+
+Bateria final verde em 5b45d31.
+
+| Verificação | Resultado final |
+|---|---|
+| Ruff check / format | Verdes, 213 ficheiros |
+| Pytest completo | 877 passed, 3 warnings em 144,52 s |
+| Typecheck | Verde |
+| Vitest | 400 passed em 54 ficheiros, 13,69 s |
+| Build | Verde, 357 ms |
+| Contraste | 86 checks, 0 failures |
+| Playwright | 70 passed (1.4m), portas 18765/14317 |
+| Guard dos eventos / git diff --check | Verdes |
+
+Não houve reruns isolados. Na segunda execução completa, o mapa de 60 mesas
+mediu 209,98 / 184,49 / 125,24 ms, todos abaixo de 300 ms. A pendência da
+decisão 25 fica fechada. Nesta continuação só foram alterados os dois relatórios.
+
+Primeira execução backend com 876 passed e uma falha de desempenho, 3 warnings
+em 184,93 s. O mapa de 60 mesas mediu 339,06 / 374,41 / 261,02 ms perante o
+limite de 300 ms. A corrida conhecida passou no conjunto. Nenhum teste foi
+repetido isoladamente.
+
+Cumprida a recuperação autorizada na branch martim/restaurantes-impl para
+b977e1c, com o patch dos dois relatórios preservado na pasta temporária.
+Backup seatplan-ux-recovery-c5942c9fb0ea4998898386c558389fad.patch em %TEMP%.
+Reaplicado o fast-forward de claude/ux-polish para 5b45d31 e reposto o patch.
+Após a bateria frontend, a segunda execução completa do backend passou.
+Critério de desempenho e código do teste conservados. As melhorias UX ficam
+integradas localmente em martim/restaurantes-impl.
+
 ## Integração posterior da Claude — 7e0f699
 
 Confirmadas árvore limpa e branch martim/restaurantes-impl em 8549d49.
