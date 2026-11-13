@@ -401,3 +401,12 @@ does not determine storage. Header checks cover PNG/JPEG/WebP, without a full
 pixel decoder. GET /photos/{public_id} serves draft bytes only to the owner,
 private/no-store; published bytes use public,max-age=31536000,immutable.
 img-src also permits blob: for authenticated previews and local resizing.
+
+Layout validation returns {code, level: error|warning|info, message, room_key,
+table_keys, opening_key?, fixture_key?}. Global no_tables uses room_key=null.
+Codes follow spec 6.9. no_north and no_tables are publication-only. Geometry
+errors remain saveable as drafts; malformed values and invalid references are
+handled separately. Join-group penetration tolerance is 2 cm, actual boundary
+touch has zero overlap, and passage footprints expand tables by 45 cm. Inactive
+tables remain physical for passage/fixture warnings. Browser/server reference
+cases cover curves, rotations, true circles, concavity and publication mode.

@@ -708,3 +708,12 @@ Tile images set strict-origin-when-cross-origin to satisfy OSM's Referer rule
 without exposing personal paths. Geolocation is self-only and explicit.
 Keep the wizard keyed by the loaded profile id so stale loading data cannot
 reset the new restaurant's identity while navigating to its persisted URL.
+
+16. Selection deletion is conservative until saved room metadata is available:
+persisted tables need has_bookings=false from the server; true or unknown
+offers unavailability instead. Task 17 must expose this read-only metadata and
+recheck real booking references on writes, never trust a client flag. While a
+chair is selected, Delete asks the owner to use the chair-count controls rather
+than unexpectedly deleting its table. Geometry edits use one history step per
+gesture. Table bodies take hit priority over expanded chair hit areas inside the
+body, avoiding invisible chair targets stealing a phone's hold on the table.

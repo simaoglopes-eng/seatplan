@@ -1,6 +1,7 @@
 // The complete route table. Every screen of SeatPlan is listed here once,
 // so feature owners fill in their page file and never need to touch this one.
 import { Route, Routes } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import EditorPage from "./pages/editor/EditorPage";
 import AttendeePage from "./pages/events/AttendeePage";
 import OrganiserPage from "./pages/events/OrganiserPage";
@@ -21,10 +22,10 @@ import OwnerSignUpPage from "./pages/owner/OwnerSignUpPage";
 import NewRestaurantWizard from "./pages/owner/NewRestaurantWizard";
 import ProfilePage from "./pages/owner/ProfilePage";
 import PhotoEditorPage from "./pages/owner/PhotoEditor";
-import RoomEditorPage from "./pages/room-editor/RoomEditorPage";
 import BookingPage from "./pages/restaurant/BookingPage";
 import ManageBookingPage from "./pages/restaurant/ManageBookingPage";
 import StaffPage from "./pages/restaurant/StaffPage";
+const RoomEditorPage = lazy(() => import("./pages/room-editor/RoomEditorPage"));
 
 export default function App() {
   return (
@@ -39,7 +40,7 @@ export default function App() {
       <Route path="/owner/:venueId/photos" element={<PhotoEditorPage />} />
       <Route path="/owner/sign-in" element={<Login defaultNext="/owner" />} />
       <Route path="/owner/:venueId/dashboard" element={<StaffPage />} />
-      <Route path="/owner/:venueId/rooms" element={<RoomEditorPage />} />
+      <Route path="/owner/:venueId/rooms" element={<Suspense fallback={<p role="status">Loading room editor…</p>}><RoomEditorPage /></Suspense>} />
       {/* Events: personal attendee link, organiser workspace */}
       <Route path="/e/:token" element={<AttendeePage />} />
       <Route path="/organiser/:eventId" element={<OrganiserPage />} />

@@ -24,7 +24,8 @@ export function WallTools({ room, selection, selected, onSelect, onSide, onChang
 
 function OpeningFields({ room, opening: o, onUpdate, onNumberUpdate }: { room: Room; opening: RoomOpening; onUpdate: (change: Partial<RoomOpening>) => void; onNumberUpdate: (change: Partial<RoomOpening>) => void }) {
   const { venueId = "" } = useParams();
-  const direction = openingBearing(room, o);
+  let direction: number | null = null, validWall = true;
+  try { direction = openingBearing(room, o); } catch { validWall = false; }
   const names = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
   return <>
     <h3>{o.kind === "door" ? "Door" : o.kind === "glass_wall" ? "Glass wall" : "Window"} properties</h3>
@@ -35,7 +36,7 @@ function OpeningFields({ room, opening: o, onUpdate, onNumberUpdate }: { room: R
     {o.kind === "glass_wall" && <p>Width: {Math.round(o.width)} cm · Entire wall</p>}
     {o.kind === "door" ? <Checkbox label="Main entrance" checked={o.is_main_entrance} onChange={e => onUpdate({ is_main_entrance: e.target.checked })} /> : <>
       <RoomNumberField label="Window top height (cm)" value={o.top_height} min={100} max={500} onCommit={top_height => onNumberUpdate({ top_height })} />
-      <p>{direction === null ? "Set north first" : `Faces ${names[Math.round(direction / 45) % 8]} (${Math.round(direction) % 360}°)`}</p>
+      <p>{!validWall ? "Check the wall geometry first" : direction === null ? "Set north first" : `Faces ${names[Math.round(direction / 45) % 8]} (${Math.round(direction) % 360}°)`}</p>
       <Field label="View" value={o.view_text} maxLength={80} onChange={e => onUpdate({ view_text: e.target.value })} />
       <fieldset className="room-view-tags"><legend>View tags (up to 3)</legend>{VIEW_TAGS.map(tag => <Checkbox key={tag} label={tag} checked={o.view_tags.includes(tag)} disabled={o.view_tags.length >= 3 && !o.view_tags.includes(tag)} onChange={e => onUpdate({ view_tags: e.target.checked ? [...o.view_tags, tag] : o.view_tags.filter(t => t !== tag) })} />)}</fieldset>
       <Field label="View at night" value={o.night_view_text} maxLength={80} onChange={e => onUpdate({ night_view_text: e.target.value })} />

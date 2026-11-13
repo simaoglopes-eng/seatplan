@@ -14,7 +14,7 @@ confirmar que claude/ambiente está pronta. Só depois faz merge dessa branch
 na impl e corre a bateria completa antes de prosseguir. Sem push nem PR.
 
 Trabalho em curso na branch martim/restaurantes-impl. Último commit verde
-antes da tarefa 14, 3ddb8bb. Spec e plano aprovados por Martim, commit 880624b
+antes da tarefa 16, ab18e82. Spec e plano aprovados por Martim, commit 880624b
 na branch martim/restaurantes-spec. Identidade Git configurada apenas neste
 repositório. Plano com 40 tarefas.
 
@@ -37,7 +37,8 @@ repositório. Plano com 40 tarefas.
 | 11 — Elementos e zonas | Feita | 022fd28 | Paletas, colocação, arrasto, campos e desfazer |
 | 12 — Perfil e localização | Feita | a97f0ac | Slug, Identity/Location persistidos, Leaflet e geolocalização explícita |
 | 13 — Fotos | Feita | 3ddb8bb | Galeria privada, resize, capa/ordem e foto de vista |
-| 14 — Mesas e cadeiras | Feita | commit desta entrada | Quatro formas, balcão unilateral, propriedades e cadeiras individuais |
+| 14 — Mesas e cadeiras | Feita | 81973f5 | Quatro formas, balcão unilateral, propriedades e cadeiras individuais |
+| 15 — Gestos e seleção | Feita | ab18e82 | Alinhar, distribuir, duplicar, pegas, atalhos e toque longo |
 
 ## Verificações reais
 
@@ -384,3 +385,68 @@ dos eventos com [201,422], 4 warnings em 114,49 s. Rerun isolado autorizado:
 Martim; eventos intactos. Pytest com --basetemp novo, -o addopts= e
 -p no:cacheprovider. Guard e diff check passaram. Commit identificado por
 feat: add restaurant tables and individually editable chairs.
+
+## Tarefa 15 — feita
+
+Seleção por Shift, área, lista e modo múltiplo; alinhamentos, distribuição,
+duplicação com novos IDs, eliminação protegida, atalhos, rotação e resize por
+pegas. Alternativas em botões/campos. IDs de mesas persistidas com estado de
+reservas desconhecido não podem ser apagados; oferece indisponibilidade.
+Tarefa 17 vai fornecer esse estado e revalidar as referências reais no servidor.
+Decisão conservadora 16 documenta a proteção e o Delete com cadeira selecionada.
+
+RED observado por módulo ausente, operações de cópia/área ausentes e resize
+ainda inexistente; quatro testes puros passaram. Teste de navegador inicial
+RED antes de ligar controlos. Depois quatro Playwright passaram em 10,8 s com
+seleção/atalhos e os três testes anteriores de mesas. Teste adicional de rotação
+usava coordenadas anteriores à deslocação da página; medição atual corrigiu-o,
+mantendo a asserção de 90°. Teste móvel real encontrou a área invisível de uma
+cadeira sobre o centro da mesa; após duas tentativas optou-se conservadoramente
+por prioridade do corpo da mesa nessa região, mantendo alvos das cadeiras fora
+do corpo. O toque longo e os restantes gestos estão novamente em verificação.
+
+Seis testes dirigidos passaram em 15,5 s: dois de seleção/transformação, três
+anteriores de mesas e um toque longo real no projeto mobile (390x844, hasTouch).
+A prioridade do corpo usa a ordem das camadas SVG, mantendo os elementos
+visíveis como alvos, sem sobreposição transparente adicional. Cinco testes
+puros finais passaram. Capturas 1440/390 inspecionadas; axe sem violações.
+
+Bateria final: Ruff check e formato verdes (176 ficheiros), pytest 659 passed,
+4 warnings em 117,54 s (um aviso da corrida antiga, sem falha); typecheck verde,
+Vitest 245 passed em 36 ficheiros, build em 366 ms, contraste 86 checks e
+0 failures; Playwright 48 passed em 49,6 s. Guard e diff check verdes.
+Pytest com --basetemp novo, -o addopts= e -p no:cacheprovider. Commit identificado
+por feat: add room table selection transforms and touch gestures.
+
+## Tarefa 16 — feita
+
+Validação pura Python/TS com os oito códigos do spec: contorno, contenção,
+sobreposição, passagem, elementos fixos, norte, vista e mesas. SAT em retângulos
+rodados e círculos, tolerância de juntar 2 cm, pegada +45 cm para passagem.
+Mesas inativas continuam físicas nos avisos de passagem/elementos fixos; só
+pares ativos têm erro de sobreposição. Contacto sem área não é sobreposição.
+Contenção também impede atravessar uma reentrância com os cantos dentro.
+
+RED por módulos inexistentes e por contornos/avisos ainda não implementados.
+Seis pytest e seis Vitest dirigidos passaram com os mesmos casos de referência:
+mesa rodada fora, círculo que cabe onde os cantos do quadrado não cabem, limite
+de juntar exato, curva, reentrância, elemento fixo, informação e publicação.
+Pureza/imutabilidade verificadas. Módulos reservados ao Claude não foram alterados.
+
+Teste UI RED antes de ligar os erros; depois 1 passed em 8,2 s, com aviso visual,
+seleção e centragem a 1440/390 e axe sem violações. O caso usa restaurante novo
+para que os avisos legítimos da demo noutra sala não alterem a contagem esperada.
+Capturas inspecionadas. Rascunhos geometricamente inválidos ficam renderizáveis;
+a persistência/publicação usarão a mesma validação nas tarefas 17/19. Lista
+global de problemas com centragem e marca vermelha/ícone na mesa. Editor passou
+a carregamento dinâmico para não aumentar o pacote inicial das outras páginas.
+
+Bateria frontend: typecheck verde, Vitest 251 passed em 37 ficheiros, build
+em 295 ms, contraste 86 checks/0 failures e Playwright 49 passed em 52,3 s.
+O resultado terminal do primeiro pytest perdeu-se na compactação da sessão;
+repetiu-se apenas o backend para conservar evidência verificável em log.
+
+Backend confirmado: Ruff check e formato verdes (178 ficheiros), pytest
+665 passed, 3 warnings em 109,35 s, com basetemp novo e cache desativada.
+Guard e diff check verdes. Commit identificado por feat: validate restaurant
+room geometry and focus layout problems. Nenhum ficheiro reservado alterado.

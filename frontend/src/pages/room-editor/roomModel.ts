@@ -4,6 +4,7 @@ import type { Box, Outline } from "./geometry";
 export interface RoomItem { id: number | null; key: string }
 export interface RoomSeat extends RoomItem { label: string; x: number; y: number; is_accessible: boolean; is_blocked: boolean }
 export interface RoomTable extends RoomItem, Box {
+  has_bookings?: boolean;
   zone_key: string | null; label: string; shape: TableShape;
   min_party: number; max_party: number; is_accessible: boolean; high_chair_ok: boolean;
   combine_group: string | null; is_active: boolean; seats: RoomSeat[];

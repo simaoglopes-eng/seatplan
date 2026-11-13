@@ -93,3 +93,34 @@ Chair drag uses centimetres, table drag the optional room grid. Inactive tables
 have dashed outlines and an (off) label. Accessible/blocked chairs have extra
 marks, not only colour. Task 15 adds transforms/multiple selection/shortcuts;
 task 17 enforces persisted booking references on the server before deletion.
+
+selection.ts implements table bounds (circles ignore rotation), group movement,
+six alignments, even gaps on either axis, duplication with fresh table/seat ids
+and keys, conservative deletion, rotation and anchored corner resizing. A
+duplicate keeps settings/labels for chairs and gets a unique table copy label.
+Negative distribution gaps are refused until the outer tables are further apart.
+has_bookings is read-only server metadata: unknown persisted tables cannot be
+deleted; task 17 must provide it and strip it from write payloads.
+
+SelectionTools has checkboxes and buttons for every batch action. Shift-click
+or a selection area adds tables; touch hold enters multiple mode. Arrows move
+1 cm (Shift 10), R rotates 15, Ctrl/Meta+D duplicates, Delete removes selected
+tables, Escape clears. Shortcuts ignore form inputs. A selected chair moves by
+arrows; Delete asks for the chair-count controls to avoid deleting the table.
+TableHandles rotates in 15-degree steps (Alt gives free angles) and resizes from
+the opposite anchored corner. Table body hit areas take priority over expanded
+chair targets within the body. Touch targets, numeric forms and checkbox lists
+provide alternatives; task 20 completes the phone workspace and camera behavior.
+
+validation.ts mirrors ambience/validation.py with known reference cases in both
+test suites. validateRooms returns RoomProblem values; publication mode adds
+no_north and no_tables. The editor memoizes draft checks on layout changes.
+ProblemList lists all rooms, not just the current one, and clicking a problem
+selects its target and centres the camera/viewport. Error tables have a red
+outline and warning glyph, and invalid outlines are red. Invalid drafts remain
+renderable and editable; unfinished outlines offer Continue drawing walls.
+SAT checks use actual circles/rotated rectangles; chair-clearance footprints add
+45 cm. Circle corners are not treated as rectangle corners. Concave containment
+checks boundary crossings as well as centres/corners. Groups allow 2 cm overlap;
+touching edges alone have no area overlap. The whole restaurant editor is lazy
+loaded so other routes do not load these geometry/interaction modules eagerly.
