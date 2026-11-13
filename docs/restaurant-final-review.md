@@ -1,5 +1,12 @@
 # Restaurant integration review and rehearsal — 2026-11-13
 
+> **Update 2026-11-14.** The review below describes the snapshot at `31cc829`. Everything it lists as absent has since been built and verified
+> on branch `claude/ambiente` and its follow-ups: discovery and the public page (25, 26, 29), changing a chair (33), the restaurant emails with
+> the mini-map (34 to 36), the demo restaurants, the staff-map chair marker, and the planner no longer moving bookings with wishes. The matrix
+> below is updated in place. Current numbers: about 880 pytest, 403 Vitest and 71 Playwright (see `test-report.md`); PostgreSQL 16 was run too
+> (876 passed, 2 timing failures on a busy machine). What is still open: real (licensed) demo photos, a physical phone rehearsal, remote tile
+> checks on the real deployment, and the 30 s editor checkpoint.
+
 Review scope: `git diff main...HEAD`, with main at `767fbb6`, the integrated
 Claude work at `31cc829`, and Codex verification/corrections on
 `martim/restaurantes-impl`. The approved restaurant spec and AGENTS.md are the
@@ -48,8 +55,8 @@ and offset, preserving physical windows; straight/semicircular cases are tested.
 Browser/server validators now test inclusive boundaries and report a draft
 error outside them, preventing publication.
 
-No additional feature was classified as unrelated scope creep. Missing discovery,
-public profile, chair management and email/demo wiring remain incomplete.
+No additional feature was classified as unrelated scope creep. (When this was written, discovery, the
+public profile, chair management and email/demo wiring were still missing; they are done now.)
 
 Spec total: **5 findings**, worst P1 invalid public booking configuration; all
 five corrected. This does not establish completion of the missing dependencies.
@@ -74,13 +81,13 @@ uses real taps with touch enabled, including save and reload.
 | Hours / publish (19) | publishing pytest; owner-publish and owner browser suites | Implemented; invalid edits of explicitly published venues become draft |
 | Mobile workspace (20) | 390×844 real-touch creation: 10×7 m, curve, two windows, north, bar, eight tables, save/reload | Acceptance flow passes; full-screen canvas/pullable property sheet and physical phone rehearsal pending |
 | Solar / ambience / preview (21–24) | Known solar cases, pure ambience tests, API isolation, editor and diner day/night browser flows | Implemented; no deployment latency guarantee |
-| Discovery and slug profile (25–26,29) | Source/route inventory | **Absent; blocks search journey, discovery axe and 100-restaurant <500 ms benchmark** |
-| Booking rooms, wishes, chair (27–32) | Map/API tests, optimiser compatibility tests, browser day/night/chair/concurrent holds | Implemented core; staff-map chair marker pending; staff service-plan/what-if ignore time-specific wishes |
-| Chair management (33) | Existing manage link shows chosen chair | `Change seat` UI/API absent |
-| Email and demo integration (34–36) | Standalone restaurant PNG pixel tests | Renderer implemented; actual restaurant mail/profile/photo/ambience wiring and four new demo venues absent |
-| Final editor/booking checks (37) | 60-table/120-chair HTTP benchmark; simultaneous 201/409 holds; 1440/390 booking | Complete for implemented journey; every measured response must be <300 ms |
-| Owner/discovery checks (38) | 1440/390 publication/unpublish/manage/axe | Owner part verified; discovery part **blocked**, not approved |
-| Final review/docs/rehearsal (39) | This matrix, current OpenAPI, full checks in night report | Review performed; whole platform is **not ready to call complete** |
+| Discovery and slug profile (25–26,29) | `test_discovery*.py`, `DiscoverPage`/`RestaurantPage` Vitest, `discovery.spec.ts` with axe on real cards, 100-restaurant benchmark | Implemented (2026-11-14) |
+| Booking rooms, wishes, chair (27–32) | Map/API tests, optimiser compatibility tests, browser day/night/chair/concurrent holds | Implemented; the staff map marks the asked-for chair and the planner keeps bookings made with wishes where they are (decisions 25 and 26) |
+| Chair management (33) | `PATCH /b/{token}` with `seat_id`, `ChangeSeat` Vitest, `restaurant-ambience-booking.spec.ts` | Implemented (2026-11-14) |
+| Email and demo integration (34–36) | `test_restaurant_emails.py`, `test_restaurant_seed.py`, PNG pixel tests | Implemented (2026-11-14): photo, address, table, chair, sentences, mini-map, four invented demo restaurants; demo photos are drawings |
+| Final editor/booking checks (37) | 60-table/120-chair HTTP benchmark; simultaneous 201/409 holds; 1440/390 booking | Complete; timing limits are scaled by machine speed (`perf_calibration.py`) |
+| Owner/discovery checks (38) | 1440/390 publication/unpublish/manage/axe | Owner and discovery parts verified (`owner-publish-find.spec.ts`, `discovery.spec.ts`); 100 restaurants under 500 ms |
+| Final review/docs/rehearsal (39) | This matrix, current OpenAPI, full checks in night report | Review performed; every spec area is now implemented. Remaining: licensed demo photos, a physical phone rehearsal, remote tile checks on the deployment |
 
 ## Rehearsal actually run
 
@@ -105,12 +112,12 @@ For Martim's manual walkthrough, use `/owner`, then an owned restaurant's
 profile/photos/hours/rooms/review. Open its working `/r/{public_id}` booking link,
 select a date/time, inspect rooms/light, hold a table, choose/skip a chair and
 confirm. Open the manage link, then unpublish from the owner screen and verify
-the old booking remains accessible. Do not demonstrate `/restaurants/{slug}`
-or claim the new email artwork is sent: those integrations are missing.
+the old booking remains accessible. `/restaurants/{slug}` and the email with the map now exist: open `/`, pick a restaurant, book it with a chair
+and read the email in the outbox log.
 
 ## Limits of this verification
 
-SQLite and local Chromium only. PostgreSQL, a physical phone's compass/pinch
+Snapshot limits (PostgreSQL has since been run, see the update above): SQLite and local Chromium only. A physical phone's compass/pinch
 behaviour, remote OpenStreetMap tiles under production headers, deployed
 cold-start/network latency and actual mail delivery were not verified. The
 two explicitly authorized flaky tests are documented; no other isolated rerun

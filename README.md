@@ -23,13 +23,10 @@ It is a university project (Introduction to Programming, Nova SBE). The design
 agreement between all modules is [`docs/CONTRACT.md`](docs/CONTRACT.md); every
 deviation from it is explained in [`docs/decisions-log.md`](docs/decisions-log.md).
 
-The restaurant platform branch adds owner accounts/profile/photos, a room
-editor, publication checks, sunlight/view descriptions, wishes and optional
-chair choice. This is still an integration in progress: discovery/public pages
-by slug, changing a chair through the manage page, and new email/demo wiring
-remain incomplete. The working booking route is `/r/:venueId`.
-See the [acceptance matrix and rehearsal](docs/restaurant-final-review.md) and
-[night report](docs/superpowers/plans/relatorio-noite.md) for verified scope.
+The restaurant platform adds owner accounts, profile and photos, a room editor, publication checks, sunlight and view descriptions, wishes,
+optional chair choice (and changing it later), restaurant search with a public page per restaurant, and booking emails with a photo and a map of
+the room. `/` is the restaurant search and `/demo` the original home page with the demo links. See the
+[acceptance matrix and rehearsal](docs/restaurant-final-review.md) and the [night report](docs/superpowers/plans/relatorio-noite.md) for the verified scope.
 
 ## Quick start
 
