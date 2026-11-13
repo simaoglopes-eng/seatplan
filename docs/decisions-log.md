@@ -796,9 +796,9 @@ Public ambience is rate-limited and contains no personal data or photo bytes.
 Detailed owner/map responses add metrics, features and view-photo metadata.
 
 31. **Optional client features preserve existing journeys.** No `rooms` prop
-keeps the old SeatMap rendering; one room needs no tabs. A table tap still
-holds it immediately, preserving the existing booking flow (deviation from
-the spec's tap-to-inspect wording). The ambience card describes the active,
+keeps the old SeatMap rendering; one room needs no tabs. A table tap first
+chose the table and later (decision 25, branch claude/ux-polish) became tap-to-inspect as in
+the spec: the card shows, and "Hold this table" reserves. The ambience card describes the active,
 held or recommended table. The light cursor debounces 250 ms and preserves
 the last scenery on network errors. Wishes are omitted from requests when
 empty; choosing sun clears shade and conversely. The seat step remains inside
