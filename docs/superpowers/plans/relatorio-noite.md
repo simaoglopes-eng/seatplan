@@ -1,7 +1,7 @@
 # Relatório da noite — 13 de novembro de 2026
 
 Trabalho em curso na branch martim/restaurantes-impl. Último commit verde
-antes da tarefa 9, 8abad49. Spec e plano aprovados por Martim, commit 880624b
+antes da tarefa 10, 3e6e651. Spec e plano aprovados por Martim, commit 880624b
 na branch martim/restaurantes-spec. Identidade Git configurada apenas neste
 repositório. Plano com 40 tarefas.
 
@@ -19,7 +19,8 @@ repositório. Plano com 40 tarefas.
 | 6 — Área do dono | Feita | d4eefca | Formulários, cartões privados e destino do login |
 | 7 — Modelo do editor | Feita | 2587840 | Geometria TS e operações imutáveis |
 | 8 — Estrutura e formas | Feita | 8abad49 | Salas retangulares, em L e desenho livre |
-| 9 — Curvas e cantos | Feita | commit desta entrada | Arcos circulares, arrasto e propriedades acessíveis |
+| 9 — Curvas e cantos | Feita | 3e6e651 | Arcos circulares, arrasto e propriedades acessíveis |
+| 10 — Aberturas e norte | Feita | commit desta entrada | Janelas, portas, vidro, normais em arcos e bússola |
 
 ## Verificações reais
 
@@ -210,3 +211,30 @@ e 0 failures. Guard e diff check passaram. Ruff passou e formato com 171
 ficheiros. Pytest final: 622 passed, 3 warnings em 114,67 s, com --basetemp
 novo, -o addopts= e -p no:cacheprovider, tal como nas tarefas anteriores.
 Commit identificado por feat: edit curved room walls and corners.
+
+## Tarefa 10 — feita
+
+Testes RED observados para os módulos de aberturas e norte inexistentes.
+RED adicional para vidro que não acompanhava o novo comprimento da parede.
+Depois nove testes de paredes/contornos e um de norte passaram. Posição em
+arcos medida pelo comprimento do arco, rumo pela normal no meio da abertura.
+Foto de vista integra-se com upload e API nas tarefas 13/17; a referência
+opening_id só existe após persistir. Bússola opcional consultada em MDN e
+W3C, sem biblioteca nova. Campos manuais e direção absoluta têm prioridade.
+
+Três Playwright novos passaram em 9,3 s: formulários a 1440/390, sobreposição
+recusada, tags e vistas preservadas, mover/redimensionar/desfazer e rodar o
+norte. Axe sem violações. Capturas desktop e telefone inspecionadas. A revisão
+visual encontrou os botões de zoom abaixo da área da planta quando o painel
+é longo; alinhamento corrigido para os manter junto à planta. Teste adicional
+RED/GREEN para definir norte 0° a partir de null; campo vazio distingue ambos.
+Bússola física iOS/Android não testada. Referências consultadas:
+https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent e
+https://www.w3.org/TR/orientation-event/ . A primeira bateria deu 36 E2E verdes;
+repete-se frontend após os dois ajustes finais, com pytest ainda em curso.
+
+Pytest final passou com 622 passed, 3 warnings em 138,98 s. Ruff check e
+formato passaram (171 ficheiros). Typecheck e 230 Vitest em 31 ficheiros
+passaram; build final em 133 ms. Contraste: 86 checks, 0 failures. Guard e
+diff check passaram. Última corrida completa Playwright: 36 passed em 32,2 s.
+Commit identificado por feat: add room openings and north orientation.

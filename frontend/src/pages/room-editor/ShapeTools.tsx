@@ -3,13 +3,13 @@ import { Field } from "../../design/components";
 
 /** Commit complete decimal edits on blur, keeping invalid input visible. */
 export function RoomNumberField({ label, value, onCommit, decimals = 0, min, max }: {
-  label: string; value: number; onCommit: (value: number) => void;
+  label: string; value: number | null; onCommit: (value: number) => void;
   decimals?: number; min?: number; max?: number;
 }) {
-  const format = (n: number) => n.toFixed(decimals).replace(".", ",");
+  const format = (n: number | null) => n === null ? "" : n.toFixed(decimals).replace(".", ",");
   const [text, setText] = useState(format(value));
   const [error, setError] = useState("");
-  useEffect(() => { setText(value.toFixed(decimals).replace(".", ",")); setError(""); }, [value, decimals]);
+  useEffect(() => { setText(value === null ? "" : value.toFixed(decimals).replace(".", ",")); setError(""); }, [value, decimals]);
   return <Field label={label} inputMode="decimal" value={text} error={error || undefined}
     onChange={event => { setText(event.target.value); setError(""); }}
     onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); } }}

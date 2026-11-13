@@ -16,6 +16,8 @@ import { appendCorner, finishOutline, removeCorner } from "./shapeEditing";
 import { RoomProperties } from "./RoomProperties";
 import type { ShapeSelection } from "./ShapeTools";
 import { RoomCanvas } from "./RoomCanvas";
+import { WallTools } from "./WallTools";
+import { NorthTools } from "./NorthTools";
 import "./room-editor.css";
 
 export default function RoomEditorPage() {
@@ -35,6 +37,8 @@ function RoomSession({ info }: { info: VenueDetail }) {
   const [adding, setAdding] = useState(false);
   const [drawingRoom, setDrawingRoom] = useState<string | null>(null);
   const [selection, setSelection] = useState<ShapeSelection>(null);
+  const [tool, setTool] = useState("Shape");
+  const [opening, setOpening] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [grid, setGrid] = useState(true);
   const [pointX, setPointX] = useState("0"), [pointY, setPointY] = useState("0");
@@ -61,7 +65,8 @@ function RoomSession({ info }: { info: VenueDetail }) {
     if (target.closest("input, textarea, select, [contenteditable=true]")) return;
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") { event.preventDefault(); if (event.shiftKey) history.redo(); else history.undo(); }
     else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") { event.preventDefault(); history.redo(); }
-    else if (event.key === "Delete" && selection?.kind === "corner") {
+    else if (event.key === "Delete" && tool === "Walls" && opening) { event.preventDefault(); changeRoom({ ...room, openings: room.openings.filter(o => o.key !== opening) }); setOpening(null); }
+    else if (event.key === "Delete" && tool === "Shape" && selection?.kind === "corner") {
       event.preventDefault();
       try { changeRoom(removeCorner(room, selection.index)); setSelection(null); }
       catch (caught) { setError(caught instanceof Error ? caught.message : "Keep at least three corners."); }
@@ -72,16 +77,18 @@ function RoomSession({ info }: { info: VenueDetail }) {
     </header>
     <div className="room-tabs"><Select label="Room" value={room.key} onChange={e => { setSelectedRoom(e.target.value); setDrawingRoom(null); setSelection(null); }} options={history.present.rooms.map(r => ({ value: r.key, label: r.name }))} /><Button variant="secondary" disabled={history.present.rooms.length >= 5} onClick={() => setAdding(true)}>Add room</Button></div>
     {error && <p role="alert" className="room-error">{error}</p>}
-    <div className="room-workspace"><nav className="room-tools" aria-label="Room tools">{["Shape", "Walls", "North", "Fixed", "Zones", "Tables", "Light", "Preview"].map(tool => <button key={tool} type="button" aria-pressed={tool === "Shape"} disabled={tool !== "Shape"}>{tool}</button>)}</nav>
-      <RoomCanvas room={room} drawing={drawing} grid={grid} onPoint={addPoint} onCloseShape={closeShape} selection={selection} onSelect={setSelection} onChange={changeRoom} onDragStart={history.checkpoint} onError={setError} />
+    <div className="room-workspace"><nav className="room-tools" aria-label="Room tools">{["Shape", "Walls", "North", "Fixed", "Zones", "Tables", "Light", "Preview"].map(name => <button key={name} type="button" aria-pressed={tool === name} disabled={!["Shape", "Walls", "North"].includes(name) || (drawing && name !== "Shape")} onClick={() => { setTool(name); setError(""); }}>{name}</button>)}</nav>
+      <RoomCanvas room={room} drawing={drawing} grid={grid} onPoint={addPoint} onCloseShape={closeShape} selection={selection} onSelect={setSelection} onChange={changeRoom} onDragStart={history.checkpoint} onError={setError} tool={tool} opening={opening} onOpening={setOpening} />
       <aside className="room-properties"><h2>Room properties</h2><div className="room-form">
         <Field label="Selected room name" value={room.name} maxLength={60} onChange={e => history.commit(replaceRoom(history.present, { ...room, name: e.target.value }))} />
         <Checkbox label="Show 50 cm grid" checked={grid} onChange={e => setGrid(e.target.checked)} />
         {drawing && <><p>Tap each corner, then close the shape.</p><div className="room-fields"><Field label="Corner x (cm)" inputMode="decimal" value={pointX} onChange={e => setPointX(e.target.value)} /><Field label="Corner y (cm)" inputMode="decimal" value={pointY} onChange={e => setPointY(e.target.value)} /></div><Button variant="secondary" onClick={() => { const x = Number(pointX.replace(",", ".")), y = Number(pointY.replace(",", ".")); if (Number.isFinite(x) && Number.isFinite(y)) addPoint({ x, y }); }}>Add corner</Button><Button disabled={room.outline.points.length < 3} onClick={closeShape}>Close shape</Button></>}
         <p>Walls: {room.outline.points.length} sides</p><p>Tables: {room.tables.length}</p>
-        {!drawing && <RoomProperties key={`${room.key}:${selection?.kind}:${selection?.index}`} room={room} selection={selection} onSelect={setSelection} onChange={changeRoom} onError={setError} />}
+        {!drawing && tool === "Shape" && <RoomProperties key={`${room.key}:${selection?.kind}:${selection?.index}`} room={room} selection={selection} onSelect={setSelection} onChange={changeRoom} onError={setError} />}
+        {!drawing && tool === "Walls" && <WallTools room={room} selection={selection} selected={opening} onSelect={setOpening} onSide={setSelection} onChange={changeRoom} onError={setError} />}
+        {!drawing && tool === "North" && <NorthTools key={room.key} room={room} onChange={changeRoom} />}
       </div></aside>
     </div><footer className="room-status">{area.toLocaleString("pt-PT", { maximumFractionDigits: 1 })} m² · {grid ? "Grid on" : "Grid off"}</footer>
-    {adding && <NewRoomDialog onClose={() => setAdding(false)} onCreate={(created, draw) => { history.commit(addRoom(history.present, created)); setSelectedRoom(created.key); setDrawingRoom(draw ? created.key : null); setSelection(null); setAdding(false); }} />}
+    {adding && <NewRoomDialog onClose={() => setAdding(false)} onCreate={(created, draw) => { history.commit(addRoom(history.present, created)); setSelectedRoom(created.key); setDrawingRoom(draw ? created.key : null); setSelection(null); setTool("Shape"); setAdding(false); }} />}
   </section>;
 }

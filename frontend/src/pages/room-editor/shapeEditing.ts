@@ -1,6 +1,7 @@
 import { outlineToPolygon, polygonArea, sideLength, sidePoint } from "./geometry";
 import type { OutlinePoint, Point } from "./geometry";
 import type { Room } from "./roomModel";
+import { checkOpenings } from "./wallModel";
 
 function withPoints(room: Room, points: OutlinePoint[]): Room {
   points.forEach((point, i) => {
@@ -8,7 +9,10 @@ function withPoints(room: Room, points: OutlinePoint[]): Room {
     const chord = Math.hypot(next.x - point.x, next.y - point.y);
     if (![point.x, point.y, point.curve].every(Number.isFinite) || chord < 1 || Math.abs(point.curve) > chord / 2 + 1e-8) throw new Error("Keep corners apart and curves within half the wall length.");
   });
-  return { ...room, outline: { points } };
+  const outline = { points };
+  const next = { ...room, outline, openings: room.openings.map(o => o.kind === "glass_wall" ? { ...o, offset: 0, width: sideLength(outline, o.side) } : o) };
+  checkOpenings(next);
+  return next;
 }
 
 export function moveCorner(room: Room, index: number, at: Point): Room {
@@ -48,7 +52,7 @@ export function insertCorner(room: Room, side: number): Room {
   const points = room.outline.points.map((p, i) => i === side ? { ...p, curve } : p);
   points.splice(side + 1, 0, { ...sidePoint(room.outline, side, 0.5), curve });
   const openings = room.openings.map(o => o.side > side ? { ...o, side: o.side + 1 } : o.side === side && o.offset >= half ? { ...o, side: side + 1, offset: o.offset - half } : o);
-  return { ...withPoints(room, points), openings };
+  return withPoints({ ...room, openings }, points);
 }
 
 export function removeCorner(room: Room, index: number): Room {
@@ -57,7 +61,7 @@ export function removeCorner(room: Room, index: number): Room {
   const previous = (index + count - 1) % count;
   if (room.openings.some(o => o.side === index || o.side === previous)) throw new Error("Move openings off the adjoining walls before removing this corner.");
   const points = room.outline.points.flatMap((p, i) => i === index ? [] : [{ ...p, curve: i === previous ? 0 : p.curve }]);
-  return { ...withPoints(room, points), openings: room.openings.map(o => ({ ...o, side: o.side > index ? o.side - 1 : o.side })) };
+  return withPoints({ ...room, openings: room.openings.map(o => ({ ...o, side: o.side > index ? o.side - 1 : o.side })) }, points);
 }
 
 export function appendCorner(room: Room, point: Point): Room {

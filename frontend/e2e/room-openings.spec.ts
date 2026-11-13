@@ -1,0 +1,70 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import AxeBuilder from "@axe-core/playwright";
+import { demoLinks, expect, lastPart, test } from "./fixtures";
+import { openOwnerRoom } from "./room-session";
+
+for (const width of [1440, 390]) {
+  test(`owner adds windows and sets north at ${width}px`, async ({ page, request }) => {
+    const links = await demoLinks(request);
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+    await openOwnerRoom(page, request, lastPart(links.restaurant_booking));
+    await page.getByRole("button", { name: "Walls", exact: true }).click();
+    await page.getByRole("button", { name: "Add window", exact: true }).click();
+    await expect(page.getByText("Set north first", { exact: true })).toBeVisible();
+    await page.getByLabel("Opening offset (cm)").fill("100");
+    await page.getByLabel("Opening offset (cm)").press("Tab");
+    await page.getByLabel("View", { exact: true }).fill("Tagus river");
+    await page.getByLabel("river", { exact: true }).check();
+    await page.getByRole("button", { name: "North", exact: true }).click();
+    await page.getByLabel("North is at (degrees)").fill("90");
+    await page.getByLabel("North is at (degrees)").press("Tab");
+    await expect(page.getByText("North is at 90°", { exact: true })).toBeVisible();
+    await page.screenshot({ path: join(tmpdir(), `seatplan-room-north-${width}.png`), fullPage: true });
+    await page.getByRole("button", { name: "Walls", exact: true }).click();
+    await expect(page.getByText("Faces west (270°)", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("View", { exact: true })).toHaveValue("Tagus river");
+    await page.getByRole("button", { name: "Add door", exact: true }).click();
+    await page.getByLabel("Main entrance").check();
+    await page.getByLabel("Opening offset (cm)").fill("110");
+    await page.getByLabel("Opening offset (cm)").press("Tab");
+    await expect(page.getByRole("alert")).toContainText("overlap");
+    await page.getByRole("button", { name: "Undo", exact: true }).click();
+    await expect(page.getByLabel("Main entrance")).not.toBeChecked();
+    await page.screenshot({ path: join(tmpdir(), `seatplan-room-openings-${width}.png`), fullPage: true });
+    expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+}
+
+test("opening gestures resize and move in single undo steps, and the north dial rotates", async ({ page, request }) => {
+  const links = await demoLinks(request);
+  await openOwnerRoom(page, request, lastPart(links.restaurant_booking));
+  await page.getByRole("button", { name: "Walls", exact: true }).click();
+  await page.getByRole("button", { name: "Add window", exact: true }).click();
+  const body = (await page.locator("[data-opening-body]").boundingBox())!;
+  await page.mouse.move(body.x + body.width / 2, body.y + body.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(body.x + body.width / 2 + 100, body.y + body.height / 2, { steps: 5 });
+  await page.mouse.up();
+  expect(Number(await page.getByLabel("Opening offset (cm)").inputValue())).toBeGreaterThan(0);
+  const end = (await page.locator('[data-opening-handle="end"]').boundingBox())!;
+  await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(end.x + end.width / 2 + 70, end.y + end.height / 2, { steps: 5 });
+  await page.mouse.up();
+  expect(Number(await page.getByLabel("Opening width (cm)").inputValue())).toBeGreaterThan(120);
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(page.getByLabel("Opening width (cm)")).toHaveValue("120");
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(page.getByLabel("Opening offset (cm)")).toHaveValue("0");
+  await page.getByRole("button", { name: "North", exact: true }).click();
+  const dial = (await page.locator(".room-north-dial svg").boundingBox())!;
+  await page.mouse.move(dial.x + dial.width / 2, dial.y + 15);
+  await page.mouse.down();
+  await page.mouse.move(dial.x + dial.width - 15, dial.y + dial.height / 2, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.getByText("North is at 90°", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(page.getByText("North is not set", { exact: true })).toBeVisible();
+});

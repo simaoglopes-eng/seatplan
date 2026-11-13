@@ -40,3 +40,22 @@ a double tap straightens the wall. RoomProperties exposes the same edits as
 forms, with decimal comma or point and visible validation errors. SVG paths use
 true circular A segments. The properties heading receives focus without
 scrolling the canvas away during a drag.
+
+wallModel.ts creates and validates openings, checks overlap and bounds in arc
+centimetres, and computes the bearing from the outward normal at the opening
+midpoint. WallTools exposes the same controls as WallLayer's move/resize
+handles. Windows have view text, up to three tags, top height and a sun rule;
+doors have the entrance flag. Glass occupies the entire side and follows side
+length edits. Shape changes which would strand a window beyond the wall are
+refused. Opening ids/keys survive edits. Photo attachment joins the upload
+and saved-room endpoints in tasks 13/17, after an opening has a database id.
+
+NorthTools offers numeric angles, 15-degree steps and a draggable compass.
+The needle uses clockwise screen degrees. Phone readings are optional: only
+absolute alpha or WebKit compass heading is accepted; relative alpha is
+ignored. Permission requests occur on a button click in a secure context.
+The phone must lie flat and align with the plan; the owner checks the result.
+Manual controls remain available when no sensor reading arrives. API reference:
+https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent and
+https://www.w3.org/TR/orientation-event/ . Physical iOS/Android hardware has
+not been tested in this Windows session.

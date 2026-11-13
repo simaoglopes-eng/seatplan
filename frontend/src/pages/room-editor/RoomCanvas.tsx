@@ -2,20 +2,23 @@ import { useId, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { Button } from "../../design/components";
 import { usePanZoom } from "../../seatmap/usePanZoom";
-import { outlinePath, outlineToPolygon } from "./geometry";
+import { outlinePath, outlineToPolygon, sidePath } from "./geometry";
 import type { Point } from "./geometry";
 import { snappedPoint } from "./shapeModel";
 import type { Room } from "./roomModel";
 import { ShapeHandles } from "./ShapeHandles";
 import type { ShapeSelection } from "./ShapeTools";
+import { WallLayer } from "./WallLayer";
+import { NorthDial } from "./NorthTools";
 
 interface Props {
   room: Room; drawing: boolean; grid: boolean; onPoint: (point: Point) => void; onCloseShape: () => void;
   selection: ShapeSelection; onSelect: (selection: ShapeSelection) => void;
   onChange: (room: Room, transient?: boolean) => void; onDragStart: () => void; onError: (message: string) => void;
+  tool: string; opening: string | null; onOpening: (key: string) => void;
 }
 
-export function RoomCanvas({ room, drawing, grid, onPoint, onCloseShape, selection, onSelect, onChange, onDragStart, onError }: Props) {
+export function RoomCanvas({ room, drawing, grid, onPoint, onCloseShape, selection, onSelect, onChange, onDragStart, onError, tool, opening, onOpening }: Props) {
   const viewport = useRef<HTMLDivElement>(null);
   const patternId = useId();
   const [cursor, setCursor] = useState<Point | null>(null);
@@ -51,10 +54,13 @@ export function RoomCanvas({ room, drawing, grid, onPoint, onCloseShape, selecti
             <text textAnchor="middle" dominantBaseline="middle" className="room-table-label">{table.label}</text>
           </g>)}
           {room.tables.flatMap(t => t.seats).map(seat => <circle key={seat.key} cx={seat.x} cy={seat.y} r="9" className="room-seat" />)}
-          {!drawing && points.length >= 3 && <ShapeHandles room={room} zoom={pan.view.k} grid={grid} selection={selection} toWorld={toWorld} onSelect={onSelect} onChange={onChange} onDragStart={() => { pan.zoomBy(1); onDragStart(); }} onError={onError} />}
+          {!drawing && points.length >= 3 && tool === "Shape" && <ShapeHandles room={room} zoom={pan.view.k} grid={grid} selection={selection} toWorld={toWorld} onSelect={onSelect} onChange={onChange} onDragStart={() => { pan.zoomBy(1); onDragStart(); }} onError={onError} />}
+          {!drawing && tool === "Walls" && points.map((_, i) => <path key={`select-${i}`} d={sidePath(room.outline, i)} className="room-wall-hit" strokeWidth={44 / pan.view.k} onPointerDown={event => { event.stopPropagation(); onSelect({ kind: "side", index: i }); }} />)}
+          {!drawing && <WallLayer room={room} zoom={pan.view.k} editing={tool === "Walls"} selected={opening} toWorld={toWorld} onSelect={onOpening} onChange={onChange} onDragStart={() => { pan.zoomBy(1); onDragStart(); }} onError={onError} />}
         </g>
       </svg>
     </div>
+    {tool === "North" && !drawing && <NorthDial north={room.north_deg} onCommit={north_deg => onChange({ ...room, north_deg })} />}
     <div className="room-zoom"><Button variant="secondary" aria-label="Zoom out" onClick={() => pan.zoomBy(0.8)}>−</Button><Button variant="secondary" onClick={pan.fit}>Fit room</Button><Button variant="secondary" aria-label="Zoom in" onClick={() => pan.zoomBy(1.25)}>+</Button><span>{Math.round(pan.view.k * 100)}%</span></div>
   </div>;
 }

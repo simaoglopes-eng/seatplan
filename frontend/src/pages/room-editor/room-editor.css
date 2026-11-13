@@ -9,7 +9,7 @@
 .room-tools button { min-height: 48px; padding: var(--space-3); background: transparent; color: var(--c-text); border: 0; text-align: left; font: inherit; }
 .room-tools button[aria-pressed="true"] { background: var(--c-primary-soft); color: var(--c-primary); font-weight: var(--fw-bold); }
 .room-tools button:disabled { color: var(--c-text-muted); }
-.room-canvas-wrap { min-width: 0; position: relative; background: var(--c-surface-sunk); }
+.room-canvas-wrap { min-width: 0; position: relative; align-self: start; background: var(--c-surface-sunk); }
 .room-canvas { height: 34rem; overflow: hidden; touch-action: none; }
 .room-zoom { position: absolute; bottom: var(--space-3); left: var(--space-3); display: flex; gap: var(--space-2); align-items: center; background: var(--c-surface); border-radius: var(--radius-pill); padding: var(--space-1); }
 .room-zoom span { padding-inline: var(--space-2); font-size: var(--fs-sm); }
@@ -33,6 +33,18 @@
 .room-handle { fill: var(--c-surface); stroke: var(--c-primary); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }
 .room-handle.selected { fill: var(--c-primary); stroke: var(--c-text); }
 .room-error { color: var(--c-danger); }
+.room-view-tags { display: grid; gap: var(--space-2); border: 1px solid var(--c-border); min-width: 0; }
+.room-opening-gap { fill: none; stroke: var(--c-surface); stroke-width: 14; }
+.room-window { fill: none; stroke: var(--c-info); stroke-width: 10; }
+.room-window-middle { fill: none; stroke: var(--c-surface); stroke-width: 3; }
+.room-door-arc { fill: none; stroke: var(--c-info); stroke-width: 3; }
+.room-opening-hit { fill: none; stroke: transparent; pointer-events: stroke; cursor: grab; }
+.room-opening.selected .room-window, .room-opening.selected .room-door-arc { stroke: var(--c-primary); }
+.room-north-dial { position: absolute; top: var(--space-4); left: 50%; transform: translateX(-50%); width: min(200px, 70%); text-align: center; color: var(--c-text); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-lg); padding: var(--space-2); }
+.room-north-dial svg { display: block; width: 100%; touch-action: none; cursor: grab; }
+.room-north-dial circle { fill: var(--c-surface); stroke: var(--c-border-strong); stroke-width: 2; }
+.room-north-dial path { fill: var(--c-primary); }
+.room-north-dial text { fill: var(--c-text); font-size: 18px; font-weight: var(--fw-bold); }
 @media (max-width: 1023px) {
   .room-workspace { grid-template-columns: minmax(0, 1fr); }
   .room-editor { padding-bottom: 4rem; }
