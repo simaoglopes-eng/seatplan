@@ -2,6 +2,14 @@
 
 ## Purpose
 
+owner_accounts.py handles owner sign-up with purpose owner in email_codes.
+Codes are bound to a browser signup id and consumed under a write lock.
+Existing accounts receive the same registration response shape, and only the
+approved demo conditions expose a code. Owner accounts reuse organiser login.
+venue_access limits staff to demo restaurants and owners to their restaurants.
+The shared venues router enforces the same rule for restaurants while keeping
+event access unchanged.
+
 The database side of the restaurants vertical. The three routers
 (`routers/restaurants.py` for diners, `routers/bookings.py` for manage links
 and the waitlist, `routers/staff.py` for staff) only check the request and

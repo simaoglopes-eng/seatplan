@@ -67,6 +67,8 @@ def make_restaurant(session: Session, owner: Organiser, cap: int = 40) -> Place:
         organiser_id=owner.id,
         kind="restaurant",
         name="Test Bistro",
+        # Explicit demo fixture: real restaurants are covered by owner isolation tests.
+        is_demo=True,
         timezone="Europe/Lisbon",
         width=800,
         height=600,

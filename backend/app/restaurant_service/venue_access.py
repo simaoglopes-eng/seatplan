@@ -19,9 +19,13 @@ def load_restaurant(session: Session, public_id: str) -> Venue:
 
 
 def load_for_staff(session: Session, public_id: str, user: Organiser) -> Venue:
-    """Same rule as the venues router: staff see every venue, an organiser
-    only their own. Forbidden looks the same as missing (404)."""
+    """Owners see their restaurants, demo staff only demo restaurants.
+
+    Forbidden looks the same as missing (404).
+    """
     venue = load_restaurant(session, public_id)
-    if user.role != "staff" and venue.organiser_id != user.id:
+    if (user.role == "staff" and not venue.is_demo) or (
+        user.role != "staff" and venue.organiser_id != user.id
+    ):
         raise ApiError(404, "not_found", "Restaurant not found.")
     return venue

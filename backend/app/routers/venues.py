@@ -136,7 +136,11 @@ def load_venue(session: Session, public_id: str, user: Organiser) -> Venue:
     """The venue if this user may see it. Staff may see every venue; an
     organiser only their own. Missing and forbidden look the same (404)."""
     venue = session.scalars(select(Venue).where(Venue.public_id == public_id)).first()
-    if venue is None or (user.role != "staff" and venue.organiser_id != user.id):
+    if (
+        venue is None
+        or (user.role != "staff" and venue.organiser_id != user.id)
+        or (user.role == "staff" and venue.kind == "restaurant" and not venue.is_demo)
+    ):
         raise ApiError(404, "not_found", "Venue not found.")
     return venue
 
@@ -146,6 +150,8 @@ def list_venues(user: CurrentUser, session: db.SessionDep) -> list[dict[str, Any
     query = select(Venue).order_by(Venue.id)
     if user.role != "staff":
         query = query.where(Venue.organiser_id == user.id)
+    else:
+        query = query.where((Venue.kind != "restaurant") | Venue.is_demo)
     return [_venue_summary(venue) for venue in session.scalars(query)]
 
 

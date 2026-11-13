@@ -1,5 +1,16 @@
 # API guide
 
+## Restaurant owner accounts
+
+POST /api/owner/register accepts name, email, password and consent=true.
+It returns 202 with signup_id, and code_shown only in approved local demo
+conditions. Existing accounts receive the same response shape. POST
+/api/owner/verify accepts email, six-digit code and signup_id and returns 201
+with token and user. Codes expire after 15 minutes, allow five attempts and
+can be consumed once. The session works with the existing /api/auth endpoints.
+Bodies reject unknown fields. Staff access to restaurant endpoints and
+the shared /api/venues endpoints is restricted to is_demo restaurants.
+
 The full, exact list of endpoints and request and answer shapes is
 [`openapi.json`](openapi.json). This page is the short version a person can
 read. The design agreement is section 5 of [`CONTRACT.md`](CONTRACT.md).

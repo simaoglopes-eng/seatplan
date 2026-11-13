@@ -33,6 +33,7 @@ from app.routers import (
     guest_accounts,
     guest_events,
     health,
+    owners,
     restaurants,
     staff,
     venues,
@@ -131,6 +132,7 @@ async def _add_security_headers(
 def _register_routers(app: FastAPI) -> None:
     for module in (
         health,
+        owners,
         auth,
         venues,
         demo,

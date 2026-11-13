@@ -12,7 +12,7 @@ repositório. Plano com 40 tarefas.
 | Spec e plano | Feita | 880624b | Leitura e inventário concluídos |
 | 0 — Proteção | Feita | ecc6dfc | AGENTS.md, guard e dois testes reais de Git |
 | 1 — Contratos | Feita | 54f89d7 | Dependência do Sérgio executada por autorização |
-| 2 — Modelos e migração | Feita | Commit desta entrada | 30 tabelas, migração repetível e formato legado preservado |
+| 2 — Modelos e migração | Feita | 2f984a4 | 30 tabelas, migração repetível e formato legado preservado |
 | 3 — Geometria | Feita | 1839a52 | Contorno circular, normais, rumos, área e contenção |
 | 4 — Sol | Feita | 7581213 | Posição e horas solares, fusos e casos polares |
 
@@ -83,6 +83,30 @@ e passou isolado com 1 passed em 1,07 s. As baterias seguintes passaram inteiras
 
 O stdin do PowerShell danificou acentos nos primeiros documentos gerados.
 O plano e este relatório foram corrigidos com escrita UTF-8 direta.
+
+## Tarefa 5 — feita
+
+Dependência do Sérgio executada para desbloquear o editor do dono. Registo
+por código com consentimento, limites partilhados, código associado ao browser,
+cinco tentativas, consumo único e login de organizador. Isolamento aplicado
+ao staff e ao caminho alternativo /venues apenas para restaurantes.
+
+RED inicial com quatro falhas esperadas. Após implementar, 39 testes de
+contas/staff/migrações passaram. A segurança adicional passou sete testes,
+incluindo duas confirmações simultâneas com um único 201 e 404/409 no outro
+pedido. Código demo omitido para caixas de correio reais.
+
+A fixture Test Bistro foi marcada explicitamente is_demo=True para preservar
+os cenários operacionais do staff. Nenhuma asserção antiga foi alterada.
+O teste novo exige 404 para restaurantes reais, incluindo acesso por /venues.
+O seed Casa Lumen também marca is_demo=True. Guias, API e OpenAPI atualizados.
+
+Verificação final com 621 passed, 3 warnings em 101,82 s. Ruff check passou,
+formato com 170 ficheiros, typecheck passou e npm test com 209 passed em
+23 ficheiros. O teste adicional confirma que um signup substituído não
+consome o código novo. A escrita atómica compara também os hashes do signup
+e do código para proteger substituições concorrentes. Guard e diff check
+passaram. Commit identificado por feat: register restaurant owners and isolate real venues.
 
 ### Compatibilidade do editor antigo
 

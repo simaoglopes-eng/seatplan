@@ -269,6 +269,7 @@ def seed(session: Session) -> dict[str, str]:
         organiser_id=_demo_owner(session).id,
         kind="restaurant",
         name="Casa Lumen",
+        is_demo=True,
         timezone="Europe/Lisbon",
         width=1000,
         height=700,

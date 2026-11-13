@@ -24,6 +24,92 @@
         }
       }
     },
+    "/api/owner/register": {
+      "post": {
+        "tags": [
+          "owners"
+        ],
+        "summary": "Register",
+        "operationId": "register_api_owner_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__routers__owners__RegisterIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Register Api Owner Register Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owner/verify": {
+      "post": {
+        "tags": [
+          "owners"
+        ],
+        "summary": "Verify",
+        "operationId": "verify_api_owner_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__routers__owners__VerifyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Verify Api Owner Verify Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/login": {
       "post": {
         "tags": [
@@ -2725,7 +2811,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RegisterIn"
+                "$ref": "#/components/schemas/app__events_service__schemas__RegisterIn"
               }
             }
           }
@@ -2846,7 +2932,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/VerifyIn"
+                "$ref": "#/components/schemas/app__events_service__schemas__VerifyIn"
               }
             }
           },
@@ -6299,47 +6385,6 @@
         ],
         "title": "ProcessResult"
       },
-      "RegisterIn": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Name"
-          },
-          "email": {
-            "type": "string",
-            "maxLength": 254,
-            "format": "email",
-            "title": "Email"
-          },
-          "password": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "Password"
-          },
-          "needs_accessible": {
-            "type": "boolean",
-            "title": "Needs Accessible",
-            "default": false
-          },
-          "consent": {
-            "type": "boolean",
-            "const": true,
-            "title": "Consent"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "name",
-          "email",
-          "password",
-          "consent"
-        ],
-        "title": "RegisterIn"
-      },
       "ResetIn": {
         "properties": {
           "email": {
@@ -6832,35 +6877,6 @@
         ],
         "title": "VenueIn"
       },
-      "VerifyIn": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "maxLength": 254,
-            "format": "email",
-            "title": "Email"
-          },
-          "code": {
-            "type": "string",
-            "pattern": "^[0-9]{6}$",
-            "title": "Code"
-          },
-          "signup_id": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 1,
-            "title": "Signup Id"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "email",
-          "code",
-          "signup_id"
-        ],
-        "title": "VerifyIn"
-      },
       "WaitlistIn": {
         "properties": {
           "date": {
@@ -7107,6 +7123,76 @@
         ],
         "title": "MoveIn"
       },
+      "app__events_service__schemas__RegisterIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Password"
+          },
+          "needs_accessible": {
+            "type": "boolean",
+            "title": "Needs Accessible",
+            "default": false
+          },
+          "consent": {
+            "type": "boolean",
+            "const": true,
+            "title": "Consent"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password",
+          "consent"
+        ],
+        "title": "RegisterIn"
+      },
+      "app__events_service__schemas__VerifyIn": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "title": "Email"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[0-9]{6}$",
+            "title": "Code"
+          },
+          "signup_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Signup Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "code",
+          "signup_id"
+        ],
+        "title": "VerifyIn"
+      },
       "app__events_service__schemas__WhatIfIn": {
         "properties": {
           "moves": {
@@ -7125,6 +7211,71 @@
           "moves"
         ],
         "title": "WhatIfIn"
+      },
+      "app__routers__owners__RegisterIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Password"
+          },
+          "consent": {
+            "type": "boolean",
+            "const": true,
+            "title": "Consent"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password",
+          "consent"
+        ],
+        "title": "RegisterIn"
+      },
+      "app__routers__owners__VerifyIn": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "title": "Email"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$",
+            "title": "Code"
+          },
+          "signup_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 10,
+            "title": "Signup Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "code",
+          "signup_id"
+        ],
+        "title": "VerifyIn"
       },
       "app__routers__staff__ExactCheckIn": {
         "properties": {
