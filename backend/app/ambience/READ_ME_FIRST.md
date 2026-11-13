@@ -39,6 +39,21 @@ light.py (spec 7.3, 7.4) decides direct sun and table light:
   > shade (outdoors under an awning) > daylight (within 3 m of a window)
   > interior. Distances are edge to edge (table footprint to window).
 
+table.py (spec 7.5) gives table_ambience(room, table, lat, lng, start, end):
+the stay is read in 15-minute steps [start, end). It returns the light at the
+start, sun_minutes, sun_until / sun_from (when the sun leaves or arrives),
+sunset_at (only when the table can see the sunset: a 200-340 degree window
+within 3 m, or outdoors) or else dark_at, the view of the nearest window within
+2 m (night text after dark), busy things within 3 m ("near"), "quiet" (no bar,
+kitchen, toilets, stage, TV or main entrance within 5 m), the features used by
+preferences and filters (sun = 30+ minutes, shade = none by day, view, quiet,
+away_from_wc, sunset) and up to three sentences from phrases.py, in the order
+light, view, near. seat_facing gives "Facing / Back to / Side-on to the window"
+for a chosen chair, or None when no window is within 3 m.
+
+Why is sunset_at stricter than dark_at? "Sunset from your seat" is a promise
+about the view; "it gets dark" is only about the clock.
+
 Why can the owner's hours not create sun? The rule only narrows what the
 geometry allows; it never overrides "the sun is behind the building".
 
