@@ -9,6 +9,7 @@ import type { BookingView } from "../../api/restaurant";
 import { Button, Dialog, EmptyState, ErrorState, PageShell, Skeleton, useToast } from "../../design/components";
 import { BookingSummary } from "./BookingSummary";
 import { ChangeBookingForm } from "./ChangeBookingForm";
+import { ChangeSeat } from "./ChangeSeat";
 import { errorMessage, formatDate } from "./format";
 import { useLoad } from "./useLoad";
 import "./restaurant.css";
@@ -66,6 +67,14 @@ function ManageBooking({ token, booking, onUpdate }: { token: string; booking: B
       {isEditable(booking) ? (
         <>
           <ChangeBookingForm token={token} booking={booking} onChanged={changed} />
+          <ChangeSeat
+            token={token}
+            booking={booking}
+            onChanged={(next) => {
+              update(next);
+              toast.show(next.seat ? `Seat ${next.seat.label} chosen.` : "Seat choice removed.", "success");
+            }}
+          />
           <CancelSection token={token} booking={booking} onCancelled={update} />
         </>
       ) : (

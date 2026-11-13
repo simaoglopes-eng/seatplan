@@ -36,6 +36,8 @@ export interface ServiceSummary {
 /** The restaurant as the booking page uses it. */
 export interface RestaurantInfo {
   public_id: string;
+  /** The public page's address; the booking page forwards there. Null or missing for a restaurant without one. */
+  slug?: string | null;
   name: string;
   timezone: string;
   max_party: number;
@@ -157,6 +159,8 @@ export interface BookingView {
   party_size: number;
   name: string;
   table_labels: string[];
+  /** The tables of the booking; the chair can be picked among their chairs. */
+  table_ids?: number[];
   status: BookingStatus;
   needs_accessible: boolean;
   high_chairs: number;
@@ -393,6 +397,7 @@ export interface ServerSchedule {
 /** GET /r/{vid}. */
 export interface ServerRestaurant {
   public_id: string;
+  slug?: string | null;
   name: string;
   timezone: string;
   max_party: number;
@@ -512,6 +517,7 @@ export interface ServerDashboard {
 export function toRestaurantInfo(server: ServerRestaurant): RestaurantInfo {
   return {
     public_id: server.public_id,
+    slug: server.slug ?? null,
     name: server.name,
     timezone: server.timezone,
     max_party: server.max_party,
@@ -549,6 +555,7 @@ export function toBookingView(server: ServerBooking): BookingView {
     party_size: server.party_size,
     name: server.name,
     table_labels: server.tables,
+    table_ids: server.table_ids ?? [],
     status: server.status,
     needs_accessible: server.needs_accessible,
     high_chairs: server.high_chairs,
@@ -703,6 +710,11 @@ export async function getBooking(token: string): Promise<BookingView> {
 
 export async function changeBooking(token: string, change: BookingChange): Promise<BookingView> {
   return toBookingView(await api.patch<ServerBooking>(manage(token), change));
+}
+
+/** Another chair at the booking's own tables, or none (null). Sent on its own, never with a time change. */
+export async function changeSeat(token: string, seatId: number | null): Promise<BookingView> {
+  return toBookingView(await api.patch<ServerBooking>(manage(token), { seat_id: seatId }));
 }
 
 export async function cancelBooking(token: string): Promise<BookingView> {

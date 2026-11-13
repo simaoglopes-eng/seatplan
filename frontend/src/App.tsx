@@ -24,6 +24,7 @@ import NewRestaurantWizard from "./pages/owner/NewRestaurantWizard";
 import ProfilePage from "./pages/owner/ProfilePage";
 import PhotoEditorPage from "./pages/owner/PhotoEditor";
 import BookingPage from "./pages/restaurant/BookingPage";
+import RestaurantPage from "./pages/restaurant-public/RestaurantPage";
 import ManageBookingPage from "./pages/restaurant/ManageBookingPage";
 import StaffPage from "./pages/restaurant/StaffPage";
 import HoursPage from "./pages/owner/HoursPage";
@@ -63,6 +64,7 @@ export default function App() {
       <Route path="/my/reset" element={<ResetPage />} />
       <Route path="/my/:eventId" element={<MySeatPage />} />
       {/* Restaurants: public booking, manage-or-cancel link, staff floor */}
+      <Route path="/restaurants/:slug" element={<RestaurantPage />} />
       <Route path="/r/:venueId" element={<BookingPage />} />
       <Route path="/b/:token" element={<ManageBookingPage />} />
       <Route path="/staff/:venueId" element={<StaffPage />} />

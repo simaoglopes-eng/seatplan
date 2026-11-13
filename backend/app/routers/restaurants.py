@@ -107,6 +107,8 @@ def restaurant(venue_public_id: str, request: Request, session: db.SessionDep) -
     venue = load_published(session, venue_public_id)
     return {
         "public_id": venue.public_id,
+        # Where the public page lives; the booking page forwards there (spec 4.1).
+        "slug": venue.slug,
         "name": venue.name,
         "timezone": venue.timezone,
         # The biggest party a table (or joined tables) can take and the covers

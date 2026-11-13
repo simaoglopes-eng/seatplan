@@ -392,3 +392,10 @@ def test_a_published_restaurant_without_a_slug_has_no_public_page_so_it_is_not_l
     row.slug = None
     session.commit()
     assert names(search(client)) == []
+
+
+def test_the_booking_page_data_names_the_public_page_it_forwards_to(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    row = open_restaurant(session, organiser, "forward-house")
+    assert client.get(f"/api/r/{row.public_id}").json()["slug"] == "forward-house"

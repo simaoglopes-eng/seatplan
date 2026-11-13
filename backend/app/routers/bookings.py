@@ -41,6 +41,8 @@ class ChangeIn(Strict):
     date: dt.date | None = None
     time: dt.time | None = None
     party_size: int | None = Field(default=None, ge=1, le=MAX_ONLINE_PARTY)
+    # The chair wished for (spec 9.4); null takes the wish away. Sent on its own.
+    seat_id: int | None = Field(default=None, ge=1)
 
 
 class WaitlistIn(Strict):
@@ -85,6 +87,11 @@ def change_booking(
     _limit(session, request, "manage", MANAGE_LIMIT)
     booking = booking_rows.load_by_token(session, manage_token)
     venue = _venue_of(session, booking.venue_id)
+    if "seat_id" in body.model_fields_set:
+        if body.date or body.time or body.party_size:
+            raise ApiError(422, "validation", "Change the seat on its own, not with the time.")
+        manage_flow.change_seat(session, venue, booking, body.seat_id)
+        return booking_rows.describe(session, venue, booking, with_phrase=True)
     if body.party_size is not None:
         check_party_size(session, venue, body.party_size)
     local_start = booking.start_at.astimezone(venue_zone(venue)).time()

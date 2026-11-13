@@ -424,6 +424,12 @@ GET /api/restaurants/{slug} is the public page: the card's fields plus descripti
 timezone, rooms_summary, photos [{url, alt, is_cover}], max_party, schedule, book_url ("/r/<public_id>") and maps_url.
 A draft answers 404 to everyone except its own organiser, who gets it with `preview: true`.
 
+GET /api/r/{vid} also carries `slug` (null for a restaurant without a public page); the frontend forwards /r/<id> to
+/restaurants/<slug> when there is one, keeping ?date=&time=&party=. PATCH /api/b/{token} accepts `seat_id` (a chair at the
+booking's own tables, or null to take the wish away) on its own: with date, time or party_size it is 422. A chair at
+another table or a blocked one is 422; a booking that can no longer change is 409. The booking, its tables and its
+emails do not change (the chair is only a wish, spec 9.4).
+
 Owner photos use JSON {kind, opening_key?, content_type, data_base64, alt_text}.
 POST /owner/restaurants/{vid}/photos returns metadata including id/public_id,
 url, actual content_type, width/height, opening_id, position and is_cover.

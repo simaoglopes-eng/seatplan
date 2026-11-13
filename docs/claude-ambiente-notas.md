@@ -367,3 +367,13 @@ ligações no painel do dono; testes unitários (10) e e2e owner-publish.spec.ts
 - `available=true` means a free seating within 60 minutes of the time asked; `next_times` are the 3 nearest non-full seatings.
 - The public page is `GET /api/restaurants/{slug}`; a draft shows only to its own organiser (`preview: true`), 404 otherwise.
 - Shares the diner read limit (`r-read:<ip>` bucket) with `/r/*`.
+
+## Tasks 26, 29, 33
+- Task 26: `/` is the discovery page, `/demo` the old home. The map is a second component (`maps/ResultsMap.tsx`), not the
+  owner's location picker. "Choose a city" is always on the page unless the browser gave a location (simpler than hiding it
+  until a refusal; same result for the diner). Restaurants published without a slug (old demo data) are not listed.
+- Task 29: `/r/:id` forwards to `/restaurants/:slug` only when the restaurant has a slug, so the demo restaurant (no slug yet)
+  and every existing booking e2e keep using `/r/`. The linked time is checked once with the slots before skipping to the tables.
+- Task 33: seat changes travel alone in PATCH /b/{token}; combining them with a time change is 422 on purpose (a failed
+  table move would otherwise leave the chair half changed).
+- The demo restaurant (Casa Lumen) has no slug, location or cuisines, so it is not on the discovery page yet: task 36 seeds that.

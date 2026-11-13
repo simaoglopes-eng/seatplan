@@ -282,3 +282,63 @@ def test_unknown_inactive_foreign_or_malformed_tables_are_refused(
     assert client.get(url, params={"table_ids": "abc"}).status_code == 422
     assert client.get(url, params={"table_ids": ""}).status_code == 422
     assert client.get(url).status_code == 422
+
+
+# ---------------------------------------------------------------- changing the chair later
+
+
+def test_the_diner_can_change_and_remove_the_chair_from_the_manage_link(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    place = make_restaurant(session, organiser)
+    first, second = add_seats(session, place, "T1")
+    _, answer = booked(client, place, future_day(), 2, first, table_id=place.table["T1"])
+    token = answer.json()["manage_token"]
+    moved = client.patch(f"/api/b/{token}", json={"seat_id": second})
+    assert moved.status_code == 200, moved.text
+    assert moved.json()["seat"]["id"] == second and "phrase" in moved.json()["seat"]
+    assert client.get(f"/api/b/{token}").json()["seat"]["id"] == second
+    cleared = client.patch(f"/api/b/{token}", json={"seat_id": None})
+    assert cleared.status_code == 200 and cleared.json()["seat"] is None
+    stored = session.query(Booking).filter_by(venue_id=place.venue_id).one()
+    session.refresh(stored)
+    assert stored.chosen_seat_id is None and stored.table_choice == "chosen"
+
+
+def test_a_chair_at_another_table_or_a_blocked_one_is_refused_and_nothing_changes(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    place = make_restaurant(session, organiser)
+    own, blocked = add_seats(session, place, "T1")
+    (other,) = add_seats(session, place, "T2", count=1)
+    session.get(Seat, blocked).is_blocked = True  # type: ignore[union-attr]
+    session.commit()
+    _, answer = booked(client, place, future_day(), 2, own, table_id=place.table["T1"])
+    token = answer.json()["manage_token"]
+    for bad in (other, blocked, 999_999):
+        refused = client.patch(f"/api/b/{token}", json={"seat_id": bad})
+        assert refused.status_code == 422, refused.text
+    assert client.get(f"/api/b/{token}").json()["seat"]["id"] == own
+
+
+def test_the_seat_is_changed_on_its_own_not_with_the_time(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    place = make_restaurant(session, organiser)
+    first, second = add_seats(session, place, "T1")
+    _, answer = booked(client, place, future_day(), 2, first, table_id=place.table["T1"])
+    token = answer.json()["manage_token"]
+    both = client.patch(f"/api/b/{token}", json={"seat_id": second, "time": "19:30"})
+    assert both.status_code == 422
+    assert client.get(f"/api/b/{token}").json()["time"] == "19:00"
+
+
+def test_a_cancelled_booking_cannot_change_its_chair(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    place = make_restaurant(session, organiser)
+    first, second = add_seats(session, place, "T1")
+    _, answer = booked(client, place, future_day(), 2, first, table_id=place.table["T1"])
+    token = answer.json()["manage_token"]
+    assert client.delete(f"/api/b/{token}").status_code == 200
+    assert client.patch(f"/api/b/{token}", json={"seat_id": second}).status_code == 409

@@ -57,3 +57,7 @@ diner under that limit.
 table?** The server never moves a diner's own choice or a seated party; the
 Optimise tab says so, shows every move before anything changes, and applies
 only the exact plan that was shown (the `plan_id`).
+
+SeatPicker.tsx is the chair map and list used by ChooseSeat (while booking) and ChangeSeat (on /b/:token, afterwards;
+sends `PATCH /b/{token} {seat_id}` on its own). BookingEmbed (BookingPage.tsx) is the booking flow without its page frame,
+used by the public restaurant page; useLinkedTime.ts starts it from a ?date=&time=&party= link.

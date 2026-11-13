@@ -5,11 +5,9 @@
 // loaded, the step quietly steps aside and the booking goes on without one.
 import { useEffect, useState } from "react";
 import { getTableSeats } from "../../api/restaurant";
-import type { TableSeats } from "../../api/restaurant";
-import type { MapSeat, MapTable } from "../../api/types";
 import { Button, Skeleton } from "../../design/components";
-import { SeatMap } from "../../seatmap/SeatMap";
 import { HoldCountdown } from "./HoldCountdown";
+import { SeatPicker } from "./SeatPicker";
 import { StepHeading } from "./StepHeading";
 import type { Hold } from "./StepTable";
 import { useLoad } from "./useLoad";
@@ -25,15 +23,7 @@ interface ChooseSeatProps {
   onBackToMap: () => void;
 }
 
-/** "Seat 2 · Facing the window", with "(not available)" for a chair that cannot be chosen. */
-export function seatLabel(seat: TableSeats["seats"][number]): string {
-  const base = seat.phrase ? `Seat ${seat.label} · ${seat.phrase}` : `Seat ${seat.label}`;
-  return seat.state === "blocked" ? `${base} (not available)` : base;
-}
-
-function asMapSeats(seats: TableSeats["seats"]): MapSeat[] {
-  return seats.map((s) => ({ id: s.id, table_id: s.table_id, label: s.label, x: s.x, y: s.y, state: s.state, accessible: s.accessible }));
-}
+export { seatLabel } from "./SeatPicker";
 
 export function ChooseSeat({ venueId, hold, secondsLeft, seatId, onDone, onBackToMap }: ChooseSeatProps) {
   const tableIds = hold.tableIds ?? [hold.tableId];
@@ -48,8 +38,6 @@ export function ChooseSeat({ venueId, hold, secondsLeft, seatId, onDone, onBackT
   }, [nothingToChoose]);
 
   if (!data || nothingToChoose) return <Skeleton lines={4} label="Loading the chairs" />;
-  const tables: MapTable[] = data.tables.map((t) => ({ ...t, shape: t.shape as MapTable["shape"], state: "free" }));
-  const seats = asMapSeats(data.seats);
   const chosen = data.seats.find((s) => s.id === picked) ?? null;
 
   return (
@@ -59,33 +47,7 @@ export function ChooseSeat({ venueId, hold, secondsLeft, seatId, onDone, onBackT
         Table {hold.tableLabel} is yours. This only tells the restaurant which chair you would like; it does not change your booking.
       </p>
       {secondsLeft !== null && <HoldCountdown tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />}
-      <div className="rb-map-layout">
-        <SeatMap
-          label={`Chairs at table ${hold.tableLabel}`}
-          mode="seats"
-          tables={tables}
-          seats={seats}
-          selectable={(id) => seats.find((s) => s.id === id)?.state === "free"}
-          selectedId={picked}
-          onSelect={setPicked}
-        />
-        <div className="rb-map-side">
-          <div role="radiogroup" aria-label="Chair at your table" className="rb-card rb-seat-choices">
-            {data.seats.map((seat) => (
-              <label key={seat.id} className="rb-seat-choice">
-                <input
-                  type="radio"
-                  name="chair"
-                  checked={picked === seat.id}
-                  disabled={seat.state === "blocked"}
-                  onChange={() => setPicked(seat.id)}
-                />
-                <span>{seatLabel(seat)}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      </div>
+      <SeatPicker label={`Chairs at table ${hold.tableLabel}`} data={data} picked={picked} onPick={setPicked} />
       <div className="rb-actions rb-actions-sticky">
         <Button variant="secondary" onClick={onBackToMap}>
           Back to the map

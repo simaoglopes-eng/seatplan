@@ -17,6 +17,8 @@ const NO_CONTACT: ContactDetails = { name: "", email: "", phone: "", notes: "" }
 export interface LinkAnswers {
   date: string | null;
   party: string | null;
+  /** From the discovery page: a free time the diner already picked, "20:15". */
+  time?: string | null;
 }
 
 /** The first answers: from the link when they make sense, otherwise today and 2 people. */

@@ -1,0 +1,27 @@
+/* Public restaurant page. Tokens only. */
+.rp { display: flex; flex-direction: column; gap: var(--space-5); }
+.rp-preview { margin: 0; padding: var(--space-3) var(--space-4); background: var(--c-accent-soft); color: var(--c-accent); border: 1px solid var(--c-accent); border-radius: var(--radius-md); font-weight: var(--fw-bold); }
+.rp-head h1 { margin-bottom: var(--space-2); }
+.rp-line { margin: 0 0 var(--space-2); color: var(--c-text-muted); }
+.rp-columns { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--space-6); align-items: start; }
+@media (max-width: 60rem) { .rp-columns { grid-template-columns: minmax(0, 1fr); } }
+.rp-hours { border-collapse: collapse; width: 100%; max-width: 28rem; }
+.rp-hours th, .rp-hours td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--c-border); font-weight: var(--fw-regular); }
+.rp-hours th { font-weight: var(--fw-bold); white-space: nowrap; }
+.rp-closed { margin: var(--space-3) 0 0; padding-left: var(--space-5); color: var(--c-text-muted); }
+.rp-map { height: 16rem; margin-bottom: var(--space-3); }
+.rp-contact { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.rp-contact a, .rp aside a { display: inline-flex; align-items: center; min-height: var(--touch-target); }
+.rp-book { border-top: 1px solid var(--c-border); padding-top: var(--space-5); scroll-margin-top: var(--space-8); }
+
+.rp-gallery { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--space-3); }
+.rp-gallery-empty { display: block; padding: var(--space-5); background: var(--c-surface-sunk); border-radius: var(--radius-lg); }
+.rp-cover { padding: 0; border: 0; background: var(--c-surface-sunk); border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 16 / 9; cursor: pointer; }
+.rp-cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.rp-thumbs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); align-content: start; }
+.rp-thumbs button { display: block; width: 100%; padding: 0; border: 0; border-radius: var(--radius-md); overflow: hidden; aspect-ratio: 16 / 9; cursor: pointer; background: var(--c-surface-sunk); }
+.rp-thumbs img { display: block; width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 40rem) { .rp-gallery { grid-template-columns: minmax(0, 1fr); } }
+.rp-lightbox { margin: 0; }
+.rp-lightbox img { display: block; max-width: 100%; max-height: 70vh; margin-inline: auto; }
+.rp-lightbox figcaption { margin-top: var(--space-2); text-align: center; color: var(--c-text-muted); }

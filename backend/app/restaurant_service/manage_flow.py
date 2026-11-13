@@ -109,6 +109,30 @@ def change_booking(
     commit_or_seat_taken(session)
 
 
+def change_seat(session: Session, venue: Venue, booking: Booking, seat_id: int | None) -> None:
+    """Pick another chair at the booking's own tables, or none. The booking itself does not move.
+
+    The chair is only a wish (spec 9.4), so there is nothing to hold or to conflict with.
+    """
+    check_changeable(venue, booking)
+    if seat_id is not None:
+        chosen_seat.check_chosen_seat(
+            session, venue, seat_id, occupancy.tables_of(session, booking)
+        )
+    booking.chosen_seat_id = seat_id
+    record_change(
+        session,
+        venue,
+        [booking.date],
+        actor="diner",
+        action="booking.seat",
+        entity="booking",
+        entity_id=booking.public_id,
+        detail={"seat_id": seat_id},
+    )
+    session.commit()
+
+
 def cancel_booking(
     session: Session, venue: Venue, booking: Booking, actor: str, token: str = ""
 ) -> WaitlistEntry | None:

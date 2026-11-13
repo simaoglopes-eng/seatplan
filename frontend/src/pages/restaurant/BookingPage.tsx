@@ -3,7 +3,7 @@
 // Five steps, one screen each: 1 date and party, 2 time, 3 table, 4 details,
 // 5 confirmation. This file only draws: the answers so far live in
 // useBookingFlow.ts, and each step lives in its own file.
-import { useParams, useSearchParams } from "react-router-dom";
+import { Navigate, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { getRestaurant } from "../../api/restaurant";
 import type { RestaurantInfo } from "../../api/restaurant";
@@ -16,6 +16,7 @@ import { StepParty } from "./StepParty";
 import { StepTable } from "./StepTable";
 import { StepTime } from "./StepTime";
 import { STEP, useBookingFlow } from "./useBookingFlow";
+import { useLinkedTime } from "./useLinkedTime";
 import { useLoad } from "./useLoad";
 import "./restaurant.css";
 
@@ -31,11 +32,18 @@ export default function BookingPage() {
         <h1 className="rb-title">{title}</h1>
         {state.status === "loading" && <Skeleton lines={5} label="Loading the restaurant" />}
         {state.status === "error" && <LoadError error={state.error} onRetry={() => reload()} />}
-        {state.status === "ready" && state.data.max_party < 1 && <NotBookable name={state.data.name} />}
-        {state.status === "ready" && state.data.max_party >= 1 && <BookingFlow venueId={venueId} info={state.data} />}
+        {state.status === "ready" && state.data.slug && <ForwardToPublicPage slug={state.data.slug} />}
+        {state.status === "ready" && !state.data.slug && state.data.max_party < 1 && <NotBookable name={state.data.name} />}
+        {state.status === "ready" && !state.data.slug && state.data.max_party >= 1 && <BookingFlow venueId={venueId} info={state.data} />}
       </div>
     </PageShell>
   );
+}
+
+/** An old /r/<id> link of a restaurant with a public page goes there, keeping ?date=&time=&party=. */
+function ForwardToPublicPage({ slug }: { slug: string }) {
+  const { search } = useLocation();
+  return <Navigate to={`/restaurants/${encodeURIComponent(slug)}${search}`} replace />;
 }
 
 function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
@@ -47,6 +55,19 @@ function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) 
     );
   }
   return <ErrorState title="We could not open the booking page" message={errorMessage(error)} onRetry={onRetry} />;
+}
+
+/** The whole booking flow for one restaurant, loading it first. The public page embeds this. */
+export function BookingEmbed({ venueId }: { venueId: string }) {
+  const { state, reload } = useLoad(() => getRestaurant(venueId), venueId);
+  return (
+    <>
+      {state.status === "loading" && <Skeleton lines={5} label="Loading the booking form" />}
+      {state.status === "error" && <LoadError error={state.error} onRetry={() => reload()} />}
+      {state.status === "ready" && state.data.max_party < 1 && <NotBookable name={state.data.name} />}
+      {state.status === "ready" && state.data.max_party >= 1 && <BookingFlow venueId={venueId} info={state.data} />}
+    </>
+  );
 }
 
 /** max_party is 0 when no table or no service is set up yet: a party-size list would be empty. */
@@ -61,10 +82,14 @@ function NotBookable({ name }: { name: string }) {
 function BookingFlow({ venueId, info }: { venueId: string; info: RestaurantInfo }) {
   // A waitlist offer email links here with ?date=&time=&party= filled in.
   const [params] = useSearchParams();
-  const flow = useBookingFlow(info, { date: params.get("date"), party: params.get("party") });
+  const link = { date: params.get("date"), party: params.get("party"), time: params.get("time") };
+  const flow = useBookingFlow(info, link);
+  const linked = useLinkedTime(venueId, link, flow);
   const { step, needs, time, hold } = flow;
+  if (linked.checking) return <Skeleton lines={3} label="Checking that time" />;
   return (
     <>
+      {linked.notice && step === STEP.time && <p role="status" className="rb-muted">{linked.notice}</p>}
       <Stepper steps={STEPS} current={step} label="Booking steps" />
       {step === STEP.party && <StepParty info={info} needs={needs} onChange={flow.setNeeds} onNext={() => flow.go(STEP.time)} focusOnMount={false} />}
       {step === STEP.time && <StepTime venueId={venueId} needs={needs} onPick={flow.pickTime} onBack={() => flow.go(STEP.party)} />}
