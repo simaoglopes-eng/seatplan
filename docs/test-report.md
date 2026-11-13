@@ -1,11 +1,86 @@
 # Test report
 
 What each layer of tests checks, how to run it, and what we saw when we ran
-it. Every result line below was copied from a run on 2026-11-10 on macOS
+it. The historical sections below describe runs on 2026-11-10 on macOS
 (Python 3.12.13, Node 24.17.0, Playwright 1.64.1 with Chrome Headless Shell
 156.0.8078.4). CI uses Node 22 and Ubuntu.
 
 Run every command from the repository root unless it starts with `cd`.
+
+## Restaurant integration — Windows, 2026-11-13
+
+Branch `martim/restaurantes-impl`, Claude integration `31cc829`; no push/PR or
+deployment. The merge baseline passed Ruff, 821 pytest, 350 Vitest, typecheck,
+build, 86 contrast checks and 54 Playwright tests. Task 37 added a strict
+60-table/120-chair/two-room HTTP benchmark and room/light/chair/concurrent-hold
+journeys. Task 38 added owner publication boundaries; its discovery portion
+remains blocked because discovery/public-slug pages are not implemented.
+
+Latest fully green pre-review point `4bb515a`: 822 pytest (3 warnings,
+144.58 s), 350 Vitest in 48 files, typecheck, build 333 ms, contrast 86/0,
+59 Playwright in 1.2 min. Cold/warm map response samples were
+229.75/218.65/141.83 ms, all below 300 ms.
+
+The final review adds HTTP regressions for opening clocks/references/spans,
+clockwise normalization with curved windows, cross-room groups, invalid
+published edits and preserved manage links. Browser/server area boundaries
+match. Frontend tests cover damaged local storage and the explanation of an
+automatic return to draft. Full mobile editor actions now use real taps.
+Six directed owner/editor checks passed in 15.7 s; 52 directed backend checks
+passed in 11.68 s. Final suite results are recorded in the
+[night report](superpowers/plans/relatorio-noite.md).
+
+Final sequential run after recovery: **837 pytest passed**, 3 warnings in
+176.92 s; Ruff check/format (203 files), typecheck, **355 Vitest / 48 files**,
+build 364 ms, **86 contrast checks / 0 failures**, **60 Playwright passed
+(1.2m)** on ports 18765/14317 with per-process traces. Map response samples:
+236.17/222.07/158.32 ms, each below 300 ms. No isolated rerun was needed.
+Protected-path guard and diff check passed. OpenAPI export is stable across
+two runs: 93 paths, 108 operations, 62 schemas.
+
+A first full review run was **not accepted**: 836 pytest passed but the map
+budget failed under load (670/473/323 ms); Playwright had 53 passed and seven
+trace-file ENOENT failures in its globally shared output folder. The patch was
+preserved, branch verified, `git reset --hard 4bb515a` performed as authorized,
+and the report restored. Output is now per Playwright process; the next full
+verification runs backend and frontend sequentially with separate browser
+ports. No assertions, tests or the 300 ms budget were relaxed.
+
+The benchmark uses a fresh API process against the real fixture database,
+with normal GC and no warmup/retry; its three responses must all fit the budget
+and contain all 60 tables, 120 chairs, two rooms and ambience. Earlier probes
+identified 237–296 ms GC pauses scanning prior pytest object graphs, which
+motivated process isolation. This local result does not measure deployment
+cold starts, network latency or discovery.
+
+Actual Windows variants:
+
+```powershell
+cd backend
+..\.venv\Scripts\ruff.exe check .
+..\.venv\Scripts\ruff.exe format --check .
+$seatplanTestTemp=Join-Path $env:TEMP ('seatplan-check-'+[guid]::NewGuid().ToString('N'))
+..\.venv\Scripts\python.exe -m pytest -q -o addopts= -p no:cacheprovider --basetemp $seatplanTestTemp
+cd ..\frontend
+npm run typecheck
+npm test
+npm run build
+npm run contrast
+$env:E2E_PYTHON=(Resolve-Path '..\.venv\Scripts\python.exe').Path
+$env:E2E_API_PORT='18765'
+$env:E2E_WEB_PORT='14317'
+npm run e2e
+cd ..
+.\.venv\Scripts\python.exe scripts/check_forbidden_paths.py --base main
+.\.venv\Scripts\python.exe scripts/export_openapi.py
+```
+
+Only the two tests explicitly authorized by Martim may be retried alone to
+accept a full-suite result: concurrent guest verification and the redteam S1
+calendar-minute login limit. PostgreSQL, physical phone sensors, real tile
+delivery under production headers and actual new restaurant email delivery
+were not verified. See the [acceptance matrix](restaurant-final-review.md)
+for missing functionality; a green suite does not mean the whole spec is done.
 
 ## The layers
 

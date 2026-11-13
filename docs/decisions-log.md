@@ -809,3 +809,47 @@ identified 237–296 ms GC pauses scanning prior tests' object graphs; isolating
 the API process measures the requested operation without that test-order
 artifact. No warmup, retry, GC disabling, response mocking or budget increase.
 This is a local response budget, not a production cold-start/network guarantee.
+
+## 2026-11-13 — final integration review corrections
+
+28. Opening clocks are bounded HH:MM; side references, wall spans, overlaps,
+glass coverage, main-door flags and view tags are checked before upsert. Bad
+requests return 422 and roll back the version. Counterclockwise outlines are
+normalized with curve signs and opening side/arc offsets remapped. Both room
+validators enforce inclusive 4–5000 m²; invalid geometry remains saveable as
+draft but prevents publication.
+
+29. The service adapter namespaces combine-group names with room_id, including
+the implicit room. The database/API labels stay unchanged and the reserved
+pure optimiser files are untouched. This blocks joining physically separate
+rooms in recommendations, maximum-party calculation and explicit holds.
+
+30. After first explicit publication (`published_at` present), an invalid
+profile/room/schedule edit atomically saves as draft. Existing bookings and
+manage links are preserved; publish must pass the checklist again. The editor
+and profile save explain the change. Legacy default-published venues have no
+complete new profile and keep compatibility until explicit publication. A slug
+stays fixed after first publication even if the venue is later draft. This is
+the conservative implementation of foundation decision 8, with no separate
+public snapshot or expensive revalidation on every diner read.
+
+31. The old half-of-tables hold cap rounded one table down to zero, making
+every hold at a one-table restaurant return 429. The allowance is now at least
+one; larger venues retain the original cap rounded down. Existing six-table
+cap tests remain unchanged. Actual one-table hold→booking→manage flows verify
+the correction. Per-client/rate limits and unique slot constraints remain.
+
+32. Local recovery ignores structurally damaged stored drafts instead of
+crashing the editor. The current storage key (`seatplan.room-draft.<venue>`)
+and 400 ms debounce are retained for compatibility with Claude's implementation
+and existing recovery tests. They differ from the spec's camel-case key/2 s
+debounce; the independent 30 s checkpoint remains pending. No failing test was
+removed, skipped or relaxed to accept the integration.
+
+33. Browser traces use a separate top-level temporary directory per Playwright
+process. A global output directory can be cleaned by another worktree while
+tests are still writing traces, producing ENOENT even after successful business
+assertions. Final checks also use distinct API/web ports and run backend then
+frontend, preserving the strict map-latency assertion. The first failed final
+run triggered the user-authorized recovery to 4bb515a; the patch and diagnostics
+were retained and the report restored before the next verification.

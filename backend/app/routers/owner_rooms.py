@@ -15,6 +15,7 @@ from app.security import CurrentOrganiser
 router = APIRouter(prefix="/owner/restaurants", tags=["owner rooms"])
 Coordinate = Annotated[float, Field(ge=-10000, le=10000)]
 Size = Annotated[float, Field(gt=0, le=10000)]
+SunClock = Annotated[str, Field(max_length=5, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")]
 
 
 class Strict(BaseModel):
@@ -100,8 +101,8 @@ class OpeningIn(Item):
     view_tags: list[str] = Field(default_factory=list, max_length=3)
     night_view_text: PlainText = Field(default="", max_length=80)
     sun_rule: Literal["auto", "never", "between"] = "auto"
-    sun_from: str | None = None
-    sun_until: str | None = None
+    sun_from: SunClock | None = None
+    sun_until: SunClock | None = None
 
 
 class RoomIn(Item):

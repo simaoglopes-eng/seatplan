@@ -15,6 +15,9 @@ organiser, a diner and a member of staff would use it.
 
 Then the tests run one at a time. Results and traces go to the system
 temporary folder, never into the repository.
+Each Playwright process now has its own top-level output folder
+`seatplan-e2e-results-<pid>` so another worktree cannot delete active traces.
+Use distinct E2E_API_PORT/E2E_WEB_PORT when running alongside another worktree.
 
 **Files.**
 

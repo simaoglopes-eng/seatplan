@@ -20,6 +20,56 @@ without creating rooms. Photos store bounded bytes and an optional opening
 reference. The diagram below records the frozen 2026-11-10 baseline. These
 additions follow specification section 11.
 
+## Restaurant extension in use (2026-11-13)
+
+The original diagram below is retained as historical context. The added
+relationships are:
+
+```mermaid
+erDiagram
+    venues ||--o{ rooms : contains
+    rooms ||--o{ room_openings : has
+    rooms ||--o{ room_fixtures : contains
+    rooms o|--o{ tables : locates
+    rooms o|--o{ seats : locates
+    rooms o|--o{ zones : locates
+    venues ||--o{ venue_photos : owns
+    room_openings o|--o{ venue_photos : view_photo
+    seats o|--o{ bookings : indicative_chair
+```
+
+`venues` holds the nullable unique slug, profile/location, `status`,
+`published_at`, derived `features` and `layout_version`. Owner creation sets
+draft explicitly; legacy rows default to published. `rooms.outline` is JSON
+with clockwise screen points and signed outgoing sagitta; openings reference
+an outline side by index and position by centimetres along its arc. Canonical
+read keys are r/o/f/z/t/s followed by the row ID; save replies retain incoming
+browser keys so selections remain stable.
+
+Room writes compare-and-increment `layout_version` atomically, upsert stable
+IDs, delete missing children safely and rebuild seat neighbours in one
+transaction. Booking slots, chosen seats, booking audit history and live holds
+protect table deletion; legacy bookings with no surviving table association
+conservatively protect all tables. Combine-group names remain unchanged in the
+database and API; the optimiser adapter namespaces them by room.
+
+`bookings.prefs` stores normalized wishes; `chosen_seat_id` is indicative and
+does not introduce a second reservation/hold. Moving assigned tables clears an
+invalid chair choice. The manage link continues to resolve an existing booking
+when its venue is draft. An invalid edit after explicit publication changes
+status to draft in the same transaction, preserving the timestamp and stable
+slug; repairing and publishing again reopens new bookings.
+
+`venue_photos` stores at most 800000 decoded bytes per image, bounded to 1600 px,
+with at most ten gallery photos and one view photo per opening. Metadata reads
+defer bytes; draft image reads are authenticated/private. Deleting an opening
+removes its view photo first. Published immutable caches cannot be revoked.
+
+No new migration was needed for the final integration fixes. The frozen
+2026-11-13 pre-extension fixture and repeated-upgrade tests verify preservation
+of existing IDs and rows. PostgreSQL runs still require
+`SEATPLAN_TEST_POSTGRES`; final local verification used SQLite.
+
 ## How the diagram was made
 
 The diagram is not drawn by hand. It was printed by a small script that reads

@@ -17,7 +17,8 @@ const ci = Boolean(process.env.CI);
 
 export default defineConfig({
   testDir: "./e2e",
-  outputDir: join(tmpdir(), "seatplan-e2e-results"),
+  // Separate runs/worktrees must never remove another run's active traces.
+  outputDir: join(tmpdir(), `seatplan-e2e-results-${process.pid}`),
   fullyParallel: false,
   workers: 1,
   // A retry would hide a flaky test; we want to see it fail instead.

@@ -9,6 +9,7 @@ import type { AmbienceAnswer } from "./restaurant";
 export interface RoomsAnswer extends RoomLayout {
   version: number;
   problems: unknown[];
+  status?: "draft" | "published";
 }
 
 const url = (venueId: string): string => `/owner/restaurants/${encodeURIComponent(venueId)}/rooms`;

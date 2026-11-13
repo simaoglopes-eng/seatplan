@@ -37,27 +37,27 @@ test("an owner builds a room on a phone, saves, reloads and sees the same", asyn
   await page.getByLabel("Bulge (cm)").press("Tab");
 
   // North first, then two windows on two walls.
-  await page.getByRole("button", { name: "North", exact: true }).click();
+  await page.getByRole("button", { name: "North", exact: true }).tap();
   await page.getByLabel("North is at (degrees)").fill("200");
   await page.getByLabel("North is at (degrees)").press("Tab");
-  await page.getByRole("button", { name: "Walls", exact: true }).click();
-  await page.getByRole("button", { name: "Add window", exact: true }).click();
+  await page.getByRole("button", { name: "Walls", exact: true }).tap();
+  await page.getByRole("button", { name: "Add window", exact: true }).tap();
   await page.getByLabel("Wall for opening").selectOption("1");
-  await page.getByRole("button", { name: "Add window", exact: true }).click();
+  await page.getByRole("button", { name: "Add window", exact: true }).tap();
 
   // A bar and eight tables.
-  await page.getByRole("button", { name: "Fixed", exact: true }).click();
-  await page.getByRole("button", { name: "Place Bar", exact: true }).click();
-  await page.getByRole("button", { name: "Place selected in room", exact: true }).click();
-  await page.getByRole("button", { name: "Tables", exact: true }).click();
+  await page.getByRole("button", { name: "Fixed", exact: true }).tap();
+  await page.getByRole("button", { name: "Place Bar", exact: true }).tap();
+  await page.getByRole("button", { name: "Place selected in room", exact: true }).tap();
+  await page.getByRole("button", { name: "Tables", exact: true }).tap();
   for (let table = 0; table < 8; table++) {
-    await page.getByRole("button", { name: "Place Round table", exact: true }).click();
-    await page.getByRole("button", { name: "Place selected in room", exact: true }).click();
+    await page.getByRole("button", { name: "Place Round table", exact: true }).tap();
+    await page.getByRole("button", { name: "Place selected in room", exact: true }).tap();
   }
   await expect(page.getByText("Tables: 8")).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: /Unsaved|Saved/ })).toHaveText("Unsaved");
 
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).tap();
   await expect(page.getByRole("status").filter({ hasText: /Unsaved|Saved/ })).toHaveText("Saved");
 
   // Reload: the same room comes back from the server, with nothing left to save.
@@ -68,11 +68,11 @@ test("an owner builds a room on a phone, saves, reloads and sees the same", asyn
   await expect(page.getByRole("status").filter({ hasText: /Unsaved|Saved/ })).toHaveText("Saved");
   await page.getByLabel("Selected wall", { exact: true }).selectOption("2");
   await expect(page.getByLabel("Bulge (cm)")).toHaveValue("80");
-  await page.getByRole("button", { name: "North", exact: true }).click();
+  await page.getByRole("button", { name: "North", exact: true }).tap();
   await expect(page.getByText("North is at 200°", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Walls", exact: true }).click();
+  await page.getByRole("button", { name: "Walls", exact: true }).tap();
   await expect(page.getByLabel("Selected opening").locator("option")).toHaveCount(3); // "Choose an opening" and the two windows
-  await page.getByRole("button", { name: "Fixed", exact: true }).click();
+  await page.getByRole("button", { name: "Fixed", exact: true }).tap();
   await expect(page.getByLabel("Selected fixed element").locator("option")).toHaveCount(2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);

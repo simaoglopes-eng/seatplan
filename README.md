@@ -23,6 +23,14 @@ It is a university project (Introduction to Programming, Nova SBE). The design
 agreement between all modules is [`docs/CONTRACT.md`](docs/CONTRACT.md); every
 deviation from it is explained in [`docs/decisions-log.md`](docs/decisions-log.md).
 
+The restaurant platform branch adds owner accounts/profile/photos, a room
+editor, publication checks, sunlight/view descriptions, wishes and optional
+chair choice. This is still an integration in progress: discovery/public pages
+by slug, changing a chair through the manage page, and new email/demo wiring
+remain incomplete. The working booking route is `/r/:venueId`.
+See the [acceptance matrix and rehearsal](docs/restaurant-final-review.md) and
+[night report](docs/superpowers/plans/relatorio-noite.md) for verified scope.
+
 ## Quick start
 
 You need Python 3.12 and Node 22 (CI uses 22; development used 24).

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "./fixtures";
-import { preparedRestaurant } from "./restaurant-fixture";
+import { preparedRestaurant, publishRestaurant } from "./restaurant-fixture";
 
 for (const width of [1440, 390]) test(`owner publishes and preserves existing bookings after unpublish at ${width}px`, async ({ page, request }) => {
   await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
@@ -44,4 +44,22 @@ for (const width of [1440, 390]) test(`owner publishes and preserves existing bo
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: join(tmpdir(), `seatplan-38-existing-booking-${width}.png`), fullPage: true });
+});
+
+test("an invalid saved room explains why new bookings closed", async ({ page, request }) => {
+  const venue = await preparedRestaurant(request, "Edited published room");
+  await publishRestaurant(request, venue);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(token => sessionStorage.setItem("seatplan.session", token), venue.headers.Authorization.slice(7));
+  await page.goto(`/owner/${venue.id}/rooms`);
+  await page.getByRole("button", { name: "Tables", exact: true }).click();
+  await page.getByLabel("Selected table", { exact: true }).selectOption({ label: "River 1" });
+  await page.getByLabel("Object x (cm)").fill("5000");
+  await page.getByLabel("Object x (cm)").press("Tab");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByRole("alert").filter({ hasText: /saved as a draft.*new bookings/i })).toBeVisible();
+  expect((await request.get(`/api/r/${venue.id}`)).status()).toBe(404);
+  expect((await request.get(`/api/owner/restaurants/${venue.id}/profile`, { headers: venue.headers })).status()).toBe(200);
+  expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: join(tmpdir(), "seatplan-39-room-draft-390.png"), fullPage: true });
 });

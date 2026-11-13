@@ -141,6 +141,13 @@ an earlier visit is offered back ("Restore my changes" / "Discard my changes") a
 overwritten before that choice. A table with bookings cannot be deleted (409 with its name):
 the message points to "Available for booking" instead. Storage errors (private windows) only
 mean no local copy; the editor still works.
+Final review adds structural checks when reading local drafts: damaged stored
+JSON shapes are ignored so the saved server rooms can still open. A room save
+that moves a published restaurant to draft explains that new bookings are
+closed until the owner fixes the problems and publishes again. Area checks
+mirror the server's inclusive 4–5000 m² limits. Server winding normalization
+preserves opening positions and curves. The full phone persistence test now
+uses real tap actions with hasTouch/isMobile, not mouse clicks at a small width.
 
 ## Light tool (task 24)
 

@@ -65,6 +65,7 @@ export function validateRooms(rooms: Room[], forPublication = false): RoomProble
     const polygon = outline(room);
     const add = (code: ProblemCode, level: RoomProblem["level"], message: string, table_keys: string[], details: Partial<RoomProblem> = {}) => problems.push({ code, level, message, room_key: room.key, table_keys, ...details });
     if (!polygon) add("outline_invalid", "error", "The walls cross each other.", []);
+    else if (Math.abs(polygonArea(polygon)) < 40000 - EPS || Math.abs(polygonArea(polygon)) > 50000000 + EPS) add("outline_invalid", "error", "Use a room area between 4 and 5000 square metres.", []);
     const windows = room.openings.filter(o => o.kind === "window" || o.kind === "glass_wall");
     if (forPublication && windows.length && room.north_deg === null) add("no_north", "error", "Set north so we can work out the sun.", []);
     for (const opening of windows) if (!opening.view_text.trim()) add("window_no_view", "info", "Add what guests see from this window.", [], { opening_key: opening.key });
