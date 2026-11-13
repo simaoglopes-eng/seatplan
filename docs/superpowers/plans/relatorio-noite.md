@@ -17,6 +17,8 @@ repositório. Plano com 40 tarefas.
 | 4 — Sol | Feita | 7581213 | Posição e horas solares, fusos e casos polares |
 | 5 — Registo e isolamento | Feita | dca8703 | Código, consentimento, concorrência, staff apenas demo |
 | 6 — Área do dono | Feita | d4eefca | Formulários, cartões privados e destino do login |
+| 7 — Modelo do editor | Feita | 2587840 | Geometria TS e operações imutáveis |
+| 8 — Estrutura e formas | Feita | Commit desta entrada | Salas retangulares, em L e desenho livre |
 
 ## Verificações reais
 
@@ -158,3 +160,20 @@ cinco salas. Typecheck passou. Guia do módulo criado. Bateria completa passou
 com 622 passed, 3 warnings em 103,21 s no backend, Ruff check verde e formato
 com 171 ficheiros. Vitest com 215 passed em 25 ficheiros. Guard e diff check
 passaram. Commit identificado por feat: add immutable room model and browser geometry.
+
+## Tarefa 8 — feita
+
+Tarefa 7 concluída em 2587840. Estrutura do editor, salas, retângulo, L e
+desenho livre com grid de 50 cm, réguas e desfazer/refazer. O adaptador lê
+a planta antiga para uma Main room implícita, preservando ids. Gravação no
+servidor depende das tarefas 17–18 e está ainda indisponível nesta etapa.
+
+RED observado para os novos módulos e para nomes vazios/dimensões inválidas.
+Depois passaram nove testes do editor. Três Playwright passaram em 8,1 s
+com salas em L a 1440 e 390 px e desenho por toques. Capturas desktop e
+390x844 inspecionadas. Teste de largura confirma ausência de scroll lateral.
+Guias atualizados. Bateria completa com 622 passed, 3 warnings em 110,25 s
+no backend, Ruff verde e formato com 171 ficheiros. Typecheck passou,
+Vitest com 219 passed em 27 ficheiros, build em 130 ms, contraste com
+86 checks e 0 failures e Playwright com 29 passed em 29,6 s. Guard e
+diff check passaram. Commit identificado por feat: build room editor shell and initial shapes.

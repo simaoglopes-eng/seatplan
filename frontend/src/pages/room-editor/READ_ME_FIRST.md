@@ -19,3 +19,11 @@ Why two geometry implementations? Browser gestures and server validation need
 the same conventions. Known reference cases are tested in both languages.
 
 Run npm test -- src/pages/room-editor/geometry.test.ts and npm run typecheck.
+
+RoomEditorPage starts the room history and accessible properties. RoomCanvas
+uses the shared pan/zoom hook, centimetre grid and rulers. NewRoomDialog and
+shapeModel create rectangles, L-shaped rooms and freehand outlines. Every
+gesture for adding a corner also has x/y fields and a button. The legacyRoom
+adapter reads the existing flat restaurant layout into an implicit Main room
+without changing any database id. The later persistence tasks replace that
+bootstrap with the dedicated versioned room API.

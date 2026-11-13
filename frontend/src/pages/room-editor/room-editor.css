@@ -1,0 +1,39 @@
+.room-editor { margin-block: var(--space-4); }
+.room-header { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); margin-bottom: var(--space-4); }
+.room-header h1 { flex: 1 1 20rem; font-size: var(--fs-2xl); margin: 0; }
+.room-actions, .room-tabs { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+.room-tabs { margin-bottom: var(--space-4); }
+.room-tabs .field { min-width: 12rem; }
+.room-workspace { display: grid; grid-template-columns: 7rem minmax(0, 1fr) 18rem; border: 1px solid var(--c-border); border-radius: var(--radius-lg); overflow: hidden; min-height: 32rem; }
+.room-tools { display: flex; flex-direction: column; background: var(--c-surface); border-right: 1px solid var(--c-border); }
+.room-tools button { min-height: 48px; padding: var(--space-3); background: transparent; color: var(--c-text); border: 0; text-align: left; font: inherit; }
+.room-tools button[aria-pressed="true"] { background: var(--c-primary-soft); color: var(--c-primary); font-weight: var(--fw-bold); }
+.room-tools button:disabled { color: var(--c-text-muted); }
+.room-canvas-wrap { min-width: 0; position: relative; background: var(--c-surface-sunk); }
+.room-canvas { height: 34rem; overflow: hidden; touch-action: none; }
+.room-zoom { position: absolute; bottom: var(--space-3); left: var(--space-3); display: flex; gap: var(--space-2); align-items: center; background: var(--c-surface); border-radius: var(--radius-pill); padding: var(--space-1); }
+.room-zoom span { padding-inline: var(--space-2); font-size: var(--fs-sm); }
+.room-zoom .btn { min-width: 44px; min-height: 44px; padding: var(--space-2) var(--space-3); white-space: nowrap; }
+.room-grid-line { stroke: var(--c-border); stroke-width: 1; fill: none; }
+.room-outline { fill: var(--c-surface); fill-opacity: .7; stroke: var(--c-text); stroke-width: 7; }
+.room-drawing { fill: none; stroke: var(--c-primary); stroke-width: 5; stroke-dasharray: 10 6; }
+.room-corner { fill: var(--c-primary); }
+.room-ruler, .room-table-label { fill: var(--c-text); }
+.room-table { fill: var(--c-surface-strong); stroke: var(--c-border-strong); stroke-width: 2; }
+.room-seat { fill: var(--c-surface); stroke: var(--c-border-strong); stroke-width: 2; }
+.room-table-label { font-size: 16px; pointer-events: none; }
+.room-properties { padding: var(--space-4); background: var(--c-surface); border-left: 1px solid var(--c-border); }
+.room-properties h2 { font-size: var(--fs-lg); margin-top: 0; }
+.room-form { display: grid; gap: var(--space-4); }
+.room-fields { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.room-fields .field { min-width: 0; }
+.room-status { padding: var(--space-3); font-size: var(--fs-sm); }
+@media (max-width: 1023px) {
+  .room-workspace { grid-template-columns: minmax(0, 1fr); }
+  .room-editor { padding-bottom: 4rem; }
+  .room-tools { position: fixed; z-index: var(--z-header); bottom: 0; left: 0; right: 0; flex-direction: row; overflow-x: auto; border-right: 0; border-top: 1px solid var(--c-border); }
+  .room-tools button { flex-shrink: 0; }
+  .room-canvas { height: 50vh; min-height: 20rem; }
+  .room-properties { border-left: 0; border-top: 1px solid var(--c-border); }
+  .room-header h1 { font-size: var(--fs-xl); }
+}

@@ -18,6 +18,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import OwnerHomePage from "./pages/owner/OwnerHomePage";
 import OwnerSignUpPage from "./pages/owner/OwnerSignUpPage";
+import RoomEditorPage from "./pages/room-editor/RoomEditorPage";
 import BookingPage from "./pages/restaurant/BookingPage";
 import ManageBookingPage from "./pages/restaurant/ManageBookingPage";
 import StaffPage from "./pages/restaurant/StaffPage";
@@ -31,6 +32,7 @@ export default function App() {
       <Route path="/owner/sign-up" element={<OwnerSignUpPage />} />
       <Route path="/owner/sign-in" element={<Login defaultNext="/owner" />} />
       <Route path="/owner/:venueId/dashboard" element={<StaffPage />} />
+      <Route path="/owner/:venueId/rooms" element={<RoomEditorPage />} />
       {/* Events: personal attendee link, organiser workspace */}
       <Route path="/e/:token" element={<AttendeePage />} />
       <Route path="/organiser/:eventId" element={<OrganiserPage />} />
