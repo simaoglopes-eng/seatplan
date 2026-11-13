@@ -167,3 +167,36 @@ O que NÃO foi feito (e porquê):
 Observação para o Martim/Sérgio (não é meu código): load_restaurant() não
 esconde restaurantes em rascunho; quem tiver o public_id acede ao mapa e agora
 também à rota de ambiente. A tarefa 25/29 (Sérgio) deve esconder rascunhos.
+
+## Tarefa 35: PNG da sala para o email (backend/app/mail/restaurant_picture.py)
+
+Ficheiros novos: mail/restaurant_picture.py e tests/test_restaurant_picture.py
+(20 testes que descodificam o PNG e olham para pixéis reais). O
+mail/seat_picture.py dos eventos NÃO foi alterado: importo dele a tela, o
+marcador "YOU" e o contorno das mesas, e acrescento o que faltava (preencher
+polígonos não convexos, paredes grossas).
+
+Decisões:
+- Entradas = dataclasses do motor (AmbienceRoom, AmbienceTable, AmbienceSeat):
+  não têm campo para pessoas, por construção. O chamador passa só as mesas e
+  cadeiras da sala da reserva (spec: com várias salas desenha só essa).
+- Contorno curvo/em L preenchido por varrimento par-ímpar; curvas a 24 pedaços.
+- Janela e parede de vidro: linha azul clara grossa; porta: interrupção
+  castanha clara na parede; elementos fixos: cinzento claro com o nome (só se
+  couber e o tipo de letra o escrever); sala exterior: chão verde claro.
+- Mesa reservada: âmbar com contorno escuro (mais a etiqueta e a cadeira, não
+  só a cor); as outras mesas todas iguais; cadeiras das outras: anéis ocos.
+- Sem cadeira escolhida (reserva só por mesa) só destaca a mesa.
+- Cabeçalho "MAIN ROOM - TABLE 4 - SEAT 2"; o que o tipo de letra não escreve
+  (acentos, nomes longos) cai: primeiro o nome da sala, depois a cadeira, e no
+  fim "YOUR TABLE". Nunca mostra texto errado.
+- Falta (tarefas 32/36, do Martim/Sérgio): quem monta as entradas a partir da
+  BD e do `ambience_view.load_rooms` e liga o PNG ao email inline (cid:seatmap).
+
+Nota sobre um teste que falha às vezes (não é meu): test_redteam.py::
+test_s1_forged_forwarded_for_cannot_dodge_the_login_limit faz 12 pedidos e
+espera 10 x 401 e depois 429. O limitador (security.rate_limit) conta por
+minuto de calendário; se os 12 pedidos atravessarem a virada do minuto (mais
+provável com a bateria toda a correr) o contador recomeça e o teste falha.
+Passa isolado. Não mexi (código de segurança e teste de outro). O meu teste do
+limite de leituras do /ambience foi escrito a contar com isto (2 x limite + 1).

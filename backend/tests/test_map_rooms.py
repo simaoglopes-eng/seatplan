@@ -277,10 +277,12 @@ def test_the_light_route_shares_the_read_limit(
     from app.routers.restaurants import READ_LIMIT
 
     place = make_restaurant(session, organiser)
-    day = future_day()
-    params = {"date": day.isoformat(), "time": "19:00", "party": 2}
-    statuses = {
-        client.get(f"/api/r/{place.public_id}/ambience", params=params).status_code
-        for _ in range(READ_LIMIT + 2)
-    }
-    assert 429 in statuses
+    params = {"date": future_day().isoformat(), "time": "19:00", "party": 2}
+    # The limiter counts per calendar minute, so a burst that crosses the turn of
+    # the minute is counted in two parts: 2 * READ_LIMIT + 1 calls always hit it.
+    for _ in range(2 * READ_LIMIT + 1):
+        answer = client.get(f"/api/r/{place.public_id}/ambience", params=params)
+        if answer.status_code == 429:
+            return
+        assert answer.status_code == 200
+    raise AssertionError("the read limit never answered 429")
