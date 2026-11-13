@@ -748,10 +748,11 @@ Decisions taken while finishing tasks 17 to 38 of the restaurant plan (Claude's 
 ## 2026-11-13 — integration of claude/ambiente
 
 Imported from [Claude's implementation notes](claude-ambiente-notas.md).
-These describe the implementation merged at 31cc829; missing work is tracked
-in the night report rather than inferred complete from these decisions.
+These initially described the implementation merged at 31cc829. The entries
+below include the completed chair-management and email integration brought in
+at 7e0f699. Restaurant decisions use continuous numbering across both authors.
 
-17. **Optimiser compatibility (spec 8.2).** `ScoreBreakdown.key()` keeps its
+26. **Optimiser compatibility (spec 8.2).** `ScoreBreakdown.key()` keeps its
 three-part `(covers, -waste, zones)` interface. `ranking_key()` appends
 `prefs_met` for heuristic tie-breaking. The exact oracle, service-plan
 comparison and gap report retain the existing definition of optimality.
@@ -761,7 +762,7 @@ more than two seats, then prefer more wishes met, then retain the old stable
 ordering. Combined tables meet a wish only when all their tables meet it.
 Staff service planning/what-if still do not evaluate time-specific wishes.
 
-18. **Publication boundary.** Draft restaurants return 404 to diner reads,
+27. **Publication boundary.** Draft restaurants return 404 to diner reads,
 holds, booking creation and waitlist entry. Existing `/b/{token}` management
 links remain usable after unpublication. Existing venues default to published,
 preserving the old demo. Publication rechecks profile, location, service,
@@ -769,14 +770,14 @@ active tables, geometric errors and window-room north on the server; photos
 remain recommended. Publication 422 includes `problems` both at the top level
 and inside the normal error envelope. `features` is derived from saved rooms.
 
-19. **Sunlight rules.** Doors never admit sun. A `between` rule is half-open
+28. **Sunlight rules.** Doors never admit sun. A `between` rule is half-open
 `[start,end)`; the engine supports a range across midnight, and missing times
 mean no sun. Curved windows use 16 segments with independent orientations.
 Outdoor daytime outside awnings is `daylight` when direct sun is absent.
 Polar night is determined by solar altitude, not missing sunrise/sunset.
 Table-to-window distance uses edges; round tables use a 16-sided approximation.
 
-20. **Ambience wording.** Sunset-from-seat requires a window bearing 200–340°
+29. **Ambience wording.** Sunset-from-seat requires a window bearing 200–340°
 within 3 m, or an outdoor room; otherwise report when it gets dark. Night uses
 `night_view_text` if present, falling back to the owner's daytime text. This
 supersedes the earlier provisional omission rule in foundation decision 9:
@@ -786,14 +787,14 @@ the shade”. Seat-facing wording uses a view window, else the nearest window,
 within 3 m; otherwise omit it. Nearness includes host stand/main entrance;
 quietness ignores fireplaces and host stands.
 
-21. **Preview and API inputs.** A legacy restaurant gets an implicit rectangle
+30. **Preview and API inputs.** A legacy restaurant gets an implicit rectangle
 without north/windows. Without coordinates the ambience response says
 `located:false`, `sun:null`, no table claims or patches. Stay start/end govern
 the phrases and durations; the optional cursor `moment` changes light scenery.
 Public ambience is rate-limited and contains no personal data or photo bytes.
 Detailed owner/map responses add metrics, features and view-photo metadata.
 
-22. **Optional client features preserve existing journeys.** No `rooms` prop
+31. **Optional client features preserve existing journeys.** No `rooms` prop
 keeps the old SeatMap rendering; one room needs no tabs. A table tap still
 holds it immediately, preserving the existing booking flow (deviation from
 the spec's tap-to-inspect wording). The ambience card describes the active,
@@ -802,33 +803,34 @@ the last scenery on network errors. Wishes are omitted from requests when
 empty; choosing sun clears shade and conversely. The seat step remains inside
 Table, is optional, and skips when usable seats cannot be loaded.
 
-23. **Seat choice.** It is indicative and adds no hold. Unknown, foreign,
+32. **Seat choice.** It is indicative and adds no hold. Unknown, foreign,
 wrong-table or blocked seats return the same 422 before consuming the table
 hold. A time change keeps the seat; changing assigned tables clears it.
-Changing a seat on the management page and marking it on the staff map are
-still pending. Staff text already shows the choice and wishes.
+Task 33 adds seat changes on the management page through a separate PATCH
+request. The staff-map chair marker remains pending. Staff text shows the
+choice and wishes.
 
-24. **Editor persistence.** Preview uses the saved draft and warns about
+33. **Editor persistence.** Preview uses the saved draft and warns about
 unsaved work. Local recovery offers only a layout differing from the server;
 restoring uses the current server version as the base, while server ownership
 and object checks still apply. A stale save retains the local work and offers
 explicit reload/overwrite choices. Booking-history protection is conservative
 when a legacy booking's released slots no longer identify its old table.
 
-25. **Email picture boundary.** The standalone restaurant PNG renderer accepts
+34. **Email picture boundary.** The standalone restaurant PNG renderer accepts
 only room/table/seat dataclasses, with no person fields; it draws the booked
 room only, curves, fixtures and the optional seat. Unsupported/oversized text
-falls back to shorter headings. Wiring this renderer, profile/photo and
-ambience into outgoing restaurant mail remains pending; the event renderer
-was only imported, never edited.
+falls back to shorter headings. Task 34 wires the renderer, profile/photo and
+ambience into outgoing restaurant mail through email_facts.py and
+restaurant_templates.py. The event renderer is reused through imports.
 
-26. **Verification exceptions authorized by Martim.** In addition to the known
+35. **Verification exceptions authorized by Martim.** In addition to the known
 concurrent guest-code verification race, only
 `test_redteam::test_s1_forged_forwarded_for_cannot_dodge_the_login_limit` may
 be rerun alone after a full-suite failure: it can cross a calendar-minute
 rate-limit boundary. Neither production limiter nor either test is weakened.
 
-27. **Local latency measurement.** The 60-table HTTP benchmark runs against
+36. **Local latency measurement.** The 60-table HTTP benchmark runs against
 the real test database in a fresh API process with normal garbage collection.
 It includes the first and two subsequent requests, requires every response
 below 300 ms, and checks room, chair and ambience payloads. Full-suite probes
@@ -839,19 +841,19 @@ This is a local response budget, not a production cold-start/network guarantee.
 
 ## 2026-11-13 — final integration review corrections
 
-28. Opening clocks are bounded HH:MM; side references, wall spans, overlaps,
+37. Opening clocks are bounded HH:MM; side references, wall spans, overlaps,
 glass coverage, main-door flags and view tags are checked before upsert. Bad
 requests return 422 and roll back the version. Counterclockwise outlines are
 normalized with curve signs and opening side/arc offsets remapped. Both room
 validators enforce inclusive 4–5000 m²; invalid geometry remains saveable as
 draft but prevents publication.
 
-29. The service adapter namespaces combine-group names with room_id, including
+38. The service adapter namespaces combine-group names with room_id, including
 the implicit room. The database/API labels stay unchanged and the reserved
 pure optimiser files are untouched. This blocks joining physically separate
 rooms in recommendations, maximum-party calculation and explicit holds.
 
-30. After first explicit publication (`published_at` present), an invalid
+39. After first explicit publication (`published_at` present), an invalid
 profile/room/schedule edit atomically saves as draft. Existing bookings and
 manage links are preserved; publish must pass the checklist again. The editor
 and profile save explain the change. Legacy default-published venues have no
@@ -860,20 +862,20 @@ stays fixed after first publication even if the venue is later draft. This is
 the conservative implementation of foundation decision 8, with no separate
 public snapshot or expensive revalidation on every diner read.
 
-31. The old half-of-tables hold cap rounded one table down to zero, making
+40. The old half-of-tables hold cap rounded one table down to zero, making
 every hold at a one-table restaurant return 429. The allowance is now at least
 one; larger venues retain the original cap rounded down. Existing six-table
 cap tests remain unchanged. Actual one-table hold→booking→manage flows verify
 the correction. Per-client/rate limits and unique slot constraints remain.
 
-32. Local recovery ignores structurally damaged stored drafts instead of
+41. Local recovery ignores structurally damaged stored drafts instead of
 crashing the editor. The current storage key (`seatplan.room-draft.<venue>`)
 and 400 ms debounce are retained for compatibility with Claude's implementation
 and existing recovery tests. They differ from the spec's camel-case key/2 s
 debounce; the independent 30 s checkpoint remains pending. No failing test was
 removed, skipped or relaxed to accept the integration.
 
-33. Browser traces use a separate top-level temporary directory per Playwright
+42. Browser traces use a separate top-level temporary directory per Playwright
 process. A global output directory can be cleaned by another worktree while
 tests are still writing traces, producing ENOENT even after successful business
 assertions. Final checks also use distinct API/web ports and run backend then

@@ -1,6 +1,57 @@
 # Relatório da noite — 13 de novembro de 2026
 
-## Resumo final para o Martim
+## Integração posterior da Claude — 7e0f699
+
+Confirmadas árvore limpa e branch martim/restaurantes-impl em 8549d49.
+git merge --ff-only claude/ambiente avançou para 7e0f699 sem conflitos.
+As tarefas 25 a 36 e os testes de descoberta/publicação foram implementados
+pela Claude na worktree C:\Users\marti\seatplan-claude, branch claude/ambiente.
+A tarefa 38 está completa com descoberta, página /restaurants/:slug, axe e
+percurso publicar → encontrar → retirar publicação.
+
+| Trabalho da Claude | Commit |
+|---|---|
+| API de descoberta e perfil público | 1f1e7fe |
+| Descoberta na página inicial | def696b |
+| Página por slug e mudar cadeira | 5887a28 |
+| Emails com mini-mapa e quatro novas demos | 498be47 |
+| E2E de descoberta/dono e desempenho, incluindo tarefa 38 | cefec44 |
+| Correções de apresentação e desempenho | 079032a / 9a970f4 |
+| Merge que inclui o trabalho do Codex até 8549d49 | 7e0f699 |
+
+Nesta continuação foram revistos os documentos pedidos. A numeração das
+decisões dos restaurantes passa a ser contínua, de 1 a 42, mantendo os textos
+e a autoria. Corrigidas as referências a gestão de cadeira/email ainda pendentes
+e distinguidos os resultados históricos da verificação atual.
+
+Bateria completa aceite em 7e0f699, corrida em sequência.
+
+| Verificação | Resultado |
+|---|---|
+| Ruff check / format | Verdes, 213 ficheiros formatados |
+| Pytest completo | 876 passed, 1 falha conhecida, 4 warnings em 165,33 s |
+| Rerun autorizado do guest-register concorrente | 1 passed, 1 warning em 1,45 s |
+| Typecheck | Verde |
+| Vitest | 397 passed em 54 ficheiros, 15,89 s |
+| Build | Verde, 386 ms |
+| Contraste | 86 checks, 0 failures |
+| Playwright | 70 passed (1.4m), portas 18765/14317 |
+| Guard dos eventos / git diff --check | Verdes |
+
+O pytest executou os 877 testes esperados. Só falhou
+test_guest_register.py::test_two_verifies_at_once_make_one_account, com
+[201, 422]. Passou no único rerun isolado, conforme autorização do Martim.
+O redteam S1 passou no conjunto e não foi repetido. Usou-se basetemp novo,
+-o addopts= e -p no:cacheprovider. O teste HTTP de 60 mesas registou
+220,15 / 184,58 / 128,85 ms, todos abaixo de 300 ms. Os testes de descoberta
+com 100 restaurantes e limite de 500 ms também passaram.
+
+Só os três documentos pedidos foram alterados nesta continuação. A tarefa 38
+fica completa por trabalho da Claude em claude/ambiente, incluindo o commit
+cefec44. O restante relatório preserva o histórico anterior a este merge,
+incluindo pendências que entretanto foram resolvidas.
+
+## Histórico do resumo em 8549d49
 
 Merge de claude/ambiente feito em martim/restaurantes-impl (31cc829), sem
 repetir o trabalho importado. A tarefa 17 não commitada foi descartada como
