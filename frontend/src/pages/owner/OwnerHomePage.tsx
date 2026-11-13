@@ -5,6 +5,7 @@ import type { OwnerCard } from "../../api/owner";
 import { Badge, EmptyState, ErrorState, PageShell, Skeleton } from "../../design/components";
 import { useLoad } from "../restaurant/useLoad";
 import "./owner.css";
+import { PhotoPreview } from "./PhotoPreview";
 
 export default function OwnerHomePage() {
   const { state, reload } = useLoad(listOwnerRestaurants, "owner-restaurants");
@@ -22,7 +23,7 @@ export default function OwnerHomePage() {
 function RestaurantCard({ card }: { card: OwnerCard }) {
   const base = `/owner/${encodeURIComponent(card.public_id)}`;
   return <article className="owner-card">
-    {card.cover_url ? <img className="owner-cover" src={card.cover_url} alt="" loading="lazy" /> : <div className="owner-cover owner-cover-empty" aria-hidden="true" />}
+    {card.cover_url ? <PhotoPreview className="owner-cover" url={card.cover_url} alt="" /> : <div className="owner-cover owner-cover-empty" aria-hidden="true" />}
     <div className="owner-card-body"><Badge tone={card.status === "published" ? "success" : "neutral"}>{card.status === "published" ? "Published" : "Draft"}</Badge>
       <h2>{card.name}</h2><p>Setup {card.setup.done} of {card.setup.total} done</p>
       <progress value={card.setup.done} max={card.setup.total} aria-label={`${card.name} setup progress`} />

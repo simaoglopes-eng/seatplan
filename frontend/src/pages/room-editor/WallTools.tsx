@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { Button, Checkbox, Field, Select } from "../../design/components";
 import { sideLength } from "./geometry";
 import type { Room, RoomOpening } from "./roomModel";
@@ -22,6 +23,7 @@ export function WallTools({ room, selection, selected, onSelect, onSide, onChang
 }
 
 function OpeningFields({ room, opening: o, onUpdate, onNumberUpdate }: { room: Room; opening: RoomOpening; onUpdate: (change: Partial<RoomOpening>) => void; onNumberUpdate: (change: Partial<RoomOpening>) => void }) {
+  const { venueId = "" } = useParams();
   const direction = openingBearing(room, o);
   const names = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
   return <>
@@ -37,6 +39,7 @@ function OpeningFields({ room, opening: o, onUpdate, onNumberUpdate }: { room: R
       <Field label="View" value={o.view_text} maxLength={80} onChange={e => onUpdate({ view_text: e.target.value })} />
       <fieldset className="room-view-tags"><legend>View tags (up to 3)</legend>{VIEW_TAGS.map(tag => <Checkbox key={tag} label={tag} checked={o.view_tags.includes(tag)} disabled={o.view_tags.length >= 3 && !o.view_tags.includes(tag)} onChange={e => onUpdate({ view_tags: e.target.checked ? [...o.view_tags, tag] : o.view_tags.filter(t => t !== tag) })} />)}</fieldset>
       <Field label="View at night" value={o.night_view_text} maxLength={80} onChange={e => onUpdate({ night_view_text: e.target.value })} />
+      {o.id === null ? <p>Save the rooms before adding a view photo.</p> : <Link to={`/owner/${encodeURIComponent(venueId)}/photos?opening=o${o.id}`}>Edit view photo</Link>}
       <Select label="Sun" value={o.sun_rule} options={[{ value: "auto", label: "Work it out for me" }, { value: "never", label: "Never gets direct sun" }, { value: "between", label: "Only between" }]} onChange={e => onUpdate({ sun_rule: e.target.value as RoomOpening["sun_rule"], ...(e.target.value === "between" ? { sun_from: o.sun_from ?? "12:00", sun_until: o.sun_until ?? "16:00" } : { sun_from: null, sun_until: null }) })} />
       {o.sun_rule === "between" && <SunTimes opening={o} onUpdate={onUpdate} />}
     </>}

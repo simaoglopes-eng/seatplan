@@ -14,7 +14,7 @@ confirmar que claude/ambiente está pronta. Só depois faz merge dessa branch
 na impl e corre a bateria completa antes de prosseguir. Sem push nem PR.
 
 Trabalho em curso na branch martim/restaurantes-impl. Último commit verde
-antes da tarefa 12, 022fd28. Spec e plano aprovados por Martim, commit 880624b
+antes da tarefa 13, a97f0ac. Spec e plano aprovados por Martim, commit 880624b
 na branch martim/restaurantes-spec. Identidade Git configurada apenas neste
 repositório. Plano com 40 tarefas.
 
@@ -35,7 +35,8 @@ repositório. Plano com 40 tarefas.
 | 9 — Curvas e cantos | Feita | 3e6e651 | Arcos circulares, arrasto e propriedades acessíveis |
 | 10 — Aberturas e norte | Feita | 2fc9ea5 | Janelas, portas, vidro, normais em arcos e bússola |
 | 11 — Elementos e zonas | Feita | 022fd28 | Paletas, colocação, arrasto, campos e desfazer |
-| 12 — Perfil e localização | Feita | commit desta entrada | Slug, Identity/Location persistidos, Leaflet e geolocalização explícita |
+| 12 — Perfil e localização | Feita | a97f0ac | Slug, Identity/Location persistidos, Leaflet e geolocalização explícita |
+| 13 — Fotos | Feita | commit desta entrada | Galeria privada, resize, capa/ordem e foto de vista |
 
 ## Verificações reais
 
@@ -322,3 +323,35 @@ ficheiros, build em 299 ms (Leaflet em chunk separado), contraste 86 checks
 e 0 failures; Playwright 40 passed em 38,8 s. Guard e diff check passaram.
 Pytest com --basetemp novo, -o addopts= e -p no:cacheprovider. Commit identificado
 por feat: add owner profiles and resumable restaurant location setup.
+
+## Tarefa 13 — feita
+
+Dependência do Sérgio executada: fotos privadas, galeria, capa/ordem/texto,
+foto por janela persistida e redimensionamento no browser. Sem novas bibliotecas
+Python/JS. Cabeçalhos JPEG/PNG/WebP inspecionados sem descodificador; não é uma
+validação integral dos pixels. Limite conservador de dimensões 1600 px no
+servidor, alinhado com o upload do browser. Fonte WebP consultada:
+https://developers.google.com/speed/webp/docs/riff_container .
+
+RED inicial por endpoints inexistentes, depois nove pytest dirigidos passaram
+em 2,51 s: magic bytes, PDF disfarçado, ficheiros truncados/excessivos, dez fotos,
+isolamento em todas as operações, ordenação/capa, uma vista por janela e rate
+limit 60/h. Primeiro teste de resize RED por módulo inexistente, depois verde.
+Dois Playwright dirigidos passaram em 8,6 s: resize real 2400→1600, descrição
+persistida, capa/ordem/remover, privacidade e capa no cartão do dono; segundo
+resize real 1600→1200 quando o primeiro JPEG passa 800 KB. Um primeiro ficheiro
+de ruído RGB continuava acima de 800 KB e foi corretamente recusado: o caso
+de fallback usa ruído monocromático que cabe em 1200, mantendo a asserção exata.
+
+Capturas desktop e 390x844 inspecionadas, axe sem violações e sem scroll lateral.
+Pré-visualizações privadas usam fetch autenticado e URL blob, libertada ao sair.
+Blob permitido só em img-src. Janela sem id mostra pedido para guardar a sala;
+com id liga ao editor de foto. Tarefa 17 concluirá essa persistência. Galeria
+de rascunho usa private/no-store; caches públicas antigas não são revogáveis.
+
+Bateria completa final: Ruff check e formato passaram (176 ficheiros), pytest
+659 passed, 3 warnings em 113,87 s; typecheck passou, Vitest 236 passed em 34
+ficheiros, build em 310 ms, contraste 86 checks e 0 failures; Playwright
+42 passed em 41,5 s. Guard e diff check passaram. Pytest com --basetemp novo,
+-o addopts= e -p no:cacheprovider. Commit identificado por
+feat: add private restaurant photo gallery and browser resizing.

@@ -14,6 +14,7 @@ who is calling and what they sent, calls a helper (in `events_service/`,
 | `health.py` | `GET /health` | Anyone. 503 when the database does not answer |
 | `auth.py` | `POST /auth/login`, `GET /auth/me` | Anyone (login is rate limited) / a logged-in user |
 | `owners.py` | `POST /owner/register`, `POST /owner/verify` | Public, code-send and verification rate limits, consent required |
+| `photos.py` | `/owner/restaurants/{vid}/photos`, `/photos/{public_id}` | Owner-only gallery writes/metadata; public bytes only for published restaurants, otherwise owner-only |
 | `venues.py` | `/venues`, `PUT /venues/{vid}/layout` | Organisers and staff (`CurrentUser`) |
 | `demo.py` | `POST /demo/reset`, `GET /demo/links` | Only with `DEMO_MODE=1`; the reset only with a matching `X-Demo-Key` |
 | `events.py` | `/events/...` (guests, seats, auto-fill, scenarios, undo, shared link) | Organisers (`CurrentOrganiser`) |
