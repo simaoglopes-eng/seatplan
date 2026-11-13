@@ -14,14 +14,13 @@ from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.mail import templates
+from app.mail import restaurant_templates, templates
 from app.mail.invites import calendar_invite
 from app.mail.outbox import enqueue
 from app.mail.reminders import reminder_time
 from app.models import Booking, EmailOutbox, Venue, WaitlistEntry, utc_now
-from app.restaurant_service import occupancy
-from app.restaurant_service.booking_rows import table_labels
 from app.restaurant_service.clock import local_datetime
+from app.restaurant_service.email_facts import booking_email_data
 
 # ---------------------------------------------------------------- small helpers
 
@@ -45,19 +44,15 @@ def _when(venue: Venue, booking: Booking) -> str:
     return templates.format_when(booking.start_at, venue.timezone)
 
 
-def _tables(session: Session, booking: Booking) -> str:
-    labels = table_labels(session, occupancy.tables_of(session, booking))
-    return " + ".join(labels) if labels else "to be confirmed"
-
-
 def _invite(venue: Venue, booking: Booking, cancelled: bool = False) -> str:
+    where = f"{venue.name}, {venue.address}" if venue.address else venue.name
     return calendar_invite(
         kind="booking",
         public_id=booking.public_id,
         start=booking.start_at,
         end=booking.end_at,
         summary=f"Table at {venue.name}",
-        location=venue.name,
+        location=where,
         description=f"Party of {booking.party_size}",
         attendee_email=booking.email,
         cancelled=cancelled,
@@ -72,6 +67,7 @@ def _queue(
     parts: templates.EmailParts,
     ics: str | None = None,
     send_after: datetime | None = None,
+    image_png: str | None = None,
 ) -> None:
     enqueue(
         session,
@@ -83,6 +79,7 @@ def _queue(
         body_html=parts.body_html,
         ics=ics,
         send_after=send_after,
+        image_png=image_png,
     )
 
 
@@ -121,14 +118,8 @@ def queue_reminder(
     send_after = reminder_time(booking.start_at, utc_now())
     if send_after is None or not booking.email:
         return
-    parts = templates.booking_reminder(
-        booking.name,
-        venue.name,
-        _when(venue, booking),
-        booking.party_size,
-        _tables(session, booking),
-        _link(venue, token),
-    )
+    data = booking_email_data(session, venue, booking, _link(venue, token))
+    parts = restaurant_templates.booking_email("reminder", data.facts)
     _queue(
         session,
         _reminder_key(booking, change_number),
@@ -137,6 +128,7 @@ def queue_reminder(
         parts,
         None,
         send_after,
+        data.picture,
     )
 
 
@@ -166,32 +158,22 @@ def drop_reminder(session: Session, booking: Booking) -> None:
 
 
 def queue_confirmation(session: Session, venue: Venue, booking: Booking, token: str) -> None:
-    parts = templates.booking_confirmation(
-        booking.name,
-        venue.name,
-        _when(venue, booking),
-        booking.party_size,
-        _tables(session, booking),
-        manage_link(token),
-    )
+    data = booking_email_data(session, venue, booking, manage_link(token))
+    parts = restaurant_templates.booking_email("confirmed", data.facts)
     key = f"booking-confirmed-{booking.public_id}"
-    _queue(session, key, booking.email, "booking_confirmed", parts, _invite(venue, booking))
+    ics = _invite(venue, booking)
+    _queue(session, key, booking.email, "booking_confirmed", parts, ics, None, data.picture)
     queue_reminder(session, venue, booking, token)
 
 
 def queue_change(session: Session, venue: Venue, booking: Booking, token: str = "") -> None:
     """`token` is the raw manage token when the diner made the change themselves."""
-    parts = templates.booking_change(
-        booking.name,
-        venue.name,
-        _when(venue, booking),
-        booking.party_size,
-        _tables(session, booking),
-        _link(venue, token),
-    )
+    data = booking_email_data(session, venue, booking, _link(venue, token))
+    parts = restaurant_templates.booking_email("changed", data.facts)
     number = _next_change_number(session, booking)
     key = f"{_change_prefix(booking)}{number}"
-    _queue(session, key, booking.email, "booking_changed", parts, _invite(venue, booking))
+    ics = _invite(venue, booking)
+    _queue(session, key, booking.email, "booking_changed", parts, ics, None, data.picture)
     queue_reminder(session, venue, booking, token, number)
 
 

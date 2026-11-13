@@ -109,6 +109,7 @@ const LINK_DESCRIPTIONS: [prefix: string, words: string][] = [
   ["/e/", "Opens one guest's personal invitation"],
   ["/organiser/", "Plans the whole room as the organiser"],
   ["/r/", "Books a table as a diner"],
+  ["/restaurants/", "Opens the public page of a demo restaurant"],
   ["/b/", "Changes or cancels an existing booking"],
   ["/staff/", "Runs the dining room during service"],
   ["/editor/", "Draws and changes the floor plan"],

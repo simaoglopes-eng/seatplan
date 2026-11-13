@@ -34,14 +34,16 @@ from app.models import (
     Venue,
     VenueTable,
     Zone,
+    utc_now,
 )
 from app.optimiser.restaurant_assign import recommend_table
 from app.optimiser.restaurant_model import TableSpec
-from app.restaurant_service import booking_rows, occupancy
+from app.restaurant_service import booking_rows, features, occupancy
 from app.restaurant_service.availability import PartyNeeds
 from app.restaurant_service.clock import now_local, slot_moment
 from app.restaurant_service.schedule import times_between, window_for
 from app.security import hash_token, new_token
+from app.seed import demo_photos
 
 SEED = 2026
 # Same address as DEMO_ORGANISER_EMAIL in seed/run.py (which imports this module).
@@ -92,6 +94,16 @@ PARTIES_PER_SERVICE = {"Lunch": 7, "Dinner": 12}
 
 FIRST_NAMES = ("Alba", "Bento", "Clara", "Dario", "Elsa", "Fabio", "Gil", "Helena", "Ivo")
 LAST_NAMES = ("Arruda", "Bastos", "Coelho", "Dores", "Esteves", "Faria", "Gomes", "Horta")
+
+
+def free_slug(session: Session, wanted: str) -> str:
+    """`wanted`, or `wanted-2`, `wanted-3`... when a restaurant already has it (a second seed)."""
+    taken = set(session.scalars(select(Venue.slug).where(Venue.slug.startswith(wanted))))
+    candidate, number = wanted, 1
+    while candidate in taken:
+        number += 1
+        candidate = f"{wanted}-{number}"
+    return candidate
 
 
 def _demo_owner(session: Session) -> Organiser:
@@ -273,11 +285,26 @@ def seed(session: Session) -> dict[str, str]:
         timezone="Europe/Lisbon",
         width=1000,
         height=700,
+        slug=free_slug(session, "casa-lumen"),
+        status="published",
+        published_at=utc_now(),
+        description="A friendly bistro in the Chiado with a sunny window row, a quiet room, a terrace and a small bar.",
+        cuisines=["portuguese", "mediterranean"],
+        price_level=2,
+        address="Rua Garrett 12, Lisboa",
+        lat=38.7108,
+        lng=-9.1415,
+        phone="+351 210 000 100",
+        instagram="casa_lumen_demo",
     )
     session.add(venue)
     session.flush()
+    demo_photos.add_photos(
+        session, venue, (("linen_bistro", "An illustration of a bright dining room with a window"),)
+    )
     today = now_local(venue).date()
     _floor_plan(session, venue)
+    features.refresh_features(session, venue)
     _schedule(session, venue, today)
     specs = occupancy.table_specs(
         occupancy.venue_tables(session, venue), occupancy.zone_kinds(session, venue)

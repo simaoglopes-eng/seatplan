@@ -122,3 +122,8 @@ down on purpose and fires three confirms at once against a cap of 4.
 Only in `clock.py`. A diner says "19:00 on Friday"; we combine that with the
 restaurant's time zone and store UTC. Slots follow the local wall clock, so
 19:00 is always slot 76, also on the night the clocks change.
+
+email_facts.py gathers what a restaurant booking email says (the booking's tables and chair, cover photo, address, phone, the
+stay's ambience sentences) and draws the mini-map of the room of the first booked table. emails.py queues the confirmed,
+changed and reminder emails from it, each with the picture (Base64 in `image_png`) and the calendar invite; the keys that
+make the queue idempotent did not change.

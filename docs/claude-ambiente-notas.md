@@ -377,3 +377,13 @@ ligações no painel do dono; testes unitários (10) e e2e owner-publish.spec.ts
 - Task 33: seat changes travel alone in PATCH /b/{token}; combining them with a time change is 422 on purpose (a failed
   table move would otherwise leave the chair half changed).
 - The demo restaurant (Casa Lumen) has no slug, location or cuisines, so it is not on the discovery page yet: task 36 seeds that.
+
+## Tasks 34, 35, 36 (emails and demo data)
+- `mail/restaurant_templates.py` is a new module (the plan listed templates.py, which keeps the old booking templates and their tests).
+  The old `booking_confirmation/change/reminder` functions are no longer used by the restaurant flow but stay, tested.
+- One intentional change to an old test: `test_booking_flow_end_to_end` looked for "table T1" and now finds "Table T1".
+- The cover photo is a remote image (`PUBLIC_BASE_URL/api/photos/<id>`); the mini-map is the one inline image (`cid:seatmap`), also on
+  the reminder. Only the room of the first booked table is drawn.
+- Demo photos are drawn by `seed/demo_photos.py` (that file is the recorded source; no third-party images). Replace with real
+  free-licence photos before showing it as a real restaurant.
+- Casa Lumen (the old demo) now has a slug, so `/r/<id>` for it forwards to `/restaurants/casa-lumen` (see the e2e note below).

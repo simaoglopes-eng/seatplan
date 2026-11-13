@@ -20,7 +20,7 @@ from app.config import Settings, get_settings
 from app.core import audit
 from app.models import DemoLink, Organiser
 from app.security import hash_password
-from app.seed import demo_events, demo_restaurant
+from app.seed import demo_events, demo_restaurant, demo_showcase
 
 DEMO_ORGANISER_EMAIL = "organiser@example.com"
 DEMO_STAFF_EMAIL = "staff@example.com"
@@ -78,7 +78,11 @@ def seed_all(session: Session, settings: Settings, actor: str) -> dict[str, str]
     log (core/audit.py).
     """
     ensure_demo_users(session, settings)
-    links = {**demo_events.seed(session), **demo_restaurant.seed(session)}
+    links = {
+        **demo_events.seed(session),
+        **demo_restaurant.seed(session),
+        **demo_showcase.seed(session),
+    }
     session.execute(delete(DemoLink))
     session.add_all(DemoLink(name=name, path=path) for name, path in links.items())
     audit.record(

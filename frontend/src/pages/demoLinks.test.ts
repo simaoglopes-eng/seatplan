@@ -10,6 +10,7 @@ describe("demoEntries", () => {
     expect(group("attendee_ana")).toBe("events");
     expect(group("staff")).toBe("restaurant");
     expect(group("docs")).toBe("tools");
+    expect(demoEntries({ showcase_tagus_terrace: "/restaurants/tagus-terrace" })[0].group).toBe("restaurant");
     expect(entries.find((e) => e.name === "wedding_share")?.label).toBe("Wedding Share");
   });
 });

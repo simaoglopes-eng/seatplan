@@ -58,7 +58,8 @@ def test_booking_flow_end_to_end(
     assert body["manage_token"] in emails["booking_confirmed"].body_text
     # The confirmation carries a calendar invite; the reminder does not need one.
     assert "METHOD:PUBLISH" in (emails["booking_confirmed"].ics or "")
-    assert "table T1" in emails["booking_confirmed"].body_text
+    # The words changed with the richer email (spec 10): "Your table: Table T1", capital T.
+    assert "Table T1" in emails["booking_confirmed"].body_text
     booking = session.scalars(select(Booking)).one()
     assert emails["booking_reminder"].next_attempt_at == booking.start_at - timedelta(hours=24)
     scope = f"venue-{place.public_id}-{day.isoformat()}"

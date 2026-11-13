@@ -30,7 +30,10 @@ same `seed_all()`.
 | `run.py` | `ensure_demo_users(session, settings)` | Creates or updates `organiser@example.com` and `staff@example.com` |
 | `run.py` | `seed_all(session, settings, actor)` | Users plus both verticals; saves the links in `demo_links`; commits |
 | `demo_events.py` | `seed(session)` | A wedding and a conference: venues, tables, guests, groups, who knows whom. Both have the shared link on (`wedding_share`, `conference_share`) |
-| `demo_restaurant.py` | `seed(session)` | "Casa Lumen": 18 tables in four zones, opening hours, bookings for today and the next three days, two weeks of past dinners |
+| `demo_restaurant.py` | `seed(session)` | "Casa Lumen": 18 tables in four zones, opening hours, bookings for today and the next three days, two weeks of past dinners; since the discovery page it also has a slug, address, location, cuisines and a drawn photo |
+| `demo_restaurant.py` | `free_slug(session, wanted)` | The slug, or `-2`, `-3`... when a restaurant already has it (a second seed) |
+| `demo_showcase.py` | `seed(session)` | Four invented restaurants in real Lisbon neighbourhoods with real rooms (south glass wall and a terrace, an awned patio and a fireplace room, a curved room with west windows, a small quiet room), published, with opening hours, drawn photos and `features`; returns `showcase_<slug>` links to `/restaurants/<slug>` |
+| `demo_photos.py` | `scene(name)`, `add_photos(session, venue, [(scene, alt)])` | The demo pictures, drawn from plain shapes by this file (400 x 225, cached per process). **The source of every demo photo is this file**: no third-party image, nothing to license |
 
 ## Data flow
 

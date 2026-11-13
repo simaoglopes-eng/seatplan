@@ -15,7 +15,7 @@ function groupFor(path: string): DemoGroup {
   if (path.startsWith("/e/") || path.startsWith("/organiser/")) return "events";
   // The shared event link and the guest account pages.
   if (path.startsWith("/j/") || path === "/my" || path.startsWith("/my/")) return "events";
-  if (path.startsWith("/r/") || path.startsWith("/b/") || path.startsWith("/staff/")) return "restaurant";
+  if (path.startsWith("/r/") || path.startsWith("/b/") || path.startsWith("/staff/") || path.startsWith("/restaurants/")) return "restaurant";
   return "tools";
 }
 
