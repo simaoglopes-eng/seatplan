@@ -433,3 +433,7 @@ Run after the last commit of the plan's tasks 17 to 38:
 
 Known flaky tests that are not from this work: `test_guest_register::test_two_verifies_at_once_make_one_account` (concurrency) and
 `test_redteam::test_s1_forged_forwarded_for_cannot_dodge_the_login_limit` (the limiter counts per calendar minute). Both pass alone.
+
+Timing tests (map for 60 tables, discovery over 100 restaurants) measure the CPU time of the test process, not the wall clock, and compare the best of
+seven runs; the Codex HTTP probe judges the warm answer on the best of three and only bounds the cold one at 1.5 s. A machine busy with other
+programs (a full e2e run next to pytest) made the wall-clock version fail once.
