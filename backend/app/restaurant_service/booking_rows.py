@@ -106,6 +106,7 @@ def describe(session: Session, venue: Venue, booking: Booking) -> dict[str, Any]
         "notes": booking.notes,
         "needs_accessible": booking.needs_accessible,
         "high_chairs": booking.high_chairs,
+        "prefs": list(booking.prefs or []),
         "status": booking.status,
         "source": booking.source,
         "table_choice": booking.table_choice,

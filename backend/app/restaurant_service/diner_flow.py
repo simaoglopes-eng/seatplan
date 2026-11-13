@@ -17,7 +17,12 @@ from app.core.holds import commit_or_seat_taken
 from app.models import Booking, Venue
 from app.optimiser.restaurant_assign import recommend_table
 from app.restaurant_service import booking_rows, emails, occupancy, schedule
-from app.restaurant_service.availability import PartyNeeds, check_covers_cap, table_specs_for
+from app.restaurant_service.availability import (
+    PREF_KEYS,
+    PartyNeeds,
+    check_covers_cap,
+    table_specs_for,
+)
 from app.restaurant_service.changes import record_change
 from app.restaurant_service.clock import time_of_slot
 from app.restaurant_service.holding import (
@@ -46,13 +51,14 @@ class Contact:
 
 
 def _auto_choices(
-    session: Session, venue: Venue, day: date, window: tuple[int, int], needs: PartyNeeds
+    session: Session, venue: Venue, day: date, at: time, window: tuple[int, int], needs: PartyNeeds
 ) -> list[tuple[int, ...]]:
     """The optimiser's top picks among tables nobody has booked or held."""
     busy = occupancy.merge(
         occupancy.booked_slots(session, venue, day), occupancy.held_slots(session, venue, day)
     )
-    picks = recommend_table(table_specs_for(session, venue), busy, needs.spec(window), top=3)
+    specs = table_specs_for(session, venue, needs, day, at)
+    picks = recommend_table(specs, busy, needs.spec(window), top=3)
     return [pick.table_ids for pick in picks]
 
 
@@ -72,7 +78,7 @@ def _options(
 ) -> tuple[list[tuple[int, ...]], str]:
     """The table choices to try in order, and whether the diner chose them."""
     if not request.table_ids:
-        return _auto_choices(session, venue, request.day, window, request.needs), "auto"
+        return _auto_choices(session, venue, request.day, request.at, window, request.needs), "auto"
     booking_rows.check_tables(session, venue, request.table_ids, request.needs)
     # Holds do not know about confirmed bookings, so check those first.
     booked = occupancy.booked_slots(session, venue, request.day)
@@ -151,6 +157,7 @@ def confirm_booking(
         source="diner",
         table_choice=held.table_choice,
         manage_token_hash=hash_token(token),
+        prefs=sorted(needs.prefs, key=PREF_KEYS.index),
     )
     booking_rows.set_times(venue, booking, held.day, held.window)
     session.add(booking)

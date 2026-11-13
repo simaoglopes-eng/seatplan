@@ -47,9 +47,9 @@ never touches the database; this package turns rows into its dataclasses.
 | `clock.py` | Local time zone, 15-minute slots (slot 76 = 19:00), slot to UTC moment |
 | `schedule.py` | Service periods, seating times, turn times, blackout dates, `check_bookable` |
 | `occupancy.py` | Rows to `TableSpec`; "busy" maps from `table_slots` and live holds |
-| `availability.py` | `PartyNeeds`, the covers cap (locked, see below), `max_party`, available / limited / full per seating time |
+| `availability.py` | `PartyNeeds` (with ambience `prefs`, checked by `clean_prefs`), the covers cap (locked, see below), `max_party`, available / limited / full per seating time |
 | `ambience_view.py` | Saved rooms and tables -> the ambience engine -> sun patches, light and sentences per table (spec 7.6). Read-only, no photo bytes, no personal data |
-| `map_view.py` | The diner map: state of every table plus the recommended tables |
+| `map_view.py` | The diner map: state of every table plus the recommended tables, and (new) the rooms with sun patches and each table's `ambience`. Tables the owner switched off (`is_active` false) are never sent |
 | `holding.py` | 5-minute table holds: one `holds` row per table per slot; caps per client and per slot; release |
 | `booking_caps.py` | Fair caps on diner bookings: upcoming bookings per email, bookings per address per day (S8) |
 | `booking_rows.py` | Write and release `table_slots`, load by manage token, describe a booking |

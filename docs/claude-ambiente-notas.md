@@ -127,3 +127,43 @@ Decisões:
   para a ferramenta Light (tarefa 24) mostrar a direção do sol.
 - Manchas à noite: lista vazia, mesmo que a geometria desse alguma coisa.
 - Desempenho medido: 200 mesas, 4 janelas, estadia de 2 h, 0,5 s. Sem cache.
+
+## Tarefas 23 (rota pública), 27 (parte backend) e 31 (parte backend)
+
+Feitas na claude/ambiente, num só commit. Ficheiros: restaurant_service/
+ambience_view.py (describe_room, table_features, rooms pré-carregadas),
+map_view.py, occupancy.py, availability.py, diner_flow.py, alternatives.py,
+manage_flow.py, booking_rows.py, staff_floor.py, routers/restaurants.py,
+docs/CONTRACT.md; testes novos test_map_rooms.py (8) e
+test_ambience_prefs_flow.py (8). Suite completa: 756 passed.
+
+O que ficou FEITO:
+- GET /api/r/{vid}/ambience (público, READ_LIMIT, party e hora validadas como
+  no mapa; `moment` opcional move só manchas e véu da noite).
+- GET /api/r/{vid}/map ganha `rooms` (contorno, aberturas sem sun_rule/hora/
+  altura, elementos, `sun`, `sun_patches`, `night`) e em cada mesa `room_id`,
+  `is_active`, `ambience` (null se o restaurante não tem coordenadas). Os
+  campos antigos não mudam.
+- Mesas inativas: occupancy.venue_tables() só devolve as ativas (mapa,
+  optimizador, validação de hold, dashboard). O staff continua a ver uma mesa
+  inativa enquanto ela tiver uma reserva a essa hora (include_inactive).
+- Preferências: PartyNeeds.prefs, clean_prefs (conhecidas, no máximo 5, sol e
+  sombra não juntos, senão 422), `?prefs=sun,view` no mapa, `prefs` no hold
+  ("Choose for me") e na reserva (guardadas ordenadas em bookings.prefs e em
+  describe() para o staff). A mudança de reserva (manage_flow) mantém-nas.
+  As features das mesas vêm de ambience_view.table_features (mesma conta do
+  cartão de ambiente). O 409 com alternativas também as usa.
+
+O que NÃO foi feito (e porquê):
+- GET /api/owner/restaurants/{vid}/ambience-preview: vive em owner_rooms.py
+  (proibido para mim, tarefa 17 do Codex). Chama ambience_payload(session,
+  venue, dia, hora, detail=True); falta só a rota e o teste de isolamento.
+- service_plan.py / whatif.py (staff): continuam sem preferências. As features
+  dependem da hora de cada reserva, e o optimizador de serviço usa um só
+  conjunto de TableSpec; precisava de features por festa. Não mexi para não
+  arriscar o que já funciona; o pedido de reserva já guarda as prefs.
+- Frontend (RoomLayers.tsx, SeatMap.tsx, StepTable/StepParty): ver abaixo.
+
+Observação para o Martim/Sérgio (não é meu código): load_restaurant() não
+esconde restaurantes em rascunho; quem tiver o public_id acede ao mapa e agora
+também à rota de ambiente. A tarefa 25/29 (Sérgio) deve esconder rascunhos.

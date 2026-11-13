@@ -85,7 +85,12 @@ def floor(session: Session, venue: Venue, day: date, at: time) -> dict[str, Any]
     It also carries zones and seats, so the staff page draws the same map as diners.
     """
     owners = _owners_at(session, venue, day, slot_of(at))
-    venue_tables = occupancy.venue_tables(session, venue)
+    # A table that was switched off stays on the floor only while it still has a booking.
+    venue_tables = [
+        t
+        for t in occupancy.venue_tables(session, venue, include_inactive=True)
+        if t.is_active or t.id in owners
+    ]
     tables = [_floor_table(t, owners.get(t.id)) for t in venue_tables]
     # A seat looks taken while its table has a booking at this time.
     seat_states = {t.id: "taken" if t.id in owners else "free" for t in venue_tables}

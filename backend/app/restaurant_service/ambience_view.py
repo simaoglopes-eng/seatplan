@@ -19,7 +19,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.ambience.geometry import Point
+from app.ambience.geometry import Point, outline_polygon
 from app.ambience.light import is_night, sun_patches
 from app.ambience.models import (
     AmbienceFixture,
@@ -185,6 +185,52 @@ def load_rooms(session: Session, venue: Venue) -> list[LoadedRoom]:
 # ---------------------------------------------------------------- engine -> JSON
 
 
+def describe_room(loaded: LoadedRoom) -> dict[str, Any]:
+    """What a diner may see of a room: walls, windows, fixtures. Never the
+    owner's private sun rules or window heights."""
+    room = loaded.room
+    corners = outline_polygon(room.outline)
+    xs, ys = [p.x for p in corners], [p.y for p in corners]
+    return {
+        "id": loaded.id,
+        "name": loaded.name,
+        "is_outdoor": room.is_outdoor,
+        "north_deg": room.north_deg,
+        "outline": room.outline,
+        "width": round(max(xs) - min(xs), 1),
+        "height": round(max(ys) - min(ys), 1),
+        "openings": [
+            {
+                "id": o.key,
+                "side": o.side,
+                "offset": o.offset,
+                "width": o.width,
+                "kind": o.kind,
+                "is_main_entrance": o.is_main_entrance,
+                "view_text": o.view_text,
+                "view_tags": list(o.view_tags),
+                "night_view_text": o.night_view_text,
+                "view_photo_url": o.view_photo_url,
+            }
+            for o in room.openings
+        ],
+        "fixtures": [
+            {
+                "id": f.key,
+                "kind": f.kind,
+                "shape": f.shape,
+                "x": f.x,
+                "y": f.y,
+                "w": f.w,
+                "h": f.h,
+                "rotation": f.rotation,
+                "label": f.label,
+            }
+            for f in room.fixtures
+        ],
+    }
+
+
 def _clock(moment: time | None) -> str | None:
     return None if moment is None else hhmm(moment)
 
@@ -224,6 +270,18 @@ def _table_payload(table_id: int, found: TableAmbience, detail: bool) -> dict[st
     return answer
 
 
+def table_features(
+    session: Session, venue: Venue, day: date, start: time, party: int
+) -> dict[int, frozenset[str]]:
+    """Table id -> its ambience features for this stay ("sun", "view", ...).
+
+    This is what the optimiser's TableSpec.features holds. Without coordinates
+    nothing can be said about the sun, so no table has any feature.
+    """
+    answer = ambience_payload(session, venue, day, start, party=party, detail=True)
+    return {row["id"]: frozenset(row["features"]) for row in answer["tables"]}
+
+
 def ambience_payload(
     session: Session,
     venue: Venue,
@@ -232,19 +290,21 @@ def ambience_payload(
     party: int | None = None,
     moment: time | None = None,
     detail: bool = False,
+    rooms: list[LoadedRoom] | None = None,
 ) -> dict[str, Any]:
     """Spec 7.6: {rooms: [{id, sun_patches, night}], tables: [{id, light, phrases}]}.
 
     `detail=True` adds the numbers behind the sentences to every table (for the
     diner map and the editor). A restaurant with no coordinates cannot say
     anything about the sun, so it answers `located: false` and no tables.
+    Callers that already loaded the rooms pass them in to save the queries.
     """
     zone = venue_zone(venue)
     begins = local_datetime(venue, day, start)
     at = local_datetime(venue, day, moment) if moment is not None else begins
     minutes = schedule.turn_minutes(session, venue, party or DEFAULT_PARTY)
     ends = begins + timedelta(minutes=minutes)
-    rooms = load_rooms(session, venue)
+    rooms = load_rooms(session, venue) if rooms is None else rooms
     answer: dict[str, Any] = {
         "date": day.isoformat(),
         "time": hhmm(at.time()),

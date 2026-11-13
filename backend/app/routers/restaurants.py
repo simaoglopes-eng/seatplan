@@ -17,12 +17,20 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from app import db
 from app.core.errors import SeatTaken
 from app.core.text import PlainText
-from app.restaurant_service import diner_flow, holding, map_view, occupancy, schedule
+from app.restaurant_service import (
+    ambience_view,
+    diner_flow,
+    holding,
+    map_view,
+    occupancy,
+    schedule,
+)
 from app.restaurant_service.alternatives import conflict_response
 from app.restaurant_service.availability import (
     MAX_ONLINE_PARTY,
     PartyNeeds,
     check_party_size,
+    clean_prefs,
     day_summary,
     max_party,
 )
@@ -68,6 +76,9 @@ class HoldIn(Strict):
     needs_accessible: bool = False
     high_chairs: int = Field(default=0, ge=0, le=6)
     zone: ZoneKind | None = None
+    # Ambience wishes for "Choose for me" (spec 8.3): sun, shade, view, quiet,
+    # away_from_wc. Checked by clean_prefs (known keys, not sun with shade).
+    prefs: list[str] = Field(default_factory=list, max_length=10)
 
 
 class BookingIn(Strict):
@@ -79,6 +90,7 @@ class BookingIn(Strict):
     party: int = Field(ge=1, le=MAX_PARTY)
     needs_accessible: bool = False
     high_chairs: int = Field(default=0, ge=0, le=6)
+    prefs: list[str] = Field(default_factory=list, max_length=10)  # kept for the staff
 
 
 def _limit(session: db.SessionDep, request: Request, name: str, limit: int) -> None:
@@ -131,13 +143,39 @@ def table_map(
     accessible: bool = False,
     high_chairs: HighChairs = 0,
     zone: ZoneKind | None = None,
+    prefs: Annotated[str, Query(max_length=80)] = "",
 ) -> dict[str, Any]:
+    """`prefs` is a comma list of wishes, e.g. `sun,view` (spec 8.3)."""
     _limit(session, request, "read", READ_LIMIT)
     venue = load_restaurant(session, venue_public_id)
     check_party_size(session, venue, party)
     schedule.check_bookable(session, venue, date, time)
-    needs = PartyNeeds(party, accessible, high_chairs, zone)
+    wishes = clean_prefs([key for key in prefs.split(",") if key])
+    needs = PartyNeeds(party, accessible, high_chairs, zone, wishes)
     return map_view.build_map(session, venue, date, time, needs)
+
+
+@router.get("/r/{venue_public_id}/ambience")
+def ambience(
+    venue_public_id: str,
+    request: Request,
+    session: db.SessionDep,
+    date: dt.date,
+    time: dt.time,
+    party: Party,
+    moment: dt.time | None = None,
+) -> dict[str, Any]:
+    """The light of every room and table, for the diner's time cursor (spec 7.6).
+
+    `time` is when the stay starts (the sentences describe the whole stay);
+    `moment` is where the cursor is and moves only the sun patches and the
+    night veil. Maths only: ids, polygons, light names and short sentences.
+    """
+    _limit(session, request, "read", READ_LIMIT)
+    venue = load_restaurant(session, venue_public_id)
+    check_party_size(session, venue, party)
+    schedule.check_bookable(session, venue, date, time)
+    return ambience_view.ambience_payload(session, venue, date, time, party=party, moment=moment)
 
 
 @router.post("/r/{venue_public_id}/hold", status_code=201, response_model=None)
@@ -148,7 +186,8 @@ def hold(
     _limit(session, request, "hold", HOLD_LIMIT)
     venue = load_restaurant(session, venue_public_id)
     check_party_size(session, venue, body.party)
-    needs = PartyNeeds(body.party, body.needs_accessible, body.high_chairs, body.zone)
+    wishes = clean_prefs(body.prefs)
+    needs = PartyNeeds(body.party, body.needs_accessible, body.high_chairs, body.zone, wishes)
     wanted = body.table_ids or ([body.table_id] if body.table_id is not None else None)
     asked = diner_flow.HoldRequest(
         day=body.date,
@@ -210,7 +249,9 @@ def book(
     # After read_hold, so a dead or made-up hold_id never counts against the
     # daily cap; before confirm_booking, because the cap commits its count.
     check_booking_caps(session, venue, str(body.email), client_ip(request))
-    needs = PartyNeeds(body.party, body.needs_accessible, body.high_chairs)
+    needs = PartyNeeds(
+        body.party, body.needs_accessible, body.high_chairs, prefs=clean_prefs(body.prefs)
+    )
     contact = diner_flow.Contact(body.name, str(body.email), body.phone, body.notes)
     try:
         booking, token = diner_flow.confirm_booking(session, venue, held, needs, contact)

@@ -234,10 +234,11 @@ Types: `frontend/src/api/types.ts`.
 Restaurants, diner (`/r/{venue_public_id}`)
 - `GET /r/{vid}` restaurant, zones, schedule summary, `max_party` (the largest party one table or allowed combination and the covers cap can seat, at most 30; a bigger party gets 422 on slots, map, hold, change and waitlist)
 - `GET /r/{vid}/slots?date=&party=` -> time slots with `available`, `limited`, `full`
-- `GET /r/{vid}/map?date=&time=&party=` -> tables with state for that slot, recommended table and reasons
-- `POST /r/{vid}/hold` `{date, time, party, table_id?}` (no table: optimiser picks) -> `{hold_id, table, expires_at}`. 429 `rate_limited` when one client already holds 3 tables for that date, or when live holds would block more than half the tables of a slot
+- `GET /r/{vid}/map?date=&time=&party=&prefs=` -> tables with state for that slot, recommended table and reasons. `prefs` is a comma list of wishes (`sun`, `shade`, `view`, `quiet`, `away_from_wc`; at most 5, never `sun` with `shade`, else 422). Added to the old fields: `rooms` (outline, openings, fixtures, `sun`, `sun_patches`, `night`) and on every table `room_id`, `is_active`, `ambience`. Tables switched off are not sent
+- `GET /r/{vid}/ambience?date=&time=&party=&moment=` -> `{rooms: [{id, sun_patches, night}], tables: [{id, light, phrases}], sun, located, time, stay_start, stay_end}` for the diner's time cursor; no personal data, same read limit as the map
+- `POST /r/{vid}/hold` `{date, time, party, table_id?, prefs?}` (no table: optimiser picks, following `prefs`) -> `{hold_id, table, expires_at}`. 429 `rate_limited` when one client already holds 3 tables for that date, or when live holds would block more than half the tables of a slot
 - `DELETE /r/{vid}/hold/{hold_id}` gives a held table back -> 204, or 404 for an unknown hold
-- `POST /r/{vid}/bookings` `{hold_id, name, email, ...}` -> confirmation with manage link. 429 `rate_limited` when this mailbox already has 4 upcoming diner bookings at this restaurant (capitals and a `+tag` count as the same mailbox), or this client address (an IPv6 address by its /64) has made 10 booking attempts here today (UTC); a refused booking keeps its hold (`restaurant_service/booking_caps.py`)
+- `POST /r/{vid}/bookings` `{hold_id, name, email, prefs?, ...}` (`prefs` are stored on the booking and shown to the staff) -> confirmation with manage link. 429 `rate_limited` when this mailbox already has 4 upcoming diner bookings at this restaurant (capitals and a `+tag` count as the same mailbox), or this client address (an IPv6 address by its /64) has made 10 booking attempts here today (UTC); a refused booking keeps its hold (`restaurant_service/booking_caps.py`)
 - `POST /r/{vid}/waitlist` -> position and estimated wait
 - `GET /b/{manage_token}` (includes the venue's `max_party`), `PATCH /b/{manage_token}`, `DELETE /b/{manage_token}`
 

@@ -5,7 +5,8 @@ would be exceeded, or when no table (or allowed combination) is free for the
 whole stay. It is "limited" when it is bookable but close to full.
 """
 
-from dataclasses import dataclass
+from collections.abc import Iterable
+from dataclasses import dataclass, replace
 from datetime import date, time
 from typing import Any
 
@@ -20,7 +21,7 @@ from app.optimiser.restaurant_model import (
     candidate_choices,
     largest_party,
 )
-from app.restaurant_service import occupancy, schedule
+from app.restaurant_service import ambience_view, occupancy, schedule
 from app.restaurant_service.clock import hhmm, is_past, slot_of
 
 # Id used for a party that has no booking row yet. Real booking ids start at 1.
@@ -29,6 +30,9 @@ NEW_PARTY_ID = 0
 FEW_TABLES_LEFT = 2
 # Even if tables could be joined for more, bigger groups call the restaurant.
 MAX_ONLINE_PARTY = 30
+# The ambience wishes a diner may tick (spec 8.1), at most this many at once.
+PREF_KEYS = ("sun", "shade", "view", "quiet", "away_from_wc")
+MAX_PREFS = 5
 
 
 @dataclass(frozen=True)
@@ -39,6 +43,7 @@ class PartyNeeds:
     needs_accessible: bool = False
     high_chairs: int = 0
     zone_pref: str | None = None
+    prefs: frozenset[str] = frozenset()
 
     def spec(self, window: tuple[int, int], party_id: int = NEW_PARTY_ID) -> PartySpec:
         return PartySpec(
@@ -50,7 +55,22 @@ class PartyNeeds:
             high_chairs=self.high_chairs,
             zone_pref=self.zone_pref,
             fixed_tables=None,
+            prefs=self.prefs,
         )
+
+
+def clean_prefs(keys: Iterable[str]) -> frozenset[str]:
+    """The wishes as a set, or 422: only known wishes, never sunny and shade
+    together, and no more than MAX_PREFS."""
+    wanted = list(keys)
+    unknown = sorted({key for key in wanted if key not in PREF_KEYS})
+    if unknown:
+        raise ApiError(422, "validation", f"Unknown wish: {unknown[0]}.")
+    if len(wanted) > MAX_PREFS:
+        raise ApiError(422, "validation", f"Choose at most {MAX_PREFS} wishes.")
+    if "sun" in wanted and "shade" in wanted:
+        raise ApiError(422, "validation", "A table cannot be both sunny and in the shade.")
+    return frozenset(wanted)
 
 
 def max_party(session: Session, venue: Venue) -> int:
@@ -161,9 +181,21 @@ def slot_statuses(
     return result
 
 
-def table_specs_for(session: Session, venue: Venue) -> list[TableSpec]:
+def table_specs_for(
+    session: Session,
+    venue: Venue,
+    needs: PartyNeeds | None = None,
+    day: date | None = None,
+    at: time | None = None,
+) -> list[TableSpec]:
+    """The optimiser's tables. When the party has wishes and the stay is known,
+    every table also carries its ambience features for that stay."""
     tables = occupancy.venue_tables(session, venue)
-    return occupancy.table_specs(tables, occupancy.zone_kinds(session, venue))
+    specs = occupancy.table_specs(tables, occupancy.zone_kinds(session, venue))
+    if needs is None or not needs.prefs or day is None or at is None:
+        return specs
+    features = ambience_view.table_features(session, venue, day, at, needs.size)
+    return [replace(spec, features=features.get(spec.id, frozenset())) for spec in specs]
 
 
 def day_summary(session: Session, venue: Venue, day: date, needs: PartyNeeds) -> dict[str, Any]:

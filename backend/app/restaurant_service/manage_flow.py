@@ -31,7 +31,8 @@ class Change:
 
 def needs_of(booking: Booking, party_size: int | None = None) -> PartyNeeds:
     size = booking.party_size if party_size is None else party_size
-    return PartyNeeds(size, booking.needs_accessible, booking.high_chairs)
+    prefs = frozenset(booking.prefs or [])
+    return PartyNeeds(size, booking.needs_accessible, booking.high_chairs, prefs=prefs)
 
 
 def check_changeable(venue: Venue, booking: Booking) -> None:
@@ -51,7 +52,7 @@ def _pick_tables(
         occupancy.booked_slots(session, venue, change.day, ignore_booking=booking.id),
         occupancy.held_slots(session, venue, change.day),
     )
-    specs = table_specs_for(session, venue)
+    specs = table_specs_for(session, venue, needs, change.day, change.at)
     current = occupancy.tables_of(session, booking)
     current_specs = [spec for spec in specs if spec.id in current]
     fits = bool(current) and choice_problem(current_specs, needs.spec(window)) is None

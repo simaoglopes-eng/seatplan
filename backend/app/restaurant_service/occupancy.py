@@ -29,8 +29,16 @@ def scope_for(venue: Venue, day: date) -> str:
     return f"venue-{venue.public_id}-{day.isoformat()}"
 
 
-def venue_tables(session: Session, venue: Venue) -> list[VenueTable]:
+def venue_tables(
+    session: Session, venue: Venue, include_inactive: bool = False
+) -> list[VenueTable]:
+    """The restaurant's tables. Tables the owner switched off ("Available for
+    booking" off, spec 6.10) are left out unless the caller asks: they are not
+    shown to diners and never enter the optimiser, but the staff floor still
+    needs them for old bookings."""
     query = select(VenueTable).where(VenueTable.venue_id == venue.id).order_by(VenueTable.id)
+    if not include_inactive:
+        query = query.where(VenueTable.is_active)
     return list(session.scalars(query))
 
 
