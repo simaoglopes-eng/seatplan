@@ -220,3 +220,23 @@ tests/test_chosen_seat.py (9).
   para uma mesa que já não é da reserva. A tarefa 33 (Sérgio) fará o
   PATCH seat_id ("Change seat") e pode reutilizar check_chosen_seat.
 - Falta o frontend (ChooseSeat, SelectionPanel, Confirmation) e o email (34/35).
+
+## Tarefa 27 (parte frontend): salas no SeatMap
+
+Ficheiros: frontend/src/seatmap/RoomLayers.tsx, roomScene.ts (novos, com
+testes: 11 + 8), SeatMap.tsx (props opcionais rooms, activeRoomId, showSun),
+seatmap.css (classes room-*), api/types.ts (tipos MapRoom, MapRoomOpening,
+MapRoomFixture, MapRoomSun, MapTableAmbience; MapTable ganha room_id,
+is_active, ambience opcionais; SeatMapPayload ganha rooms opcional).
+- Sem `rooms` o mapa desenha-se exatamente como antes (eventos intactos);
+  testado ("draws no room at all when none is given").
+- Reutiliza as funções puras do editor (pages/room-editor/geometry.ts e
+  FIXTURE_NAMES de roomObjects.ts): só importo, não edito. Se o Codex mudar
+  esses exportes, o roomScene.ts é o único sítio a ajustar.
+- Cores só com tokens existentes (sol = latão às riscas; janela = info-soft;
+  noite = info a 38 %). Contraste: 86 verificações, 0 falhas.
+- Verificado a olho com o Chromium do Playwright (sala em L, vidro curvo,
+  janela, porta, bar, WC, sol, noite).
+- Falta (tarefa 28): StepTable com separadores de salas, contagens, cartão de
+  ambiente e o cursor de hora (250 ms) ligado a GET /api/r/{vid}/ambience;
+  MapKey com sol/noite/vista. Também passar `rooms` do build_map ao SeatMap.

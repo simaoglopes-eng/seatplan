@@ -62,6 +62,10 @@ export interface MapTable {
   zone_id?: number | null;
   state?: SeatState;
   accessible?: boolean;
+  /** Restaurant map only (room editor): which room, whether it is on, and what it is like. */
+  room_id?: number | null;
+  is_active?: boolean;
+  ambience?: MapTableAmbience | null;
 }
 
 /** A seat as drawn on a map. (x, y) is the seat centre in venue coordinates. */
@@ -87,6 +91,89 @@ export interface MapZone {
   h: number;
 }
 
+// ---------- Rooms and ambience (restaurant map, spec 7.6 and 9.3) ----------
+
+export type RoomLight = "night" | "sun" | "sunset" | "shade" | "daylight" | "interior";
+
+export interface MapOutlinePoint {
+  x: number;
+  y: number;
+  /** Sagitta of the side that starts at this point, in cm; 0 is straight. */
+  curve: number;
+}
+
+export interface MapRoomOpening {
+  id: number;
+  side: number;
+  offset: number;
+  width: number;
+  kind: "window" | "door" | "glass_wall";
+  is_main_entrance: boolean;
+  view_text: string;
+  view_tags: string[];
+  night_view_text: string;
+  view_photo_url: string;
+}
+
+export interface MapRoomFixture {
+  id: number;
+  kind: string;
+  shape: "rect" | "circle";
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  rotation: number;
+  label: string;
+}
+
+export interface MapRoomSun {
+  sunrise: string | null;
+  sunset: string | null;
+  azimuth: number;
+  altitude: number;
+}
+
+/** One room as a diner sees it. `id` is null for the implicit room of a restaurant that never saved one. */
+export interface MapRoom {
+  id: number | null;
+  name: string;
+  is_outdoor: boolean;
+  north_deg: number | null;
+  outline: { points: MapOutlinePoint[] };
+  width: number;
+  height: number;
+  openings: MapRoomOpening[];
+  fixtures: MapRoomFixture[];
+  sun: MapRoomSun | null;
+  /** Floor areas in direct sun, in cm; the map clips them to the outline. */
+  sun_patches: { x: number; y: number }[][];
+  night: boolean;
+}
+
+export interface MapTableView {
+  text: string;
+  tags: string[];
+  night_text: string;
+  photo_url: string;
+  distance_cm: number;
+}
+
+/** What a table is like for the stay (spec 7.5). Times are "HH:MM". */
+export interface MapTableAmbience {
+  light: RoomLight;
+  phrases: string[];
+  sun_minutes: number;
+  sun_until: string | null;
+  sun_from: string | null;
+  sunset_at: string | null;
+  dark_at: string | null;
+  view: MapTableView | null;
+  near: string[];
+  quiet: boolean;
+  features: string[];
+}
+
 /** What any map endpoint returns: enough to draw the floor. */
 export interface SeatMapPayload {
   width: number;
@@ -94,6 +181,8 @@ export interface SeatMapPayload {
   zones: MapZone[];
   tables: MapTable[];
   seats: MapSeat[];
+  /** Restaurant map only: the rooms with their walls, windows, sun and night. */
+  rooms?: MapRoom[];
 }
 
 // ---------- Core endpoints ----------

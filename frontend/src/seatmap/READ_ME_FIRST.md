@@ -20,6 +20,7 @@ nothing: the page says what may be picked and calls the API.
 | `mapKeyboard.ts` | Arrow keys move a cursor between seats; Enter or Space picks |
 | `useSeatChanges.ts` | Compares old and new states: one sentence for the live region and a short motion cue |
 | `seatPositions.ts` | Where chairs go around a table (editor and home sample) |
+| `RoomLayers.tsx`, `roomScene.ts` | Restaurant rooms as scenery (optional `rooms`, `activeRoomId`, `showSun` props): floor, curved walls, windows (light blue line), doors (gap and swing), fixed items, striped sun patches clipped to the room, a view icon where a window has a view, and the night veil on top (never catches a tap). Without `rooms` the map is drawn exactly as before, so events never change. `roomScene.ts` is pure path and bounds maths that reuses the room editor's outline functions (`pages/room-editor/geometry.ts`), so the map and the editor bend a wall the same way |
 
 ## Data flow
 

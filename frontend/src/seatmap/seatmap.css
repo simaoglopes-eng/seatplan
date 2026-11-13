@@ -324,3 +324,88 @@
   font-size: var(--fs-sm);
   color: var(--c-text-muted);
 }
+
+/* ---------- Restaurant rooms (RoomLayers.tsx) ----------
+   Scenery only. Sun is striped, not just coloured; the veil never catches a tap. */
+
+.room-floor {
+  fill: var(--c-surface);
+}
+
+.room-wall {
+  fill: none;
+  stroke: var(--c-text);
+  stroke-width: 6;
+  stroke-linejoin: round;
+}
+
+.room-opening-gap {
+  fill: none;
+  stroke: var(--c-surface);
+  stroke-width: 10;
+}
+
+.room-window {
+  fill: none;
+  stroke: var(--c-info-soft);
+  stroke-width: 9;
+}
+
+.room-window-middle {
+  fill: none;
+  stroke: var(--c-info);
+  stroke-width: 2.5;
+}
+
+.room-door-arc {
+  fill: none;
+  stroke: var(--c-accent-bright);
+  stroke-width: 2;
+}
+
+.room-fixture ellipse,
+.room-fixture rect {
+  fill: var(--c-surface-sunk);
+  stroke: var(--c-border-strong);
+  stroke-width: 1;
+}
+
+.room-fixture-label {
+  fill: var(--c-text-muted);
+  font-family: var(--font-body);
+  font-size: max(11px, calc(var(--map-label-min) / var(--map-zoom, 1)));
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pat-sun-bg {
+  fill: var(--c-accent-soft);
+  opacity: 0.6;
+}
+
+.pat-sun-fg {
+  fill: var(--c-accent-bright);
+  opacity: 0.5;
+}
+
+.room-view-icon circle:first-child {
+  fill: var(--c-info-soft);
+  stroke: var(--c-info);
+  stroke-width: 1;
+}
+
+.room-view-icon path {
+  fill: none;
+  stroke: var(--c-info);
+  stroke-width: 1.4;
+}
+
+.room-view-pupil {
+  fill: var(--c-info);
+}
+
+.room-night {
+  fill: var(--c-info);
+  opacity: 0.38;
+  pointer-events: none;
+}
