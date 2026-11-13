@@ -63,6 +63,36 @@ API novo. Typecheck, Vitest 350/48, build 315 ms, contraste 86/0 e Playwright
 57 passed em 1,1 min. Guard e diff check verdes. Commit identificado por
 test: verify restaurant ambience journeys concurrency and map latency.
 
+## Tarefa 38 — bloqueada parcialmente; fluxo do dono verificado
+
+O código integrado não contém discovery.py/discovery router, DiscoveryPage
+nem RestaurantPage/rota /restaurants/:slug. São dependências 25/26/29, não
+implementações perdidas por merge (inventário e App.tsx confirmados). Logo não
+há endpoint para medir 100 restaurantes <500 ms, página para axe, nem percurso
+"publicar → encontrar na pesquisa". A opção conservadora é registar o bloqueio
+e continuar a revisão 39, conforme regra do Martim; não criar um teste que
+declare uma pesquisa inexistente como aprovada, nem alargar uma revisão final
+para substituir silenciosamente essas funcionalidades de produto.
+
+O link "View public page" após publicar já aponta para /restaurants/:slug,
+como o contrato exige, mas ainda leva ao NotFound. Requisito 29 pendente,
+explicitamente não validado por clicar nesse link. A rota /r/:id funciona.
+
+Acrescentado owner.spec.ts: publicar/retirar publicação por UI a 1440/390,
+rascunho recusa novos clientes, reserva real com cadeira 2 mantém a gestão e
+cancelamento disponíveis após unpublish. Axe nos estados review, rascunho
+público e gestão sem violações; sem scroll horizontal. Capturas para inspeção.
+Três dirigidos passaram em 10,4 s (inclui o owner-publish anterior). Bateria
+completa da tarefa em execução. Tarefa 37 no commit 0168a4e.
+
+Bateria final da parte executável verde: Ruff check/formato (201 ficheiros),
+pytest 822 passed/3 warnings em 144,58 s; typecheck, Vitest 350/48, build
+333 ms, contraste 86/0 e Playwright 59 passed em 1,2 min. Capturas desktop e
+móvel inspecionadas, guard e diff check verdes. Sem reruns isolados.
+Commit identificado por test: verify owner publication boundaries and record
+the missing discovery dependency. Descoberta/performance de 100 restaurantes
+continuam bloqueadas, não aprovadas.
+
 ## Coordenação atualizada por Martim
 
 Claude trabalha em C:\Users\marti\seatplan-claude, branch claude/ambiente,
