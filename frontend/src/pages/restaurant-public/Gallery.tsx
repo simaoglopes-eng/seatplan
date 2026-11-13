@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { PublicPhoto } from "../../api/discovery";
 import { Button, Dialog } from "../../design/components";
+import { PhotoImg } from "./PhotoImg";
 
 /** The cover first, then the rest in the owner's order. */
 export function coverFirst(photos: PublicPhoto[]): PublicPhoto[] {
@@ -11,7 +12,7 @@ export function coverFirst(photos: PublicPhoto[]): PublicPhoto[] {
   return cover <= 0 ? photos : [photos[cover], ...photos.filter((_, i) => i !== cover)];
 }
 
-export function Gallery({ photos, name }: { photos: PublicPhoto[]; name: string }) {
+export function Gallery({ photos, name, preview = false }: { photos: PublicPhoto[]; name: string; preview?: boolean }) {
   const ordered = coverFirst(photos);
   const [open, setOpen] = useState<number | null>(null);
   const touchStart = useRef<number | null>(null);
@@ -40,14 +41,14 @@ export function Gallery({ photos, name }: { photos: PublicPhoto[]; name: string 
   return (
     <div className="rp-gallery">
       <button type="button" className="rp-cover" onClick={() => setOpen(0)} aria-label={`Open photo 1 of ${ordered.length}: ${ordered[0].alt || name}`}>
-        <img src={ordered[0].url} alt={ordered[0].alt} />
+        <PhotoImg url={ordered[0].url} alt={ordered[0].alt} preview={preview} />
       </button>
       {ordered.length > 1 && (
         <ul className="rp-thumbs" aria-label="More photos">
           {ordered.slice(1).map((photo, index) => (
             <li key={photo.url}>
               <button type="button" onClick={() => setOpen(index + 1)} aria-label={`Open photo ${index + 2} of ${ordered.length}: ${photo.alt || name}`}>
-                <img src={photo.url} alt={photo.alt} loading="lazy" />
+                <PhotoImg url={photo.url} alt={photo.alt} preview={preview} lazy />
               </button>
             </li>
           ))}
@@ -86,7 +87,7 @@ export function Gallery({ photos, name }: { photos: PublicPhoto[]; name: string 
               if (from !== null && to !== undefined && Math.abs(to - from) > 50) step(to < from ? 1 : -1);
             }}
           >
-            <img src={current.url} alt={current.alt} />
+            <PhotoImg url={current.url} alt={current.alt} preview={preview} />
             <figcaption role="status">
               Photo {(open ?? 0) + 1} of {ordered.length}
               {current.alt ? `: ${current.alt}` : ""}

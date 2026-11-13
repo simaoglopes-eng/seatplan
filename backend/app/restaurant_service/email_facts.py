@@ -66,10 +66,17 @@ def _picture(
     session: Session,
     rooms: list[ambience_view.LoadedRoom],
     table_ids: tuple[int, ...],
-    seat_id: int | None,
+    seat: tuple[int, int] | None,
 ) -> bytes | None:
-    """The room of the first booked table, from above, with the table and chair marked."""
-    for loaded in rooms:
+    """The room of the booking from above, with its tables and the chosen chair marked.
+
+    `seat` is (chair id, the id of the table it is at). A joined booking can span two rooms; the
+    room drawn is the one with the chair, else the one with the first booked table. Every booked
+    table of that room is highlighted, and the chair is marked at its own table.
+    """
+    wanted = seat[1] if seat else table_ids[0]
+    ordered = sorted(rooms, key=lambda loaded: all(row.id != wanted for row, _ in loaded.tables))
+    for loaded in ordered:
         mine = [row.id for row, _ in loaded.tables if row.id in table_ids]
         if not mine:
             continue
@@ -78,14 +85,16 @@ def _picture(
             AmbienceSeat(s.id, s.table_id, s.label, s.x, s.y)
             for s in session.scalars(select(Seat).where(Seat.table_id.in_(ids)).order_by(Seat.id))
         ]
-        chosen = seat_id if any(s.key == seat_id for s in seats if s.table_key == mine[0]) else None
+        main = wanted if wanted in mine else mine[0]
+        chosen = seat[0] if seat and seat[1] == main else None
         return render_restaurant_picture(
             loaded.room,
             [table for _, table in loaded.tables],
             seats,
-            mine[0],
+            main,
             chosen,
             room_name=loaded.name,
+            also_tables=[t for t in mine if t != main],
         )
     return None
 
@@ -98,7 +107,8 @@ def booking_email_data(
     labels = table_labels(session, table_ids)
     seat = chosen_seat.seat_payload(session, venue, booking, with_phrase=True)
     rooms = ambience_view.load_rooms(session, venue)
-    png = _picture(session, rooms, table_ids, seat["id"] if seat else None) if table_ids else None
+    placed = (seat["id"], seat["table_id"]) if seat else None
+    png = _picture(session, rooms, table_ids, placed) if table_ids else None
     cover = _cover(session, venue)
     base = get_settings().public_base_url
     table_text = " + ".join(labels) if labels else "to be confirmed"

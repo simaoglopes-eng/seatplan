@@ -47,3 +47,29 @@ test("a published restaurant is found by name, and unpublishing takes it off the
   await expect(page.getByText("No restaurants match. Try removing a filter.")).toBeVisible();
   expect((await request.get(`/api/restaurants/${slug}`)).status()).toBe(404);
 });
+
+test("the owner sees the photos of an unpublished restaurant in the preview", async ({ page, request }) => {
+  const token = await ownerToken(request);
+  const headers = { Authorization: `Bearer ${token}` };
+  const created = await request.post("/api/owner/restaurants", { data: { name: `Preview Photos ${Date.now()}` }, headers });
+  expect(created.status()).toBe(201);
+  const body = (await created.json()) as { public_id: string; slug: string | null };
+  // A 1 x 1 PNG: enough for the server to accept it and for the browser to decode it.
+  const png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+  const photo = await request.post(`/api/owner/restaurants/${body.public_id}/photos`, {
+    data: { kind: "gallery", content_type: "image/png", data_base64: png, alt_text: "A private preview photo" },
+    headers,
+  });
+  expect(photo.status()).toBe(201);
+  const page_ = (await (await request.get(`/api/owner/restaurants/${body.public_id}`, { headers })).json()) as { slug: string | null };
+  const slug = page_.slug ?? body.slug;
+  test.skip(!slug, "a new restaurant has no slug until its identity is saved");
+
+  await page.addInitScript((t) => window.sessionStorage.setItem("seatplan.session", t), token);
+  await page.goto(`/restaurants/${slug}`);
+  await expect(page.getByText(/Preview: this restaurant is not published yet/)).toBeVisible();
+  const image = page.getByAltText("A private preview photo").first();
+  await expect(image).toBeVisible();
+  // Decoded for real: a broken image has no width.
+  await expect.poll(() => image.evaluate((el) => (el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+});

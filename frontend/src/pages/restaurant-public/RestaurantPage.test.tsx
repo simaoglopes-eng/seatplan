@@ -157,6 +157,40 @@ describe("Restaurant page", () => {
     expect(callsTo(calls, "GET", API)).toHaveLength(0);
   });
 
+  it("loads the photos of an unpublished restaurant with the owner's sign-in, because a plain image cannot send it", async () => {
+    sessionStorage.setItem("seatplan.session", "owner-token");
+    const asked: { path: string; auth: string | null }[] = [];
+    const calls = mockApi({
+      "GET /api/restaurants/casa-linho": () => page({ preview: true }),
+      "GET /api/photos/a": () => new Response(new Blob(["a"], { type: "image/png" })),
+      "GET /api/photos/b": () => new Response(new Blob(["b"], { type: "image/png" })),
+    });
+    const made: string[] = [];
+    const original = { create: URL.createObjectURL, revoke: URL.revokeObjectURL };
+    URL.createObjectURL = vi.fn(() => `blob:${made.push("x")}`);
+    URL.revokeObjectURL = vi.fn();
+    const fetchMock = globalThis.fetch as unknown as { mock: { calls: [RequestInfo | URL, RequestInit | undefined][] } };
+    renderAt("/restaurants/casa-linho");
+    const cover = await screen.findByAltText("The terrace");
+    expect(cover.getAttribute("src")).toMatch(/^blob:/);
+    for (const [input, init] of fetchMock.mock.calls) {
+      if (String(input).includes("/api/photos/")) asked.push({ path: String(input), auth: new Headers(init?.headers).get("Authorization") });
+    }
+    expect(asked.length).toBeGreaterThanOrEqual(2);
+    expect(asked.every((r) => r.auth === "Bearer owner-token")).toBe(true);
+    expect(calls.some((c) => c.path === "/api/photos/b")).toBe(true);
+    URL.createObjectURL = original.create;
+    URL.revokeObjectURL = original.revoke;
+    sessionStorage.clear();
+  });
+
+  it("shows the photos of a published restaurant by their public address, with no sign-in sent", async () => {
+    mockApi({ "GET /api/restaurants/casa-linho": () => page(), [`GET ${API}`]: () => INFO });
+    renderAt("/restaurants/casa-linho");
+    const cover = await screen.findByAltText("The terrace");
+    expect(cover.getAttribute("src")).toBe("/api/photos/b");
+  });
+
   it("says the restaurant cannot be found for a 404", async () => {
     mockApi({ "GET /api/restaurants/nope": () => apiError(404, "not_found", "Restaurant not found.") });
     renderAt("/restaurants/nope");

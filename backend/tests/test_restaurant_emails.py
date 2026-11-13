@@ -214,3 +214,34 @@ def test_text_from_the_restaurant_is_escaped_in_the_html_and_links_must_be_web_l
 def test_a_reminder_asks_to_cancel_if_the_diner_cannot_come() -> None:
     assert "cancel" in booking_email("reminder", facts()).body_text.lower()
     assert booking_email("changed", facts()).subject.startswith("Updated: ")
+
+
+# ---------------------------------------------------------------- a booking that joins tables
+
+
+def test_the_map_marks_the_chair_at_the_second_joined_table_and_highlights_both_tables(
+    client: TestClient, session: Session, organiser: Organiser
+) -> None:
+    from unittest.mock import patch
+
+    from test_restaurant_helpers import book, hold
+
+    from app.restaurant_service import email_facts
+
+    place = make_restaurant(session, organiser)
+    (chair,) = add_seats(session, place, "T6", count=1)
+    t5, t6 = place.table["T5"], place.table["T6"]
+    held = hold(client, place, future_day(), "19:00", 7, table_ids=[t5, t6])
+    assert held.status_code == 201, held.text
+    real = email_facts.render_restaurant_picture
+    with patch.object(email_facts, "render_restaurant_picture", wraps=real) as spy:
+        answer = book(client, place, held.json()["hold_id"], 7, seat_id=chair)
+    assert answer.status_code == 201, answer.text
+    assert spy.call_count >= 1
+    args, kwargs = spy.call_args
+    # The chair belongs to the second table, so that table is the main one and the first is highlighted too.
+    assert args[3] == t6 and args[4] == chair
+    assert list(kwargs["also_tables"]) == [t5]
+    (row,) = rows(session, "booking_confirmed")
+    assert row.image_png is not None
+    assert "T5" in row.body_text and "T6" in row.body_text

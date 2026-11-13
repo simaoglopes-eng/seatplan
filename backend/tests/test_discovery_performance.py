@@ -1,11 +1,12 @@
 """Discovery stays quick with 100 restaurants (spec 12: under 500 ms), with and without free times.
 
-It measures the CPU time of this process, not the wall clock, so a busy machine does not fail the test; the best of seven runs is compared.
+The best of seven runs is compared, and the limit is scaled by how slow the machine is at that moment (perf_calibration.py), so a busy machine does not fail the test.
 """
 
 import time
 
 from fastapi.testclient import TestClient
+from perf_calibration import limit
 from sqlalchemy.orm import Session
 from test_discovery import LISBON, venue
 from test_restaurant_helpers import add_schedule, future_day
@@ -52,10 +53,10 @@ def hundred(session: Session, owner: Organiser) -> None:
 def best_of(client: TestClient, params: dict) -> float:
     best = float("inf")
     for _ in range(7):
-        began = time.process_time()
+        began = time.perf_counter()
         answer = client.get("/api/restaurants", params=params)
         assert answer.status_code == 200, answer.text
-        best = min(best, time.process_time() - began)
+        best = min(best, time.perf_counter() - began)
     return best
 
 
@@ -73,7 +74,7 @@ def test_a_search_over_a_hundred_restaurants_with_filters_and_distance(
     }
     body = client.get("/api/restaurants", params=params).json()
     assert body["total"] > 20 and len(body["items"]) == 20
-    assert best_of(client, params) < LIMIT_SECONDS
+    assert best_of(client, params) < limit(LIMIT_SECONDS)
 
 
 def test_free_times_for_the_twenty_on_the_page_stay_under_the_limit(
@@ -105,4 +106,4 @@ def test_free_times_for_the_twenty_on_the_page_stay_under_the_limit(
     params = {"date": future_day(3).isoformat(), "time": "20:00", "party": 2}
     body = client.get("/api/restaurants", params=params).json()
     assert len(body["items"]) == 20 and all(len(item["next_times"]) == 3 for item in body["items"])
-    assert best_of(client, params) < LIMIT_SECONDS
+    assert best_of(client, params) < limit(LIMIT_SECONDS)

@@ -1,15 +1,15 @@
 """The diner map with ambience stays quick for a big restaurant (spec 12: 60 tables under 300 ms).
 
-Measured as the CPU time of this process (not the wall clock, which other programs on a busy machine stretch),
-on the local test database through the real route (request check, rate limit, rooms, sun, light,
-phrases, optimiser suggestions, JSON). The best of seven runs is compared, so one slow moment on a busy
-machine does not fail the test; a real slowdown makes every run slow.
+Measured on the wall clock on the local test database through the real route (request check, rate limit, rooms, sun, light,
+phrases, optimiser suggestions, JSON). The best of seven runs is compared, and the limit is scaled by how slow
+the machine is at that moment (perf_calibration.py), so a busy machine does not fail it; a real slowdown still does.
 """
 
 import time
 from datetime import time as clock
 
 from fastapi.testclient import TestClient
+from perf_calibration import limit
 from sqlalchemy.orm import Session
 from test_restaurant_helpers import add_schedule, future_day
 
@@ -106,10 +106,10 @@ def big_restaurant(session: Session, owner: Organiser) -> Venue:
 def best_of(runs: int, call) -> float:
     best = float("inf")
     for _ in range(runs):
-        began = time.process_time()
+        began = time.perf_counter()
         answer = call()
         assert answer.status_code == 200, answer.text
-        best = min(best, time.process_time() - began)
+        best = min(best, time.perf_counter() - began)
     return best
 
 
@@ -127,9 +127,8 @@ def test_the_map_with_ambience_for_sixty_tables_answers_in_under_300_ms(
     assert any(table["ambience"]["light"] == "sun" for table in body["tables"]) or any(
         table["ambience"]["phrases"] for table in body["tables"]
     )
-    assert (
-        best_of(7, lambda: client.get(f"/api/r/{venue.public_id}/map", params=params))
-        < LIMIT_SECONDS
+    assert best_of(7, lambda: client.get(f"/api/r/{venue.public_id}/map", params=params)) < limit(
+        LIMIT_SECONDS
     )
 
 
@@ -143,7 +142,6 @@ def test_the_light_route_for_sixty_tables_is_quick_too(
         "party": 2,
         "moment": clock(18, 30).isoformat("minutes"),
     }
-    assert (
-        best_of(7, lambda: client.get(f"/api/r/{venue.public_id}/ambience", params=params))
-        < LIMIT_SECONDS
-    )
+    assert best_of(
+        7, lambda: client.get(f"/api/r/{venue.public_id}/ambience", params=params)
+    ) < limit(LIMIT_SECONDS)

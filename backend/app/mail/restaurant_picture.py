@@ -253,11 +253,13 @@ def render_restaurant_picture(
     room_name: str = "",
     table_label: str | None = None,
     seat_label: str | None = None,
+    also_tables: Sequence[int | str] = (),
 ) -> bytes:
     """The PNG of `room` with the booked table highlighted and chair `seat_key` marked.
 
-    `tables` and `seats` are those of this room only. Raises ValueError for a
-    table that is not in the room, or a chair that is not at that table.
+    `tables` and `seats` are those of this room only. `also_tables` are more tables of the
+    same booking in this room (a joined booking), highlighted like the first. Raises
+    ValueError for a table that is not in the room, or a chair that is not at that table.
     """
     chosen = next((t for t in tables if t.key == table_key), None)
     if chosen is None:
@@ -274,7 +276,7 @@ def render_restaurant_picture(
     for fixture in room.fixtures:
         _draw_fixture(canvas, layout, fixture)
     for table in tables:
-        _draw_table(canvas, layout, table, table.key == table_key)
+        _draw_table(canvas, layout, table, table.key == table_key or table.key in also_tables)
     _draw_labels(canvas, layout, tables, seats)
     for seat in seats:
         if mine is None or seat.key != mine.key:

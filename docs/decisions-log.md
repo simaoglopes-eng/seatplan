@@ -884,3 +884,8 @@ assertions. Final checks also use distinct API/web ports and run backend then
 frontend, preserving the strict map-latency assertion. The first failed final
 run triggered the user-authorized recovery to 4bb515a; the patch and diagnostics
 were retained and the report restored before the next verification.
+
+27. **Two integration findings from the independent review, fixed** (branch claude/staff-polish): (a) the owner's preview of an unpublished
+    restaurant showed broken photos, because a draft's photos need the owner's sign-in and a plain image cannot send it; the preview now fetches
+    them with the sign-in (`PhotoImg`); (b) the confirmation email's map marked no chair when the chair was at the second table of a joined
+    booking; it now draws the room of the chair's table, marks the chair there and highlights every booked table of that room.

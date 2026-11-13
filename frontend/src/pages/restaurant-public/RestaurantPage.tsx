@@ -71,7 +71,7 @@ function Page({ data }: { data: PublicRestaurant }) {
           Preview: this restaurant is not published yet. Only you can see this page.
         </p>
       )}
-      <Gallery photos={data.photos} name={data.name} />
+      <Gallery photos={data.photos} name={data.name} preview={data.preview} />
       <header className="rp-head">
         <h1>{data.name}</h1>
         <p className="rp-line">
