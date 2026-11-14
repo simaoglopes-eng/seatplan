@@ -1,104 +1,108 @@
 /*
-  The Restaurants look: a white base, petrol-blue actions, amber for sun.
+  The Restaurants look: ivory paper, dark green actions, terracotta for what needs attention.
 
   PageShell sets data-surface="restaurants" on <html> for the diner, owner and
   staff routes ("/", "/restaurants/...", "/r/...", "/b/...", "/owner...",
-  "/staff/..."), and on no other route. So this file changes only those
-  pages: the events pages and the login for events keep the linen and
-  bottle-green look from tokens.css.
+  "/staff/...", and the owner or staff sign-in), and on no other route. So this
+  file changes only those pages: the events pages and the login for events keep
+  the linen and bottle-green look from tokens.css.
 
   It only re-defines token values; no stylesheet needs to know about it.
   Every pair is checked by scripts/contrast.mjs (WCAG 2.2 AA), the same
   way as tokens.css.
+
+  Palette (brief of the 20-screen redesign): ivory #F6F4EC, surface #FFFDF7,
+  ink #222A22, secondary #555F53, action green #234C39, selection #E0EADF,
+  outline #D8D9CD, terracotta #A43F28 on #F8E5D5. Amber stays for the sun.
 */
 
 :root[data-surface="restaurants"] {
   /* ---------- Colour: light ---------- */
-  --c-bg: #f7f9fc;
-  --c-surface: #ffffff;
-  --c-surface-sunk: #e8eef4;   /* the floor under a plan */
-  --c-surface-strong: #cdd8e2; /* tables drawn on the floor */
-  --c-text: #142633;
-  --c-text-muted: #475569;
-  --c-border: #d9e2ea;
-  --c-border-strong: #64748b;
+  --c-bg: #f6f4ec;
+  --c-surface: #fffdf7;
+  --c-surface-sunk: #e6eadf;   /* the floor under a plan */
+  --c-surface-strong: #d3dacd; /* tables drawn on the floor */
+  --c-text: #222a22;
+  --c-text-muted: #555f53;
+  --c-border: #d8d9cd;
+  --c-border-strong: #7a8376;
 
-  --c-primary: #075b73;        /* petrol blue: the one action in a decision area */
-  --c-primary-hover: #054a5e;
-  --c-on-primary: #ffffff;
-  --c-primary-soft: #dceff4;
+  --c-primary: #234c39;        /* dark green: the one action in a decision area */
+  --c-primary-hover: #1a3a2b;
+  --c-on-primary: #fffdf7;
+  --c-primary-soft: #e0eadf;   /* selection */
 
-  --c-accent: #805000;         /* amber, dark enough for text: sun and "recommended" */
-  --c-accent-bright: #b07000;
-  --c-accent-soft: #fff2cd;
+  --c-accent: #7f5310;         /* amber, dark enough for text: sun and "recommended" */
+  --c-accent-bright: #a06a12;
+  --c-accent-soft: #f3e4c4;
 
-  --c-danger: #a32532;
-  --c-danger-soft: #fbe3e5;
+  --c-danger: #a43f28;         /* terracotta: needs attention, destructive */
+  --c-danger-soft: #f8e5d5;
 
   --c-focus: #005fcc;
-  --c-overlay: rgb(20 38 51 / 0.45);
+  --c-overlay: rgb(34 42 34 / 0.45);
 
-  --seat-free-fill: #ffffff;
-  --seat-free-stroke: #334155;
-  --seat-held: #805000;
-  --seat-held-soft: #fff2cd;
-  --seat-taken: #4b5b69;
-  --seat-taken-mark: #ffffff;
-  --seat-mine: #075b73;
-  --seat-mine-mark: #ffffff;
-  --seat-blocked: #64748b;
-  --seat-blocked-soft: #e2e8f0;
-  --seat-highlight: #b07000;
+  --seat-free-fill: #fffdf7;
+  --seat-free-stroke: #3b4541;
+  --seat-held: #7f5310;
+  --seat-held-soft: #f3e4c4;
+  --seat-taken: #59625e;
+  --seat-taken-mark: #fffdf7;
+  --seat-mine: #234c39;
+  --seat-mine-mark: #fffdf7;
+  --seat-blocked: #7c7466;
+  --seat-blocked-soft: #e3e5da;
+  --seat-highlight: #a06a12;
 
-  /* ---------- Type: one family, headings included ---------- */
-  --font-display: var(--font-body);
+  /* ---------- Type: an editorial serif for headings, the system sans for everything else ---------- */
+  --font-display: "DM Serif Text", Georgia, "Iowan Old Style", Charter, Cambria, serif;
 
-  /* ---------- Shape: 12 px cards, 10 px controls ---------- */
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
+  /* ---------- Shape: 8 px controls, 12 to 15 px surfaces ---------- */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
 
-  --shadow-sm: 0 1px 2px rgb(20 38 51 / 0.08);
-  --shadow-md: 0 4px 14px rgb(20 38 51 / 0.1), 0 1px 3px rgb(20 38 51 / 0.08);
-  --shadow-lg: 0 18px 48px rgb(20 38 51 / 0.2);
+  --shadow-sm: 0 1px 2px rgb(34 42 34 / 0.08);
+  --shadow-md: 0 4px 14px rgb(34 42 34 / 0.1), 0 1px 3px rgb(34 42 34 / 0.08);
+  --shadow-lg: 0 18px 48px rgb(34 42 34 / 0.2);
 }
 
 @media (prefers-color-scheme: dark) {
   :root[data-surface="restaurants"] {
-    --c-bg: #101820;
-    --c-surface: #17232e;
-    --c-surface-sunk: #0b1219;
-    --c-surface-strong: #2a3a48;
-    --c-text: #f4f7fb;
-    --c-text-muted: #b0bfcd;
-    --c-border: #354655;
-    --c-border-strong: #758a9d;
+    --c-bg: #151a15;
+    --c-surface: #1d241d;
+    --c-surface-sunk: #0f130f;
+    --c-surface-strong: #2c362b;
+    --c-text: #f1efe4;
+    --c-text-muted: #b4bcb0;
+    --c-border: #384237;
+    --c-border-strong: #7e8a7a;
 
-    --c-primary: #78d4e8;
-    --c-primary-hover: #96e0f0;
-    --c-on-primary: #102632;
-    --c-primary-soft: #16363f;
+    --c-primary: #8fcfa8;
+    --c-primary-hover: #a9dfbf;
+    --c-on-primary: #11201a;
+    --c-primary-soft: #223a2c;
 
     --c-accent: #ffd480;
     --c-accent-bright: #ffd480;
     --c-accent-soft: #4a3419;
 
-    --c-danger: #ffadb5;
-    --c-danger-soft: #40202a;
+    --c-danger: #f2a58f;
+    --c-danger-soft: #45241b;
 
     --c-focus: #9ac2ff;
     --c-overlay: rgb(0 0 0 / 0.6);
 
-    --seat-free-fill: #17232e;
-    --seat-free-stroke: #c5d2de;
+    --seat-free-fill: #1d241d;
+    --seat-free-stroke: #c9d2c4;
     --seat-held: #ffd480;
     --seat-held-soft: #4a3419;
-    --seat-taken: #8fa0b0;
-    --seat-taken-mark: #0b1219;
-    --seat-mine: #78d4e8;
-    --seat-mine-mark: #0b1219;
-    --seat-blocked: #6b7c8c;
-    --seat-blocked-soft: #1f2b36;
+    --seat-taken: #98a394;
+    --seat-taken-mark: #0f130f;
+    --seat-mine: #8fcfa8;
+    --seat-mine-mark: #0f130f;
+    --seat-blocked: #6f7a6b;
+    --seat-blocked-soft: #232b22;
     --seat-highlight: #ffd480;
 
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
