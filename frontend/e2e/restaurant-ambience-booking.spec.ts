@@ -45,3 +45,19 @@ test("a time that is no longer free in the link lands on the list of times", asy
   await expect(page.getByText("03:00 is not free any more. Please pick another time.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Pick a time" })).toBeVisible();
 });
+
+test("a diner confirms from the form beside the plan, without leaving the map", async ({ page, request }) => {
+  const links = await demoLinks(request);
+  await page.goto(`${links.showcase_tagus_terrace}?date=${isoDaysFromToday(5)}&time=20:00&party=2`);
+  await expect(page.getByRole("heading", { name: "Choose your table" })).toBeVisible();
+  // The suggested table is already selected, so reserving it is one tap on its card.
+  await expect(page.getByRole("option", { selected: true })).toHaveCount(1);
+  await page.getByRole("button", { name: "Hold this table" }).first().click();
+  const panel = page.getByRole("form", { name: "Your details" });
+  await expect(panel).toBeVisible();
+  await expect(page.getByRole("option").first()).toBeVisible(); // the plan is still there
+  await panel.getByLabel("Name for the booking").fill("Panel Diner");
+  await panel.getByLabel("Email", { exact: true }).fill("panel.diner@example.com");
+  await panel.getByRole("button", { name: "Confirm booking" }).click();
+  await expect(page.getByRole("heading", { name: "You are booked, Panel" })).toBeVisible();
+});

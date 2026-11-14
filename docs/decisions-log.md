@@ -916,3 +916,10 @@ were retained and the report restored before the next verification.
     (b) The diner's table map draws three looks only: Available (open ring), Your table (green, ticked) and Unavailable (one neutral look for booked, being
     chosen by someone else, and not suiting the party). The reason stays in each table's spoken name and in its card. The wheelchair badge stays on accessible
     tables only. What the sun stripes, the dark veil and the eye mean is said once in a sentence under the map, not as legend rows.
+
+31d. **The details form beside the plan** (claude/ux-v2, step 4). The step structure, the holds and the `?date&time&party` link are unchanged. Once a table is
+    held, the side panel next to the map shows "Your details" (the same form and the same checks as the Your details step, `StepDetails` with
+    `variant="panel"`) with its own Confirm booking, and a quiet "Choose a specific chair (optional)" that goes on to the chair step, carrying what was typed.
+    The sticky bar's "Continue with table X" stays, as the secondary way on. A hold that ends while the form is open shows the usual "your hold ended"
+    message and keeps the details. The suggestion card is hidden while a table is held. Inside a restaurant's public page the booking uses the whole width,
+    so the plan is bigger (two thirds, with the panel a third).

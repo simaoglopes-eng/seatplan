@@ -392,6 +392,16 @@
   }
 }
 
+/* The booking inside a restaurant's public page has the whole width: a bigger plan, the side panel with the details form next to it. */
+.rp-book .rb-page { max-width: none; }
+.rp-book .rb-step { max-width: none; }
+@media (min-width: 64rem) {
+  .rp-book .rb-map-layout { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+  .rp-book .rb-map-layout .seatmap-viewport { height: min(72vh, 36rem); }
+}
+
+.rb-details-panel .rb-actions { margin-top: var(--space-2); }
+
 /* ---------- Staff: laptop first, but it still works on a tablet ---------- */
 
 .st-page {

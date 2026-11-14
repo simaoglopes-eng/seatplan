@@ -107,6 +107,7 @@ function BookingFlow({ venueId, info }: { venueId: string; info: RestaurantInfo 
           onHold={flow.setHold}
           onNext={flow.askSeat}
           onBack={() => flow.go(STEP.time)}
+          details={{ seatId: flow.seatId, contact: flow.contact, onContactChange: flow.setContact, onBooked: flow.booked, onHoldLost: flow.holdLost }}
         />
       )}
       {step === STEP.details && hold && (

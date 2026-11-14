@@ -6,7 +6,7 @@ import { applyAmbience, cursorSteps, defaultRoom, roomTabs, seatsInRoom, tablesI
 import { useLightCursor } from "./useLightCursor";
 import { ApiError } from "../../api/client";
 import { getDinerMap, holdTable, venueDayScope } from "../../api/restaurant";
-import type { DinerMap, PartyNeeds } from "../../api/restaurant";
+import type { BookingConfirmation, ContactDetails, DinerMap, PartyNeeds } from "../../api/restaurant";
 import { useLive } from "../../api/useLive";
 import { Button, ErrorState, Skeleton } from "../../design/components";
 import { SeatMap } from "../../seatmap/SeatMap";
@@ -15,6 +15,7 @@ import { HoldCountdown } from "./HoldCountdown";
 import { LightCursorControl } from "./LightCursor";
 import { DINER_KEY, MapKey, SCENE_NOTE } from "./MapKey";
 import { RoomTabs } from "./RoomTabs";
+import { StepDetails } from "./StepDetails";
 import { StepHeading } from "./StepHeading";
 import { AmbienceCard, ConflictNotice, SuggestionCard, TableList } from "./TablePanels";
 import { alternatives, describeDinerTables, isPickable, tablesForMap } from "./tableView";
@@ -41,6 +42,17 @@ interface StepTableProps {
   onHold: (hold: Hold | null) => void;
   onNext: () => void;
   onBack: () => void;
+  /** What the details form beside the map needs; without it (older callers) the form only appears as its own step. */
+  details?: DetailsProps;
+}
+
+/** The parts of the booking flow the side-panel form shares with the Your details step. */
+export interface DetailsProps {
+  seatId: number | null;
+  contact: ContactDetails;
+  onContactChange: (contact: ContactDetails) => void;
+  onBooked: (confirmation: BookingConfirmation) => void;
+  onHoldLost: (message: string) => void;
 }
 
 interface Conflict {
@@ -72,6 +84,12 @@ export function StepTable(props: StepTableProps) {
   const [problem, setProblem] = useState<string | null>(null);
   const [spoken, setSpoken] = useState("");
   const map = state.status === "ready" ? state.data : null;
+
+  // The form beside the map can lose the hold while this step stays on screen: show why, as a conflict does.
+  const carried = props.carriedNotice;
+  useEffect(() => {
+    if (carried) setConflict({ message: carried, failedId: null });
+  }, [carried]);
 
   // A live update shows our held table as booked: the hold was lost (it had expired).
   useEffect(() => {
@@ -128,7 +146,7 @@ interface BodyProps extends StepTableProps {
   onTake: (tableId: number | null) => void;
 }
 
-function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict, problem, onTake, onNext, onBack, needs, time }: BodyProps) {
+function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict, problem, onTake, onNext, onBack, needs, time, details }: BodyProps) {
   const heldId = hold && secondsLeft !== 0 ? hold.tableId : null;
   // The light cursor only repaints the light; the tables, holds and live updates stay as they are.
   const steps = cursorSteps(loaded.stay_start, loaded.stay_end);
@@ -216,11 +234,13 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
           onSelect={lookAt}
         />
         <div className="rb-map-side">
-          {nothingFree ? (
-            <p className="rb-notice">No table for {people(needs.party)} is free at {time} any more. Please go back and pick another time.</p>
-          ) : (
-            <SuggestionCard map={map} busy={busy} onTake={onTake} onChooseForMe={() => onTake(null)} />
-          )}
+          {/* Once a table is held the suggestion has done its job: the card below and the form say what happens next. */}
+          {heldId === null &&
+            (nothingFree ? (
+              <p className="rb-notice">No table for {people(needs.party)} is free at {time} any more. Please go back and pick another time.</p>
+            ) : (
+              <SuggestionCard map={map} busy={busy} onTake={onTake} onChooseForMe={() => onTake(null)} />
+            ))}
           {cardTable && (
             <AmbienceCard
               table={cardTable}
@@ -233,6 +253,26 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
               }}
             />
           )}
+          {details && hold && heldId !== null && secondsLeft !== null && (
+            <>
+              <StepDetails
+                variant="panel"
+                venueId={venueId}
+                needs={needs}
+                hold={hold}
+                seatId={details.seatId}
+                secondsLeft={secondsLeft}
+                contact={details.contact}
+                onContactChange={details.onContactChange}
+                onBooked={details.onBooked}
+                onHoldLost={details.onHoldLost}
+                onBack={onBack}
+              />
+              <Button variant="ghost" onClick={onNext}>
+                Choose a specific chair (optional)
+              </Button>
+            </>
+          )}
           <MapKey entries={DINER_KEY} />
           {map.rooms && <p className="rb-muted rb-scene-note">{SCENE_NOTE}</p>}
         </div>
@@ -243,7 +283,8 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
         <Button variant="secondary" onClick={onBack}>
           Change time
         </Button>
-        <Button onClick={onNext} disabled={heldId === null}>
+        {/* With the form beside the map, "Confirm booking" is the main action; this one goes on to choose a chair first. */}
+        <Button variant={details && heldId !== null ? "secondary" : "primary"} onClick={onNext} disabled={heldId === null}>
           {heldId === null ? "Pick a table to continue" : `Continue with table ${hold?.tableLabel}`}
         </Button>
       </div>
