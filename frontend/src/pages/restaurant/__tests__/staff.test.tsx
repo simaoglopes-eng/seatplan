@@ -150,6 +150,7 @@ describe("Staff page", () => {
     await screen.findByText("Rui Costa");
     fireEvent.change(screen.getByLabelText("Day"), { target: { value: "2026-12-24" } });
     await screen.findByText("Rui Costa");
+    fireEvent.click(screen.getByRole("button", { name: "Check a walk-in" }));
     fireEvent.click(screen.getByRole("button", { name: "Check" }));
     await screen.findByText("Only free table for 5");
     expect(callsTo(calls, "POST", `${API}/whatif`)[0]?.body).toMatchObject({ date: "2026-12-24" });
@@ -188,7 +189,8 @@ describe("Staff page", () => {
     expect(screen.getByText(/2 empty chairs fewer/)).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/optimise/service`)[0]?.body).toEqual({ date: todayIso(), service: "Dinner" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Apply these moves" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply 1 move" }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", {name:"Confirm 1 move"}));
     expect(await screen.findByText("Done: 1 booking moved.")).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/optimise/service`)[1]?.body).toEqual({ date: todayIso(), service: "Dinner", apply: true, plan_id: SERVICE_PLAN.plan_id });
   });
@@ -203,9 +205,10 @@ describe("Staff page", () => {
 
     answer = SERVICE_PLAN;
     fireEvent.click(screen.getByRole("button", { name: "Preview moves" }));
-    await screen.findByRole("button", { name: "Apply these moves" });
+    await screen.findByRole("button", { name: "Apply 1 move" });
     answer = apiError(409, "conflict", "The floor changed since the preview. Please preview again.");
-    fireEvent.click(screen.getByRole("button", { name: "Apply these moves" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply 1 move" }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", {name:"Confirm 1 move"}));
     expect((await screen.findByRole("alert")).textContent).toContain("Please preview again.");
   });
 
@@ -213,6 +216,7 @@ describe("Staff page", () => {
     const calls = mockApi({ [`GET ${API}/schedule`]: () => INFO.schedule, [`POST ${API}/optimise/exact-check`]: () => EXACT_CHECK });
     renderStaff();
     fireEvent.click(screen.getByRole("tab", { name: "Optimise" }));
+    fireEvent.click(await screen.findByText("Exact check · optional analysis"));
     fireEvent.click(await screen.findByRole("button", { name: "Run the exact check" }));
     const card = (await screen.findByText(/The best possible plan seats 2 more guests/)).closest("section") as HTMLElement;
     expect(card.textContent).toContain("Quick planner: 18 guests seated, 4 empty chairs");

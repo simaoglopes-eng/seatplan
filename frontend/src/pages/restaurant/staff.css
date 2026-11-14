@@ -1,0 +1,94 @@
+﻿/* Service operations only. Restaurant tokens remain owned by the shared theme. */
+.st-page { --st-panel-height: min(52dvh, 31rem); }
+.st-page .st-top { align-items: center; gap: var(--space-4); }
+.st-page .st-title { font-size: clamp(1.75rem, 3vw, 2.25rem); margin-bottom: var(--space-1); }
+.st-restaurant-name { margin: var(--space-2) 0 var(--space-1); font-weight: var(--fw-bold); color: var(--c-primary); }
+.st-page .st-tabs { gap: var(--space-2); overflow-x: auto; }
+.st-page .st-tab { min-height: var(--touch-target); white-space: nowrap; }
+.st-page .st-floor-head { display: grid; grid-template-columns: 1fr; align-items: stretch; padding: var(--space-4); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-lg); gap: var(--space-3); }
+.st-page .st-counts { order: 2; margin: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.st-page .st-count { padding: var(--space-2) var(--space-3); border: 1px solid var(--c-border); border-radius: var(--radius-md); background: var(--c-bg); }
+.st-page .st-count-number { font-size: var(--fs-lg); }
+.st-time-reference { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2) var(--space-4); align-items: center; }
+.st-time-reference > strong { font-size: var(--fs-lg); font-variant-numeric: tabular-nums; }
+.st-time-reference > span { grid-column: 1; }
+.st-time-reference > .btn { grid-column: 2; grid-row: 1 / 3; }
+.st-time-slider { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); grid-column: 1 / -1; font-size: var(--fs-sm); color: var(--c-text-muted); }
+.st-time-slider input { flex: 1; min-width: 8rem; min-height: var(--touch-target); accent-color: var(--c-primary); }
+.st-quick-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.st-page .st-grid { grid-template-columns: minmax(0, 1.65fr) minmax(20rem, 1fr); align-items: start; }
+.st-page .st-main { position: sticky; top: 4.5rem; }
+.st-page .st-side { min-width: 0; }
+.st-view-controls { display: flex; gap: var(--space-2); }
+.st-page .st-arrivals-panel { padding-bottom: var(--space-2); }
+.st-page .st-arrivals { max-height: var(--st-panel-height); overflow-y: auto; overscroll-behavior: contain; padding: var(--space-1); }
+.st-arrival-group { margin: 0 0 var(--space-2); color: var(--c-text-muted); font-size: var(--fs-sm); font-weight: var(--fw-bold); }
+.st-page .st-arrival { border-color: var(--c-border); background: var(--c-surface); }
+.st-page .st-arrival:has([aria-pressed="true"]) { border-color: var(--c-primary); background: var(--c-primary-soft); }
+.st-action-context { flex-basis: 100%; font-size: var(--fs-sm); color: var(--c-text-muted); margin-block: 0 var(--space-2); }
+.st-page .st-actions { padding-top: var(--space-2); align-items: center; }
+.st-page .st-cancel-booking { color: var(--c-danger); margin-top: var(--space-3); border-top: 1px solid var(--c-border); width: 100%; }
+.st-walkin-fields { border: 0; margin: 0; padding: 0; min-width: 0; }
+.st-effective-time { padding: var(--space-3); background: var(--c-primary-soft); border-left: 3px solid var(--c-primary); border-radius: var(--radius-sm); }
+.st-page .dialog-backdrop, .st-page .dialog { animation: none; }
+.st-page .dialog { max-width: calc(100vw - var(--space-4)); }
+.st-page button:focus-visible, .st-page a:focus-visible, .st-page input:focus-visible, .st-page select:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 3px; }
+@media (max-width: 64rem) {
+  .st-page .st-grid { grid-template-columns: minmax(0, 1fr); }
+  .st-page .st-main { position: static; }
+  .st-page .st-side { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; }
+}
+@media (max-width: 40rem) {
+  .st-page .st-side { display: flex; }
+  .st-page .st-top { flex-wrap: wrap; }
+  .st-time-reference { grid-template-columns: minmax(0, 1fr); }
+  .st-time-reference > .btn { grid-column: 1; grid-row: auto; justify-self: start; }
+  .st-page .rb-card { padding: var(--space-3); }
+  .st-page .st-actions .btn { flex-grow: 1; }
+  .st-page .st-count { font-size: var(--fs-sm); }
+}
+@media (prefers-reduced-motion: reduce) { .st-page *, .st-page *::before, .st-page *::after { animation: none !important; scroll-behavior: auto !important; } }
+.st-page [hidden] { display: none !important; }
+.st-page .st-optimise { display: flex; flex-direction: column; align-items: stretch; }
+.st-operation-plan h2 { font-size: var(--fs-xl); }
+.st-plan-preview { margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--c-border); }
+.st-plan-moves { padding-left: var(--space-5); }
+.st-plan-moves li { padding-block: var(--space-3); border-bottom: 1px solid var(--c-border); }
+.st-page summary { cursor: pointer; min-height: var(--touch-target); display: list-item; align-content: center; font-weight: var(--fw-bold); }
+.st-page .st-stats { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.st-page .st-stat { border: 1px solid var(--c-border); background: var(--c-surface); border-radius: var(--radius-lg); padding: var(--space-4); }
+.st-page .st-stat-value { font-size: var(--fs-2xl); }
+.st-schedule-heading nav { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+.st-schedule-heading nav a { min-height: var(--touch-target); align-content: center; }
+.st-schedule-save { position: sticky; top: 3.75rem; z-index: 5; background: var(--c-surface); border: 1px solid var(--c-border); padding: var(--space-3); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); align-items: center; }
+.st-schedule-save > span { margin-right: auto; font-size: var(--fs-sm); }
+.st-page .st-schedule section { scroll-margin-top: 10rem; }
+.st-page .st-table-wrap { max-width: 100%; }
+@media (max-width: 64rem) { .st-page .st-stats { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 40rem) {
+  .st-page .st-bar { display: flex; flex-direction: column; align-items: stretch; }
+  .st-page .st-inline { flex-wrap: wrap; }
+  .st-page .st-inline input { max-width: 100%; }
+  .st-page .st-table-wrap { overflow: visible; }
+  .st-schedule .st-table thead { display: none; }
+  .st-schedule .st-table, .st-schedule .st-table tbody { display: block; width: 100%; }
+  .st-schedule .st-table tr { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); padding: var(--space-3) 0; gap: var(--space-3); border-bottom: 1px solid var(--c-border-strong); }
+  .st-schedule .st-table td { display: block; min-width: 0; padding: 0; border: 0; }
+  .st-schedule .st-table td::before { display: block; color: var(--c-text-muted); font-size: var(--fs-sm); margin-bottom: var(--space-1); }
+  .st-schedule .st-table td:nth-child(1)::before { content: "Service name"; }
+  .st-schedule .st-table td:nth-child(2)::before { content: "Weekday"; }
+  .st-schedule .st-table td:nth-child(3)::before { content: "Opens"; }
+  .st-schedule .st-table td:nth-child(4)::before { content: "Last slot ends"; }
+  .st-schedule .st-table td:nth-child(5)::before { content: "Minutes per slot"; }
+  .st-schedule .st-table td:nth-child(6)::before { content: "Guests per slot"; }
+  .st-schedule-save { gap: var(--space-2); }
+}
+.st-schedule-fields { display: flex; flex-direction: column; gap: var(--space-4); border: 0; padding: 0; margin: 0; min-width: 0; }
+.st-page .st-service-errors td { color: var(--c-danger); }
+@media (max-width: 40rem) { .st-schedule .st-service-errors { display: block; } .st-schedule .st-service-errors td::before { content: none; } }
+@media (max-width: 40rem) { .st-schedule .st-table .field-input { width: 100%; min-width: 0; box-sizing: border-box; } }
+:root:has(.st-page) { scroll-padding-block-start: 12rem; }
+.st-page .st-panel, .st-page .st-schedule, .st-schedule-fields > .rb-card { min-width: 0; }
+@media (min-width: 40.01rem) { .st-page .st-table-wrap { min-width: 0; width: 100%; overflow-x: auto; } }
+/* Contain the absolutely positioned screen-reader labels inside the scrollable table. */
+.st-page .st-table-wrap { position: relative; }

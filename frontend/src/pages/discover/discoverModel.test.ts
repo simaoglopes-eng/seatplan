@@ -56,7 +56,7 @@ describe("labels", () => {
   });
 
   it("writes one line about the room from the three facts a restaurant has, and nothing when it has none", () => {
-    expect(ambienceLine({ sun: true, view: true, accessible: true, terrace: true })).toBe("Sunny tables · With a view · Terrace");
+    expect(ambienceLine({ sun: true, view: true, accessible: true, terrace: true })).toBe("Has sunny tables · Tables with a view · Terrace");
     expect(ambienceLine({ sun: false, view: false, accessible: true, terrace: true })).toBe("Terrace");
     expect(ambienceLine({ sun: false, view: false, accessible: true, terrace: false })).toBe("");
   });

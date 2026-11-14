@@ -33,6 +33,8 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   terrace: "Terrace",
 };
 export const FEATURE_KEYS = Object.keys(FEATURE_LABELS) as FeatureKey[];
+// Public restaurant pages share FEATURE_LABELS; keep discovery copy local to this flow.
+export const DISCOVERY_FEATURE_LABELS = { ...FEATURE_LABELS, sun: "Has sunny tables", view: "Tables with a view" };
 
 /** "petiscos" becomes "Petiscos". */
 export function cuisineLabel(key: string): string {
@@ -61,7 +63,7 @@ export function featureNames(features: Features): string[] {
 export function ambienceLine(features: Features): string {
   return (["sun", "view", "terrace"] as FeatureKey[])
     .filter((key) => features[key])
-    .map((key) => FEATURE_LABELS[key])
+    .map((key) => DISCOVERY_FEATURE_LABELS[key])
     .join(" · ");
 }
 

@@ -22,7 +22,7 @@ test("the filters drawer has no accessibility problems, on the wide bar and on a
     await page.getByRole("button", { name: /^Filters/ }).click();
     await expect(page.getByRole("dialog", { name: "Filters" })).toBeVisible();
     const found = await new AxeBuilder({ page }).withTags(TAGS).analyze();
-    expect(found.violations.map((v) => `${width}px ${v.id}: ${v.help}`)).toEqual([]);
+    expect(found.violations.map((v) => ({ width, id: v.id, nodes: v.nodes.map(node => ({target: node.target, summary: node.failureSummary})) }))).toEqual([]);
   }
 });
 
