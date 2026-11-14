@@ -42,7 +42,7 @@ export function ChooseSeat({ venueId, hold, secondsLeft, seatId, onDone, onBackT
 
   return (
     <section className="rb-step">
-      <StepHeading>Where would you like to sit? (optional)</StepHeading>
+      <StepHeading>Request a chair (optional)</StepHeading>
       <p className="rb-muted">
         Table {hold.tableLabel} is yours. This only tells the restaurant which chair you would like; it does not change your booking.
       </p>
@@ -50,7 +50,7 @@ export function ChooseSeat({ venueId, hold, secondsLeft, seatId, onDone, onBackT
       <SeatPicker label={`Chairs at table ${hold.tableLabel}`} data={data} picked={picked} onPick={setPicked} />
       <div className="rb-actions rb-actions-sticky">
         <Button variant="secondary" onClick={onBackToMap}>
-          Back to the map
+          Back to your details
         </Button>
         <Button variant="ghost" onClick={() => onDone(null)}>
           Skip

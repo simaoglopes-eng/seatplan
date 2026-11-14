@@ -973,3 +973,7 @@
   .rb-map-layout .rb-map-side > .legend, .rb-map-layout .rb-map-side > .rb-scene-note { order: 2; }
 }
 .rb-done > .badge { align-self: flex-start; }
+
+/* The date line with "Change time" next to it, instead of a second bar at the bottom of a phone. */
+.rb-step-context { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.rb-step-context > p { margin: 0; }

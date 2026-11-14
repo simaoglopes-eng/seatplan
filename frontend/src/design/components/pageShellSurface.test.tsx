@@ -17,6 +17,17 @@ describe("isRestaurantRoute", () => {
   });
 });
 
+describe("isRestaurantRoute and the sign-in", () => {
+  it("treats the sign-in of an owner or staff journey as Restaurants, and every other sign-in as Events", () => {
+    expect(isRestaurantRoute("/login", "?next=%2Fowner")).toBe(true);
+    expect(isRestaurantRoute("/login", "?next=%2Fowner%2Fabc%2Frooms")).toBe(true);
+    expect(isRestaurantRoute("/login", "?next=%2Fstaff%2Fabc")).toBe(true);
+    expect(isRestaurantRoute("/login", "?next=%2Fmy")).toBe(false);
+    expect(isRestaurantRoute("/login", "?next=%2Fowners-club")).toBe(false);
+    expect(isRestaurantRoute("/login", "")).toBe(false);
+  });
+});
+
 describe("PageShell surface", () => {
   it("sets data-surface on the page only on Restaurants routes, and removes it on the way out", () => {
     const restaurants = render(

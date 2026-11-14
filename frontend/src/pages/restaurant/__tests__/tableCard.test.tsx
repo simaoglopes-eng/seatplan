@@ -78,7 +78,9 @@ describe("One card per table", () => {
     fireEvent.click(within(screen.getByRole("tablist", { name: "Rooms" })).getByRole("tab", { name: /Terrace/ }));
     // Nothing of ours is on the Terrace: no card for a table from the Main room.
     expect(screen.queryByRole("region", { name: /^Table 7/ })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Suggested: table 7 in Main room" }));
+    // Another room's table is never offered for holding from here: only a way to go and look at it.
+    expect(screen.getByText("Table 7 is in Main room")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Show table 7 in Main room" }));
     expect(within(screen.getByRole("tablist", { name: "Rooms" })).getByRole("tab", { name: /Main room/ }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByRole("region", { name: /^Table 7/ })).toBeTruthy();
   });
@@ -109,12 +111,33 @@ describe("The details form beside the plan", () => {
     expect(within(form).getByRole("button", { name: "Confirm booking" })).toBeTruthy();
   });
 
+  it("marks Your details as the current step as soon as the table is held", async () => {
+    mockApi(routes());
+    await reachTableStep();
+    const current = () => screen.getByRole("navigation", { name: "Booking steps" }).querySelector('[aria-current="step"]')?.textContent;
+    expect(current()).toContain("Table");
+    fireEvent.click(screen.getByRole("button", { name: "Hold table 7 & continue" }));
+    await screen.findByRole("form", { name: "Your details" });
+    expect(current()).toContain("Your details");
+    expect(screen.getByRole("heading", { name: "Your details" })).toBeTruthy();
+    // One main action: no second "continue" bar, and "Change time" sits next to the date.
+    expect(screen.queryByRole("button", { name: /Pick a table to continue|Continue with table/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Change time" })).toBeTruthy();
+  });
+
+  it("has one main action before a hold too: the card's, with no disabled bar under it", async () => {
+    mockApi(routes());
+    await reachTableStep();
+    expect(screen.queryByRole("button", { name: "Pick a table to continue" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Hold table 7 & continue" })).toBeTruthy();
+  });
+
   it("marks Your details as the current step while the chair is being chosen", async () => {
     mockApi({ ...routes(), [`GET ${API}/seats`]: () => ({ tables: [{ id: 7, label: "7", shape: "rect", x: 40, y: 40, w: 120, h: 60, rotation: 0 }], seats: [{ id: 71, table_id: 7, label: "1", x: 70, y: 30, state: "free", accessible: false, phrase: null }] }) });
     await reachTableStep();
     fireEvent.click(screen.getByRole("button", { name: "Hold table 7 & continue" }));
     fireEvent.click(await screen.findByRole("button", { name: "Choose a chair" }));
-    await screen.findByRole("heading", { name: /Where would you like to sit/ });
+    await screen.findByRole("heading", { name: /Request a chair/ });
     const steps = screen.getByRole("navigation", { name: "Booking steps" });
     expect(steps.querySelector('[aria-current="step"]')?.textContent).toContain("Your details");
   });

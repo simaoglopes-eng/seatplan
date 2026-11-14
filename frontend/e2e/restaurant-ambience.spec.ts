@@ -25,7 +25,7 @@ for (const width of [1440, 390]) test(`diner sees rooms, daylight and night and 
   await cursor.fill(last!);
   await expect(page.locator(".room-night")).toHaveCount(1);
   await expect(page.locator(".room-sun")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Pick a table to continue" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Pick a table to continue" })).toHaveCount(0); // one main action: the card's
   await page.screenshot({ path: join(tmpdir(), `seatplan-37-night-${width}.png`), fullPage: true });
   await page.getByRole("button", { name: "Hold table Garden 1", exact: true }).last().click();
   await page.getByRole("button", { name: "Choose a chair" }).click();

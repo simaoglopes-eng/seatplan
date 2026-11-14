@@ -79,7 +79,7 @@ export function StepDetails(props: StepDetailsProps) {
 
   return (
     <form className={panel ? "rb-card rb-form rb-details-panel" : "rb-step rb-form"} onSubmit={submit} noValidate aria-label={panel ? "Your details" : undefined}>
-      {panel ? <h3 className="rb-suggestion-title">Your details</h3> : <StepHeading>Your details</StepHeading>}
+      {panel ? <h3 className="rb-suggestion-title">Confirm your booking</h3> : <StepHeading>Your details</StepHeading>}
       {panel && summary && <p className="rb-muted rb-details-summary">{summary}</p>}
       <HoldCountdown tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />
       <Field label="Name for the booking" autoComplete="name" required {...bind("name")} />

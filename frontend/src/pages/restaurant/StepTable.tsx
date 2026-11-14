@@ -126,10 +126,16 @@ export function StepTable(props: StepTableProps) {
 
   return (
     <section className="rb-step">
-      <StepHeading>Choose your table</StepHeading>
-      <p className="rb-muted">
-        {formatDate(needs.date)} at {time}, {people(needs.party)}.
-      </p>
+      {/* Once a table is held this screen is the details form (the step indicator says so too). */}
+      <StepHeading>{hold && props.secondsLeft !== 0 && props.details ? "Your details" : "Choose your table"}</StepHeading>
+      <div className="rb-step-context">
+        <p className="rb-muted">
+          {formatDate(needs.date)} at {time}, {people(needs.party)}.
+        </p>
+        <Button variant="ghost" onClick={props.onBack}>
+          Change time
+        </Button>
+      </div>
       {state.status === "loading" && <Skeleton lines={6} label="Loading the floor plan" />}
       {state.status === "error" && <ErrorState title="We could not load the floor plan" message={errorMessage(state.error)} onRetry={() => reload()} />}
       {map && (
@@ -294,6 +300,18 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
                 onTake(id);
               }}
             />
+          ) : suggestionElsewhere && bestTable ? (
+            <div className="rb-card rb-suggestion">
+              <p className="rb-eyebrow">Our suggestion</p>
+              <h3 className="rb-suggestion-title">Table {bestTable.label} is in {roomNameOf(bestTable.room_id) ?? "another room"}</h3>
+              <p className="rb-muted">There is no suggested table in the room you are looking at. Tap any free table here, or go to our suggestion first.</p>
+              <Button onClick={useSuggestion}>
+                Show table {bestTable.label} in {roomNameOf(bestTable.room_id) ?? "another room"}
+              </Button>
+              <Button variant="ghost" busy={busy} onClick={() => onTake(null)}>
+                Choose for me
+              </Button>
+            </div>
           ) : (
             <SuggestionCard map={map} busy={busy} onTake={onTake} onChooseForMe={() => onTake(null)} />
           )}
@@ -309,27 +327,18 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
               </Button>
             </div>
           )}
-          {suggestionElsewhere && bestTable && (
-            <Button variant="ghost" onClick={useSuggestion}>
-              Suggested: table {bestTable.label} in {roomNameOf(bestTable.room_id) ?? "another room"}
-            </Button>
-          )}
           <MapKey entries={heldId !== null ? DINER_KEY_HELD : DINER_KEY} />
           {map.rooms && <p className="rb-muted rb-scene-note">{SCENE_NOTE}</p>}
         </div>
       </div>
       <TableList tables={map.tables} map={map} heldId={heldId} focusId={cardTable?.id ?? null} busy={busy} onTake={onTake} />
-      <div className="rb-actions rb-actions-sticky">
-        <Button variant="secondary" onClick={onBack}>
-          Change time
-        </Button>
-        {/* With the form beside the map, "Confirm booking" is the main action: nothing else competes with it. */}
-        {!panelShown && (
-          <Button onClick={onNext} disabled={heldId === null}>
-            {heldId === null ? "Pick a table to continue" : `Continue with table ${hold?.tableLabel}`}
-          </Button>
-        )}
-      </div>
+      {/* One main action at a time: the table card holds a table, the form confirms the booking.
+          This bar only exists for a hold without the form beside the map (older callers). */}
+      {!panelShown && heldId !== null && (
+        <div className="rb-actions rb-actions-sticky">
+          <Button onClick={onNext}>Continue with table {hold?.tableLabel}</Button>
+        </div>
+      )}
     </>
   );
 }

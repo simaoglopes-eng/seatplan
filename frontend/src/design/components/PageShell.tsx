@@ -7,8 +7,14 @@ import { Link, useLocation } from "react-router-dom";
 const RESTAURANT_ROOTS = ["/restaurants", "/r", "/b", "/owner", "/staff"];
 
 /** The routes of the Restaurants product (diner, owner, staff). Events and their sign-ins are not in it. */
-export function isRestaurantRoute(pathname: string): boolean {
-  return pathname === "/" || RESTAURANT_ROOTS.some((root) => pathname === root || pathname.startsWith(`${root}/`));
+export function isRestaurantRoute(pathname: string, search = ""): boolean {
+  if (pathname === "/" || RESTAURANT_ROOTS.some((root) => pathname === root || pathname.startsWith(`${root}/`))) return true;
+  // The sign-in a restaurant page sends people to (/login?next=/owner...) is part of the owner's journey, not of Events.
+  if (pathname === "/login") {
+    const next = new URLSearchParams(search).get("next") ?? "";
+    return RESTAURANT_ROOTS.some((root) => root !== "/r" && root !== "/b" && (next === root || next.startsWith(`${root}/`)));
+  }
+  return false;
 }
 
 interface PageShellProps {
@@ -42,8 +48,8 @@ export function PageShell({ title, children, width = "normal", headerActions }: 
   }, [title]);
 
   // The Restaurants look (restaurant-theme.css) applies to <html> on its own routes only.
-  const { pathname } = useLocation();
-  const restaurants = isRestaurantRoute(pathname);
+  const { pathname, search } = useLocation();
+  const restaurants = isRestaurantRoute(pathname, search);
   useEffect(() => {
     const root = document.documentElement;
     if (restaurants) root.dataset.surface = "restaurants";

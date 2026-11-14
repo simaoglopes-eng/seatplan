@@ -46,7 +46,7 @@ test("a diner picks a chair and sees it on the confirmation", async ({ page, req
   await page.getByRole("button", { name: "Choose for me" }).click();
   await page.getByRole("button", { name: "Choose a chair" }).click();
 
-  await expect(page.getByRole("heading", { name: /Where would you like to sit/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Request a chair/ })).toBeVisible();
   // The demo's chairs are labelled like "W2-2": take the second one, whatever the table is called.
   const second = page.getByRole("radio").nth(1);
   const seat = ((await second.evaluate((el) => el.parentElement?.textContent ?? "")).split(" · ")[0] ?? "").trim();

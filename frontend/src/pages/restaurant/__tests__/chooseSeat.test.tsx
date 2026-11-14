@@ -62,7 +62,7 @@ describe("Where would you like to sit?", () => {
   it("lists the chairs of the held table with their sentences, and books the chosen one", async () => {
     const calls = mockApi({ ...ROUTES, [`POST ${API}/bookings`]: () => WITH_SEAT });
     await holdTable7();
-    await screen.findByRole("heading", { name: /Where would you like to sit/ });
+    await screen.findByRole("heading", { name: /Request a chair/ });
     expect(callsTo(calls, "GET", `${API}/seats`)[0]?.query.get("table_ids")).toBe("7");
 
     const group = screen.getByRole("radiogroup", { name: /Chair/ });
@@ -119,8 +119,8 @@ describe("Where would you like to sit?", () => {
   it("lets the diner go back to the map without losing the hold", async () => {
     mockApi(ROUTES);
     await holdTable7();
-    fireEvent.click(await screen.findByRole("button", { name: "Back to the map" }));
-    expect(await screen.findByRole("heading", { name: "Choose your table" })).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: "Back to your details" }));
+    expect(await screen.findByRole("heading", { name: "Your details" })).toBeTruthy();
     expect(screen.getByRole("timer")).toBeTruthy();
   });
 
@@ -128,13 +128,13 @@ describe("Where would you like to sit?", () => {
     mockApi({ ...ROUTES, [`POST ${API}/bookings`]: () => CONFIRMATION });
     await holdTable7();
     fireEvent.click(await screen.findByLabelText(/Seat 1/));
-    fireEvent.click(screen.getByRole("button", { name: "Back to the map" }));
-    await screen.findByRole("heading", { name: "Choose your table" });
+    fireEvent.click(screen.getByRole("button", { name: "Back to your details" }));
+    await screen.findByRole("heading", { name: "Your details" });
     fireEvent.click(screen.getAllByRole("button", { name: "Hold table 8" })[0]);
     await screen.findByRole("timer");
     fireEvent.click(screen.getByRole("button", { name: "Choose a chair" }));
     // The new table has to be asked again: nothing is pre-selected.
-    expect(await screen.findByRole("heading", { name: /Where would you like to sit/ })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: /Request a chair/ })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Continue with seat 1/ })).toBeNull();
   });
 });
