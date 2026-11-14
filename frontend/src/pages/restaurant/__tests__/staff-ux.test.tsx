@@ -89,3 +89,11 @@ it("labels the device clock when restaurant timezone metadata is unavailable",as
  mockApi({[`GET ${API}/floor`]:()=>FLOOR});show();
  expect(await screen.findByText(/Using the device clock/)).toBeTruthy();
 });
+
+it("identifies an unpublished restaurant through the existing owner profile when opening its service floor",async()=>{
+ const calls=mockApi({[`GET /api/owner/restaurants/${VENUE}`]:()=>({public_id:VENUE,name:"Draft dining room",timezone:"Europe/Lisbon"}),[`GET ${API}/floor`]:()=>FLOOR});
+ render(<MemoryRouter initialEntries={[`/owner/${VENUE}/dashboard`]}><Routes><Route path="/owner/:venueId/dashboard" element={<StaffPage/>}/></Routes></MemoryRouter>);
+ expect(await screen.findByText("Draft dining room")).toBeTruthy();
+ expect(screen.getByRole("link",{name:"My restaurants"}).getAttribute("href")).toBe("/owner");
+ expect(callsTo(calls,"GET",`/api/r/${VENUE}`)).toHaveLength(0);
+});
