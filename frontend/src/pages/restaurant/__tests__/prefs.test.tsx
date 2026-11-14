@@ -68,7 +68,6 @@ describe("Wishes in the booking flow", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
     await screen.findByRole("timer");
     expect(callsTo(calls, "POST", `${API}/hold`)[0]?.body).toMatchObject({ table_id: 7, prefs: ["sun", "view"] });
-    fireEvent.click(screen.getByRole("button", { name: "Continue with table 7" }));
     await screen.findByRole("heading", { name: "Your details" });
     fireEvent.change(screen.getByLabelText("Name for the booking"), { target: { value: "Ana Pereira" } });
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ana@example.com" } });

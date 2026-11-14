@@ -21,6 +21,13 @@ interface StepDetailsProps {
   hold: Hold;
   /** The chair the diner would like, if they chose one. */
   seatId: number | null;
+  /** The chair's code ("R3-1"), for the request summary in the panel. */
+  seatLabel?: string | null;
+  /** One line about the booking (table, room, day, time, party), shown in the panel next to the timer. */
+  summary?: string;
+  /** Panel only: open the optional chair request, and take the request back. */
+  onChooseSeat?: () => void;
+  onClearSeat?: () => void;
   secondsLeft: number;
   /** Kept by the page, so going back to the map does not wipe what was typed. */
   contact: ContactDetails;
@@ -36,7 +43,7 @@ interface StepDetailsProps {
 const FIELD_ORDER: (keyof ContactDetails)[] = ["name", "email", "phone", "notes"];
 
 export function StepDetails(props: StepDetailsProps) {
-  const { venueId, needs, hold, seatId, secondsLeft, contact, onContactChange, onBooked, onHoldLost, onBack, variant = "step" } = props;
+  const { venueId, needs, hold, seatId, seatLabel, summary, secondsLeft, contact, onContactChange, onBooked, onHoldLost, onBack, onChooseSeat, onClearSeat, variant = "step" } = props;
   const panel = variant === "panel";
   const [touched, setTouched] = useState<Partial<Record<keyof ContactDetails, boolean>>>({});
   const [busy, setBusy] = useState(false);
@@ -73,11 +80,13 @@ export function StepDetails(props: StepDetailsProps) {
   return (
     <form className={panel ? "rb-card rb-form rb-details-panel" : "rb-step rb-form"} onSubmit={submit} noValidate aria-label={panel ? "Your details" : undefined}>
       {panel ? <h3 className="rb-suggestion-title">Your details</h3> : <StepHeading>Your details</StepHeading>}
-      {!panel && <HoldCountdown tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />}
+      {panel && summary && <p className="rb-muted rb-details-summary">{summary}</p>}
+      <HoldCountdown tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />
       <Field label="Name for the booking" autoComplete="name" required {...bind("name")} />
       <Field label="Email" hint="We send the confirmation and a calendar invite here." type="email" autoComplete="email" inputMode="email" required {...bind("email")} />
       <Field label="Phone (optional)" hint="Only used if we need to reach you on the day." type="tel" autoComplete="tel" {...bind("phone")} />
       <Field label="Notes for the restaurant (optional)" hint="Allergies, a birthday, a pram..." {...bind("notes")} />
+      {panel && onChooseSeat && <ChairRequest seatId={seatId} seatLabel={seatLabel ?? null} onChoose={onChooseSeat} onClear={onClearSeat} />}
       {problem && (
         <p className="rb-notice rb-notice-error" role="alert">
           {problem}
@@ -94,6 +103,35 @@ export function StepDetails(props: StepDetailsProps) {
         </Button>
       </div>
     </form>
+  );
+}
+
+/** The optional chair, folded into the form: nothing to open unless the diner wants a chair. */
+function ChairRequest({ seatId, seatLabel, onChoose, onClear }: { seatId: number | null; seatLabel: string | null; onChoose: () => void; onClear?: () => void }) {
+  return (
+    <section className="rb-chair-request" aria-label="Chair request">
+      <h4 className="rb-chair-request-title">Request a chair (optional)</h4>
+      <p className="rb-muted">We will pass your preference to the restaurant. It does not change your booking.</p>
+      {seatId === null ? (
+        <Button variant="secondary" onClick={onChoose}>
+          Choose a chair
+        </Button>
+      ) : (
+        <div className="rb-chair-request-chosen">
+          <p>
+            <strong>Chair requested{seatLabel ? `: ${seatLabel}` : ""}</strong>
+          </p>
+          <Button variant="ghost" onClick={onChoose}>
+            Change chair
+          </Button>
+          {onClear && (
+            <Button variant="ghost" onClick={onClear}>
+              Remove request
+            </Button>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

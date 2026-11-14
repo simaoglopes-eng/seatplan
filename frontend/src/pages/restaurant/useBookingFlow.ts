@@ -56,10 +56,12 @@ export function useBookingFlow(info: RestaurantInfo, link: LinkAnswers = { date:
   // The optional chair (spec 9.4) is asked inside the Table step, once a table is held.
   const [choosingSeat, setChoosingSeat] = useState(false);
   const [seatId, setSeatId] = useState<number | null>(null);
+  const [seatLabel, setSeatLabel] = useState<string | null>(null);
   // Stable function: StepTable calls it from inside an effect. A new hold is a new table: the old chair no longer applies.
   const setHold = useCallback((next: Hold | null) => {
     setHoldState(next);
     setSeatId(null);
+    setSeatLabel(null);
   }, []);
   const secondsLeft = useSecondsLeft(hold?.expiresAt ?? null);
 
@@ -76,9 +78,16 @@ export function useBookingFlow(info: RestaurantInfo, link: LinkAnswers = { date:
   const askSeat = (): void => setChoosingSeat(true);
   const backToMap = (): void => setChoosingSeat(false);
   /** The chair step is over, with a chair or without: on to the details. */
-  const chooseSeat = (chosen: number | null): void => {
+  const chooseSeat = (chosen: number | null, label: string | null = null): void => {
     setSeatId(chosen);
-    go(STEP.details);
+    setSeatLabel(chosen === null ? null : label);
+    // The chair is asked from the form beside the map: go back to it, so the diner can confirm there.
+    setChoosingSeat(false);
+  };
+  /** The diner takes the chair request back: the booking stays on the table alone. */
+  const clearSeat = (): void => {
+    setSeatId(null);
+    setSeatLabel(null);
   };
   const pickTime = (picked: string): void => {
     setTime(picked);
@@ -111,6 +120,8 @@ export function useBookingFlow(info: RestaurantInfo, link: LinkAnswers = { date:
     carriedNotice,
     choosingSeat,
     seatId,
+    seatLabel,
+    clearSeat,
     go,
     pickTime,
     holdLost,

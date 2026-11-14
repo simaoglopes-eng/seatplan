@@ -33,16 +33,19 @@ function needsText(booking: BookingView): string {
   return needs.length > 0 ? needs.join(", ") : "None";
 }
 
-export function BookingSummary({ booking }: { booking: BookingView }) {
+/** `hideStatus` leaves the status row out where the page already says it in a heading ("Booking confirmed"). */
+export function BookingSummary({ booking, hideStatus = false }: { booking: BookingView; hideStatus?: boolean }) {
   const status = STATUS_TEXT[booking.status];
   return (
     <dl className="rb-summary">
-      <div>
-        <dt>Status</dt>
-        <dd>
-          <Badge tone={status.tone}>{status.label}</Badge>
-        </dd>
-      </div>
+      {!hideStatus && (
+        <div>
+          <dt>Status</dt>
+          <dd>
+            <Badge tone={status.tone}>{status.label}</Badge>
+          </dd>
+        </div>
+      )}
       <div>
         <dt>Restaurant</dt>
         <dd>{booking.venue_name}</dd>
@@ -63,7 +66,7 @@ export function BookingSummary({ booking }: { booking: BookingView }) {
       </div>
       {booking.seat && (
         <div>
-          <dt>Seat</dt>
+          <dt>Chair requested</dt>
           <dd>{seatText(booking.seat)}</dd>
         </div>
       )}

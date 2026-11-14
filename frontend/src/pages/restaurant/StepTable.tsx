@@ -13,11 +13,12 @@ import { SeatMap } from "../../seatmap/SeatMap";
 import { errorMessage, formatDate, people } from "./format";
 import { HoldCountdown } from "./HoldCountdown";
 import { LightCursorControl } from "./LightCursor";
-import { DINER_KEY, MapKey, SCENE_NOTE } from "./MapKey";
+import { DINER_KEY, DINER_KEY_HELD, MapKey, SCENE_NOTE } from "./MapKey";
 import { RoomTabs } from "./RoomTabs";
 import { StepDetails } from "./StepDetails";
 import { StepHeading } from "./StepHeading";
-import { AmbienceCard, ConflictNotice, SuggestionCard, TableList } from "./TablePanels";
+import { TableCard } from "./TableCard";
+import { ConflictNotice, SuggestionCard, TableList } from "./TablePanels";
 import { alternatives, describeDinerTables, isPickable, tablesForMap } from "./tableView";
 import { releaseQuietly } from "./useBookingFlow";
 import { useLoad } from "./useLoad";
@@ -49,6 +50,9 @@ interface StepTableProps {
 /** The parts of the booking flow the side-panel form shares with the Your details step. */
 export interface DetailsProps {
   seatId: number | null;
+  /** The chair's code, e.g. "R3-1", for the summary of the request. */
+  seatLabel: string | null;
+  onClearSeat: () => void;
   contact: ContactDetails;
   onContactChange: (contact: ContactDetails) => void;
   onBooked: (confirmation: BookingConfirmation) => void;
@@ -165,7 +169,7 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
   const roomTables = tablesInRoom(tablesForMap(map, heldId), roomId);
 
   // A tap or Enter on the map only chooses a table to look at: its card tells the light and the view,
-  // and "Hold this table" there reserves it. Nobody holds a table by accident with a finger.
+  // and its "Hold table" button reserves it. Nobody holds a table by accident with a finger.
   const [pointed, setPointed] = useState<number | null>(null);
   const [looking, setLooking] = useState<number | null>(null);
   // Whether the table in front of the diner is one they chose, or only the one we suggested on arrival.
@@ -189,20 +193,39 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
     setLooking(bestId);
     setChosenByDiner(false);
     const table = map.tables.find((t) => t.id === bestId);
-    if (table) setPicked(`Table ${table.label} is suggested for you and already selected. Use Hold this table to reserve it.`);
+    if (table) setPicked(`Table ${table.label} is suggested for you and already selected. Use Hold table ${table.label} and continue to reserve it.`);
   }, [looking, heldId, bestId, map]);
   const lookAt = (id: number): void => {
     setChosenByDiner(true);
     setLooking(id);
     const table = map.tables.find((t) => t.id === id);
-    setPicked(table ? `Table ${table.label} selected. Use Hold this table to reserve it.` : "");
+    setPicked(table ? `Table ${table.label} selected. Use Hold table ${table.label} and continue to reserve it.` : "");
   };
   // A table the diner chose stays in front of them; our own suggestion gives way to whatever they point at.
   const focusId = chosenByDiner ? (looking ?? pointed) : (pointed ?? looking);
-  const cardTable = map.tables.find((t) => t.id === (focusId ?? heldId ?? map.recommended?.table_ids[0]));
+  // Our suggestion for several joined tables is held through "Choose for me": it has no single table to show.
+  const recIds = map.recommended?.table_ids ?? [];
+  const combined = recIds.length > 1;
+  const candidate = focusId ?? heldId ?? (combined ? null : (recIds[0] ?? null));
+  const inRoom = (id: number | null): boolean => id !== null && roomTables.some((t) => t.id === id);
+  // The card always describes a table of the room on screen; another room's suggestion is a link below it.
+  const cardTable = inRoom(candidate) ? map.tables.find((t) => t.id === candidate) : undefined;
+  const bestTable = !combined && bestId !== undefined && pickable.has(bestId) ? map.tables.find((t) => t.id === bestId) : undefined;
+  const roomNameOf = (roomId: number | null | undefined): string | null => tabs.find((tab) => tab.id === (roomId ?? null))?.name ?? null;
+  const suggestionElsewhere = heldId === null && bestTable !== undefined && !inRoom(bestTable.id);
+  const useSuggestion = (): void => {
+    if (!bestTable) return;
+    setChosenByDiner(false);
+    setPointed(null);
+    setLooking(bestTable.id);
+    setChosenRoom(bestTable.room_id ?? null);
+    setPicked(`Table ${bestTable.label} is suggested for you and selected. Use Hold table ${bestTable.label} and continue to reserve it.`);
+  };
+  const summary = hold ? `Table ${hold.tableLabel}${roomNameOf(map.tables.find((t) => t.id === hold.tableId)?.room_id) ? ` · ${roomNameOf(map.tables.find((t) => t.id === hold.tableId)?.room_id)}` : ""} · ${formatDate(needs.date)} at ${time} · ${people(needs.party)}` : "";
 
   const highlight = new Set(map.recommended?.table_ids ?? []);
   const nothingFree = pickable.size === 0 && heldId === null;
+  const panelShown = Boolean(details && hold && heldId !== null && secondsLeft !== null);
   return (
     <>
       {conflict && <ConflictNotice message={conflict.message} options={alternatives(map, conflict.failedId, needs.party)} busy={busy} onTake={onTake} />}
@@ -214,79 +237,98 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
       <span className="visually-hidden" role="status" aria-live="polite">
         {picked}
       </span>
-      {hold && secondsLeft !== null && <HoldCountdown tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />}
+      {/* With the details form beside the map the countdown lives in the form, next to the confirm button. */}
+      {hold && secondsLeft !== null && !panelShown && <HoldCountdown tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />}
       {tabs.length > 0 && <RoomTabs tabs={tabs} current={roomId as number | null} onChange={setChosenRoom} />}
       <div className="rb-map-layout">
-        <SeatMap
-          label={`Floor plan for ${time}`}
-          mode="tables"
-          tables={roomTables}
-          seats={seatsInRoom(map.seats, roomTables)}
-          zones={map.zones}
-          rooms={map.rooms}
-          activeRoomId={roomId}
-          onActiveChange={setPointed}
-          selectable={(id) => pickable.has(id)}
-          selectedId={looking ?? heldId}
-          ownId={heldId}
-          highlight={highlight}
-          describe={describeDinerTables(map)}
-          onSelect={lookAt}
-        />
+        <div className="rb-map-main">
+          <SeatMap
+            label={`Floor plan for ${time}`}
+            mode="tables"
+            tables={roomTables}
+            seats={seatsInRoom(map.seats, roomTables)}
+            zones={map.zones}
+            rooms={map.rooms}
+            activeRoomId={roomId}
+            onActiveChange={setPointed}
+            selectable={(id) => pickable.has(id)}
+            selectedId={looking ?? heldId}
+            ownId={heldId}
+            highlight={highlight}
+            describe={describeDinerTables(map)}
+            onSelect={lookAt}
+          />
+          {canShowLight && <LightCursorControl steps={steps} index={cursor.index} onChange={cursor.setIndex} failed={cursor.failed} bookingTime={time} sunset={sunsetOf(map)} />}
+        </div>
         <div className="rb-map-side">
-          {/* Once a table is held the suggestion has done its job: the card below and the form say what happens next. */}
-          {heldId === null &&
-            (nothingFree ? (
-              <p className="rb-notice">No table for {people(needs.party)} is free at {time} any more. Please go back and pick another time.</p>
-            ) : (
-              <SuggestionCard map={map} busy={busy} onTake={onTake} onChooseForMe={() => onTake(null)} />
-            ))}
-          {cardTable && (
-            <AmbienceCard
+          {panelShown && details && hold && secondsLeft !== null ? (
+            <StepDetails
+              variant="panel"
+              venueId={venueId}
+              needs={needs}
+              hold={hold}
+              seatId={details.seatId}
+              seatLabel={details.seatLabel}
+              secondsLeft={secondsLeft}
+              summary={summary}
+              contact={details.contact}
+              onContactChange={details.onContactChange}
+              onBooked={details.onBooked}
+              onHoldLost={details.onHoldLost}
+              onBack={onBack}
+              onChooseSeat={onNext}
+              onClearSeat={details.onClearSeat}
+            />
+          ) : nothingFree ? (
+            <p className="rb-notice">No table for {people(needs.party)} is free at {time} any more. Please go back and pick another time.</p>
+          ) : cardTable ? (
+            <TableCard
               table={cardTable}
+              roomName={tabs.length > 0 ? roomNameOf(cardTable.room_id) : null}
+              recommended={recIds.includes(cardTable.id)}
+              reasons={map.recommended?.reasons ?? []}
               heldId={heldId}
               busy={busy}
-              chosen={looking === cardTable.id && chosenByDiner}
               onTake={(id) => {
                 setLooking(null);
                 onTake(id);
               }}
             />
+          ) : (
+            <SuggestionCard map={map} busy={busy} onTake={onTake} onChooseForMe={() => onTake(null)} />
           )}
-          {details && hold && heldId !== null && secondsLeft !== null && (
-            <>
-              <StepDetails
-                variant="panel"
-                venueId={venueId}
-                needs={needs}
-                hold={hold}
-                seatId={details.seatId}
-                secondsLeft={secondsLeft}
-                contact={details.contact}
-                onContactChange={details.onContactChange}
-                onBooked={details.onBooked}
-                onHoldLost={details.onHoldLost}
-                onBack={onBack}
-              />
-              <Button variant="ghost" onClick={onNext}>
-                Choose a specific chair (optional)
+          {!panelShown && cardTable && heldId === null && (
+            <div className="rb-table-card-more">
+              {bestTable && cardTable.id !== bestTable.id && inRoom(bestTable.id) && (
+                <Button variant="ghost" onClick={useSuggestion}>
+                  Use suggested table {bestTable.label}
+                </Button>
+              )}
+              <Button variant="ghost" busy={busy} onClick={() => onTake(null)}>
+                Choose for me
               </Button>
-            </>
+            </div>
           )}
-          <MapKey entries={DINER_KEY} />
+          {suggestionElsewhere && bestTable && (
+            <Button variant="ghost" onClick={useSuggestion}>
+              Suggested: table {bestTable.label} in {roomNameOf(bestTable.room_id) ?? "another room"}
+            </Button>
+          )}
+          <MapKey entries={heldId !== null ? DINER_KEY_HELD : DINER_KEY} />
           {map.rooms && <p className="rb-muted rb-scene-note">{SCENE_NOTE}</p>}
         </div>
       </div>
-      {canShowLight && <LightCursorControl steps={steps} index={cursor.index} onChange={cursor.setIndex} failed={cursor.failed} bookingTime={time} sunset={sunsetOf(map)} />}
-      <TableList tables={map.tables} map={map} heldId={heldId} busy={busy} onTake={onTake} />
+      <TableList tables={map.tables} map={map} heldId={heldId} focusId={cardTable?.id ?? null} busy={busy} onTake={onTake} />
       <div className="rb-actions rb-actions-sticky">
         <Button variant="secondary" onClick={onBack}>
           Change time
         </Button>
-        {/* With the form beside the map, "Confirm booking" is the main action; this one goes on to choose a chair first. */}
-        <Button variant={details && heldId !== null ? "secondary" : "primary"} onClick={onNext} disabled={heldId === null}>
-          {heldId === null ? "Pick a table to continue" : `Continue with table ${hold?.tableLabel}`}
-        </Button>
+        {/* With the form beside the map, "Confirm booking" is the main action: nothing else competes with it. */}
+        {!panelShown && (
+          <Button onClick={onNext} disabled={heldId === null}>
+            {heldId === null ? "Pick a table to continue" : `Continue with table ${hold?.tableLabel}`}
+          </Button>
+        )}
       </div>
     </>
   );

@@ -90,7 +90,8 @@ function BookingFlow({ venueId, info }: { venueId: string; info: RestaurantInfo 
   return (
     <>
       {linked.notice && step === STEP.time && <p role="status" className="rb-muted">{linked.notice}</p>}
-      <Stepper steps={STEPS} current={step} label="Booking steps" />
+      {/* Asking for a chair is part of the details, so the indicator says so. */}
+      <Stepper steps={STEPS} current={step === STEP.table && flow.choosingSeat ? STEP.details : step} label="Booking steps" />
       {step === STEP.party && <StepParty info={info} needs={needs} onChange={flow.setNeeds} onNext={() => flow.go(STEP.time)} focusOnMount={false} />}
       {step === STEP.time && <StepTime venueId={venueId} needs={needs} onPick={flow.pickTime} onBack={() => flow.go(STEP.party)} />}
       {step === STEP.table && flow.choosingSeat && hold && (
@@ -107,7 +108,7 @@ function BookingFlow({ venueId, info }: { venueId: string; info: RestaurantInfo 
           onHold={flow.setHold}
           onNext={flow.askSeat}
           onBack={() => flow.go(STEP.time)}
-          details={{ seatId: flow.seatId, contact: flow.contact, onContactChange: flow.setContact, onBooked: flow.booked, onHoldLost: flow.holdLost }}
+          details={{ seatId: flow.seatId, seatLabel: flow.seatLabel, onClearSeat: flow.clearSeat, contact: flow.contact, onContactChange: flow.setContact, onBooked: flow.booked, onHoldLost: flow.holdLost }}
         />
       )}
       {step === STEP.details && hold && (

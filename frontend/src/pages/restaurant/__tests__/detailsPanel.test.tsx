@@ -74,17 +74,18 @@ describe("The details form beside the map", () => {
     expect(callsTo(calls, "POST", `${API}/bookings`)).toHaveLength(0);
   });
 
-  it("keeps what was typed when the diner goes on to choose a chair, and books with that chair", async () => {
+  it("keeps what was typed when the diner goes on to request a chair, and books with that chair", async () => {
     const calls = mockApi(routes());
     await holdTable7();
     const panel = screen.getByRole("form", { name: "Your details" });
     fireEvent.change(within(panel).getByLabelText("Name for the booking"), { target: { value: "Ana Pereira" } });
     fireEvent.change(within(panel).getByLabelText("Email"), { target: { value: "ana@example.com" } });
-    fireEvent.click(screen.getByRole("button", { name: "Choose a specific chair (optional)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Choose a chair" }));
     fireEvent.click(await screen.findByLabelText(/Seat 1 · Facing the window/));
     fireEvent.click(screen.getByRole("button", { name: /^Continue with seat 1/ }));
-    // The Your details step has the same words already in it.
+    // Back at the plan, the same form has the same words already in it, and shows the request.
     expect((await screen.findByLabelText("Name for the booking") as HTMLInputElement).value).toBe("Ana Pereira");
+    expect(screen.getByText("Chair requested: 7-1")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Confirm booking" }));
     expect(await screen.findByRole("heading", { name: "You are booked, Ana" })).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/bookings`)[0]?.body).toMatchObject({ seat_id: 71 });

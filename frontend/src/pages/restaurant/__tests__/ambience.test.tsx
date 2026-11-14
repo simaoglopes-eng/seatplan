@@ -128,7 +128,7 @@ describe("Ambience card", () => {
     expect(within(card).getByText("Direct sun until 14:00")).toBeTruthy();
     expect(within(card).getByText("View of the river")).toBeTruthy();
     expect(within(card).getByRole("img", { name: "river" }).getAttribute("src")).toBe("/api/photos/abc");
-    fireEvent.click(within(card).getByRole("button", { name: "Hold this table" }));
+    fireEvent.click(within(card).getByRole("button", { name: "Hold table 7 & continue" }));
     expect(await screen.findByRole("timer")).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/hold`)[0]?.body).toMatchObject({ table_id: 7 });
   });
@@ -140,12 +140,14 @@ describe("Ambience card", () => {
     expect(screen.getByRole("region", { name: /Table 8/ })).toBeTruthy();
   });
 
-  it("shows no card, and so no claim about light, for tables without ambience", async () => {
+  it("makes no claim about light for tables without ambience: the card only says what we know", async () => {
     const plain = roomsMap();
     plain.tables = plain.tables.map((t) => ({ ...t, ambience: null }));
     mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => plain });
     await reachTableStep();
-    expect(screen.queryByRole("region", { name: /Table 7/ })).toBeNull();
+    const card = screen.getByRole("region", { name: /Table 7/ });
+    expect(within(card).queryByText(/sun|shade|dark outside/i)).toBeNull();
+    expect(within(card).queryByRole("img")).toBeNull();
   });
 });
 
@@ -163,7 +165,7 @@ describe("Light cursor", () => {
     await screen.findByRole("timer");
     const mapCalls = callsTo(calls, "GET", `${API}/map`).length;
 
-    const slider = screen.getByRole("slider", { name: /Preview room light.*does not change booking time/i }) as HTMLInputElement;
+    const slider = screen.getByRole("slider", { name: /Preview light.*does not change your booking/i }) as HTMLInputElement;
     expect([slider.min, slider.max, slider.step]).toEqual(["0", "6", "1"]); // 13:00 ... 14:30 in 15-minute steps
     expect(slider.getAttribute("aria-valuetext")).toContain("13:00");
     expect(document.querySelector(".room-night")).toBeNull();
@@ -204,11 +206,11 @@ describe("Light cursor", () => {
 });
 
 describe("Map key", () => {
-  it("shows three looks and no more: available, your table and unavailable", async () => {
+  it("shows three looks and no more: available, selected and unavailable", async () => {
     mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => roomsMap() });
     await reachTableStep();
     const key = screen.getByRole("list", { name: "Map key" });
-    expect(within(key).getAllByRole("listitem").map((li) => li.querySelector("strong")?.textContent)).toEqual(["Available", "Your table", "Unavailable"]);
+    expect(within(key).getAllByRole("listitem").map((li) => li.querySelector("strong")?.textContent)).toEqual(["Available", "Selected", "Unavailable"]);
   });
 
   it("explains sun, night and the view once, in a sentence by the plan, only when there are rooms", async () => {
@@ -247,9 +249,9 @@ describe("Choosing a table on the map", () => {
     await reachTableStep();
     fireEvent.click(screen.getByRole("option", { name: /Table 8,/ }));
     expect(callsTo(calls, "POST", `${API}/hold`)).toHaveLength(0);
-    expect(await screen.findByText(/Table 8 selected\. Use Hold this table to reserve it\./)).toBeTruthy();
+    expect(await screen.findByText(/Table 8 selected\. Use Hold table 8 and continue to reserve it\./)).toBeTruthy();
     const card = screen.getByRole("region", { name: /Table 8/ });
-    fireEvent.click(within(card).getByRole("button", { name: "Hold this table" }));
+    fireEvent.click(within(card).getByRole("button", { name: "Hold table 8 & continue" }));
     expect(await screen.findByRole("timer")).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/hold`)[0]?.body).toMatchObject({ table_id: 8 });
   });
@@ -264,11 +266,10 @@ describe("Choosing a table on the map", () => {
       [`POST ${API}/hold`]: () => heldTable(7, "7"),
     });
     await reachTableStep();
-    expect(screen.queryByRole("region", { name: /Table 7/ })).toBeNull();
     fireEvent.click(screen.getByRole("option", { name: /Table 7,/ }));
     const card = await screen.findByRole("region", { name: /Table 7/ });
     expect(within(card).queryByText(/sun|shade|dark/i)).toBeNull(); // nothing is claimed about the light
-    fireEvent.click(within(card).getByRole("button", { name: "Hold this table" }));
+    fireEvent.click(within(card).getByRole("button", { name: "Hold table 7 & continue" }));
     expect(await screen.findByRole("timer")).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/hold`)).toHaveLength(1);
   });
@@ -283,7 +284,7 @@ describe("Step 2: suggested table already selected, and an unambiguous light pre
     expect(suggested.getAttribute("aria-selected")).toBe("true");
     expect(suggested.querySelector(".selected-tick")).not.toBeNull(); // outlined and ticked, not drawn as held
     expect(screen.getByRole("option", { name: /Table 8,/ }).getAttribute("aria-selected")).toBe("false");
-    expect(await screen.findByText(/Table 7 is suggested for you and already selected\. Use Hold this table to reserve it\./)).toBeTruthy();
+    expect(await screen.findByText(/Table 7 is suggested for you and already selected\. Use Hold table 7 and continue to reserve it\./)).toBeTruthy();
     expect(screen.queryByRole("timer")).toBeNull(); // nothing is held until the diner says so
   });
 
@@ -298,7 +299,7 @@ describe("Step 2: suggested table already selected, and an unambiguous light pre
     fireEvent.pointerEnter(screen.getByRole("option", { name: /Table 8,/ }));
     expect(screen.getByRole("region", { name: /Table 8/ })).toBeTruthy();
     fireEvent.pointerLeave(screen.getByRole("option", { name: /Table 8,/ }));
-    fireEvent.click(within(screen.getByRole("region", { name: /Table 7/ })).getByRole("button", { name: "Hold this table" }));
+    fireEvent.click(within(screen.getByRole("region", { name: /Table 7/ })).getByRole("button", { name: "Hold table 7 & continue" }));
     expect(await screen.findByRole("timer")).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/hold`)[0]?.body).toMatchObject({ table_id: 7 });
   });
@@ -313,13 +314,14 @@ describe("Step 2: suggested table already selected, and an unambiguous light pre
     expect(screen.getByRole("option", { name: /Table 7,/ }).getAttribute("aria-selected")).toBe("false");
   });
 
-  it("says the preview does not change the booking time, shows the booked stay and where the sun sets", async () => {
+  it("says the preview does not change the booking, shows the booked stay and where the sun sets", async () => {
     mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => roomsMap(), [`GET ${API}/ambience`]: () => answer() });
     await reachTableStep();
-    const slider = screen.getByRole("slider", { name: "Preview room light (does not change booking time)" }) as HTMLInputElement;
+    const slider = screen.getByRole("slider", { name: "Preview light (does not change your booking)" }) as HTMLInputElement;
     expect(screen.getByText("Your booking 13:00 → 14:30")).toBeTruthy();
-    expect(screen.getByText(/Showing the room at 13:00\. Your booking is at 19:30\./)).toBeTruthy();
+    expect(screen.getByText(/Light preview at 13:00\./)).toBeTruthy();
     fireEvent.change(slider, { target: { value: "3" } });
-    expect(screen.getByText(/Previewing the room at 13:45\. Your booking is at 19:30\./)).toBeTruthy();
+    expect(screen.getByText(/Light preview at 13:45\./)).toBeTruthy();
+    expect(screen.getByText(/Booking at 19:30\./)).toBeTruthy();
   });
 });

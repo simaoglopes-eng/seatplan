@@ -90,14 +90,21 @@ export function MapKey({ entries, scenes = [], label = "Map key" }: { entries: K
 }
 
 /**
- * The key for the diner's table map: three looks and no more. The wheelchair badge sits on the
+ * The key for the diner's table map: three looks and no more ("Selected" while exploring, "Held for you" after the hold). The wheelchair badge sits on the
  * tables that are accessible and needs no entry of its own; why a table is unavailable is said in its
  * card and to screen readers.
  */
 export const DINER_KEY: KeyEntry[] = [
   { state: "free", name: "Available", hint: "Tap a table to see it, then hold it for 5 minutes" },
-  { state: "mine", name: "Your table", hint: "The one selected or held for you" },
+  { state: "mine", name: "Selected", hint: "The table you are looking at" },
   { state: "taken", name: "Unavailable", hint: "Booked, being chosen by someone else, or not right for your party" },
+];
+
+/** The same key once a table is held: the middle look now means the table is reserved for the diner. */
+export const DINER_KEY_HELD: KeyEntry[] = [
+  DINER_KEY[0],
+  { state: "mine", name: "Held for you", hint: "Reserved for you while you finish the booking" },
+  DINER_KEY[2],
 ];
 
 /** What the sun, the night and the view icon mean; said once, next to the light preview, not in the key. */

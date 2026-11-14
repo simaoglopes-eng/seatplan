@@ -89,6 +89,21 @@ describe("Restaurant page", () => {
     expect(await screen.findByTestId("map")).toBeTruthy();
   });
 
+  it("puts the name, a Book a table button and the booking before the photos' details, About and Hours", async () => {
+    mockApi({ "GET /api/restaurants/casa-linho": () => page(), [`GET ${API}`]: () => INFO });
+    renderAt("/restaurants/casa-linho");
+    const name = await screen.findByRole("heading", { level: 1, name: "Casa Linho" });
+    const cta = screen.getByRole("link", { name: "Book a table" });
+    expect(cta.getAttribute("href")).toBe("#book");
+    const booking = screen.getByRole("heading", { level: 2, name: "Book a table" });
+    const hours = screen.getByRole("heading", { level: 2, name: "Hours" });
+    // Document order: identity and its button, then the booking, then the rest.
+    expect(name.compareDocumentPosition(cta) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(cta.compareDocumentPosition(booking) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(booking.compareDocumentPosition(hours) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "Find us" })).toBeTruthy();
+  });
+
   it("opens a photo full screen, moves with the arrows and closes on Escape", async () => {
     mockApi({ "GET /api/restaurants/casa-linho": () => page(), [`GET ${API}`]: () => INFO });
     renderAt("/restaurants/casa-linho");

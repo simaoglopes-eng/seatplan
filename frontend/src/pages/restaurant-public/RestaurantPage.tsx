@@ -3,6 +3,7 @@
 // brings ?date=&time=&party=, and the booking flow starts with them filled in.
 // The owner sees an unpublished restaurant with a Preview banner; nobody else can.
 import { lazy, Suspense, useEffect, useRef } from "react";
+import type { MouseEvent } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { getPublicRestaurant } from "../../api/discovery";
@@ -54,6 +55,13 @@ function Page({ data }: { data: PublicRestaurant }) {
     if (linked && !data.preview) book.current?.scrollIntoView?.({ block: "start" });
   }, [linked, data.preview]);
 
+  // The button moves keyboard focus with the page, so the next Tab lands in the booking, not back at the top.
+  const goToBooking = (event: MouseEvent<HTMLAnchorElement>): void => {
+    event.preventDefault();
+    book.current?.scrollIntoView?.({ block: "start" });
+    book.current?.querySelector<HTMLElement>("select, input, button")?.focus({ preventScroll: true });
+  };
+
   const place = loadPlace();
   const meters = place && data.lat !== null && data.lng !== null ? metersBetween(place, { lat: data.lat, lng: data.lng }) : null;
   const price = priceText(data.price_level);
@@ -71,29 +79,48 @@ function Page({ data }: { data: PublicRestaurant }) {
           Preview: this restaurant is not published yet. Only you can see this page.
         </p>
       )}
-      <Gallery photos={data.photos} name={data.name} preview={data.preview} />
       <header className="rp-head">
-        <h1>{data.name}</h1>
-        <p className="rp-line">
-          {data.cuisines.map(cuisineLabel).join(", ")}
-          {price && (
-            <>
-              {" · "}
-              <span aria-hidden="true">{price}</span>
-              <span className="visually-hidden">Price level {data.price_level} of 4</span>
-            </>
+        <div className="rp-head-main">
+          <h1>{data.name}</h1>
+          <p className="rp-line">
+            {data.cuisines.map(cuisineLabel).join(", ")}
+            {price && (
+              <>
+                {" · "}
+                <span aria-hidden="true">{price}</span>
+                <span className="visually-hidden">Price level {data.price_level} of 4</span>
+              </>
+            )}
+            {meters !== null && ` · ${formatDistance(meters)} from you`}
+          </p>
+          {data.address && <p className="rp-line">{data.address}</p>}
+          {highlights.length > 0 && (
+            <ul className="discover-features" aria-label="Highlights">
+              {highlights.map((name) => (
+                <li key={name}>{name}</li>
+              ))}
+            </ul>
           )}
-          {meters !== null && ` · ${formatDistance(meters)} from you`}
-        </p>
-        {data.address && <p className="rp-line">{data.address}</p>}
-        {highlights.length > 0 && (
-          <ul className="discover-features" aria-label="Highlights">
-            {highlights.map((name) => (
-              <li key={name}>{name}</li>
-            ))}
-          </ul>
+        </div>
+        {!data.preview && (
+          <a className="btn btn-primary rp-cta" href="#book" onClick={goToBooking}>
+            Book a table
+          </a>
         )}
       </header>
+      <Gallery photos={data.photos} name={data.name} preview={data.preview} />
+
+      {/* The booking comes right after the identity: nothing has to be scrolled past to reserve. */}
+      <section ref={book} id="book" className="rp-book" aria-labelledby="rp-book-title">
+        <h2 id="rp-book-title">Book a table</h2>
+        {data.preview ? (
+          <p className="rb-muted">Booking opens as soon as you publish {data.name}.</p>
+        ) : (
+          <div className="rb-page">
+            <BookingEmbed venueId={data.public_id} />
+          </div>
+        )}
+      </section>
 
       <div className="rp-columns">
         <div>
@@ -104,7 +131,7 @@ function Page({ data }: { data: PublicRestaurant }) {
             </section>
           )}
           <section aria-labelledby="rp-hours">
-            <h2 id="rp-hours">Opening hours</h2>
+            <h2 id="rp-hours">Hours</h2>
             {rows.length === 0 ? (
               <p className="rb-muted">Opening hours are not published yet.</p>
             ) : (
@@ -168,17 +195,6 @@ function Page({ data }: { data: PublicRestaurant }) {
           </ul>
         </aside>
       </div>
-
-      <section ref={book} id="book" className="rp-book" aria-labelledby="rp-book-title">
-        <h2 id="rp-book-title">Book a table</h2>
-        {data.preview ? (
-          <p className="rb-muted">Booking opens as soon as you publish {data.name}.</p>
-        ) : (
-          <div className="rb-page">
-            <BookingEmbed venueId={data.public_id} />
-          </div>
-        )}
-      </section>
     </article>
   );
 }

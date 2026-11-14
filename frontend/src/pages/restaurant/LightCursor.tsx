@@ -1,4 +1,4 @@
-// "Preview room light (does not change booking time)": a slider over the stay in 15-minute
+// "Preview light (does not change your booking)": a slider over the stay in 15-minute
 // steps. A native range input, so arrows, Page Up/Down, Home and End work, and aria-valuetext
 // says the time in words. The track is the booked stay itself, drawn in brass so it reads as
 // "your meal", with the sunset marked on it when it falls inside the stay. Moving the thumb only
@@ -35,7 +35,7 @@ export function LightCursorControl({ steps, index, onChange, failed, bookingTime
   return (
     <div className="rb-light-cursor">
       <label htmlFor={id} className="field-label">
-        <span>Preview room light</span> <span className="rb-muted">(does not change booking time)</span>
+        <span>Preview light</span> <span className="rb-muted">(does not change your booking)</span>
       </label>
       <div className="rb-light-track">
         <span className="rb-light-stay tabular" aria-hidden="true">
@@ -69,7 +69,7 @@ export function LightCursorControl({ steps, index, onChange, failed, bookingTime
         </div>
       </div>
       <p className="rb-muted" aria-live="polite">
-        {steps[index] === first ? `Showing the room at ${steps[index]}.` : `Previewing the room at ${steps[index]}.`} Your booking is at {bookingTime}.
+        <strong>Light preview at {steps[index]}.</strong> Booking at {bookingTime}.
         {sun !== null && sunset ? ` The sun sets at ${sunset}.` : ""}
       </p>
       {failed && (

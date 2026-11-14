@@ -3,8 +3,7 @@
 // the map, for people who prefer a list or cannot use the map).
 import type { DinerMap, DinerTable } from "../../api/restaurant";
 import { Badge, Button } from "../../design/components";
-import { lightWords } from "./ambienceView";
-import { partyRange, tableFeatures, unavailableReason } from "./tableView";
+import { tableFeatures, unavailableReason } from "./tableView";
 
 interface SuggestionProps {
   map: DinerMap;
@@ -47,53 +46,6 @@ export function SuggestionCard({ map, busy, onTake, onChooseForMe }: SuggestionP
   );
 }
 
-interface AmbienceCardProps {
-  table: DinerTable;
-  heldId: number | null;
-  busy: boolean;
-  /** The diner chose this table on the map: show the card even when no ambience is known. */
-  chosen?: boolean;
-  onTake: (tableId: number) => void;
-}
-
-/**
- * What one table is like for the stay: the light, the view with its photo, what
- * is near, and a button to hold it. It describes the table under the pointer or
- * keyboard cursor, else the held one, else our suggestion. Without ambience it
- * is only drawn for a table the diner chose; it never claims anything then.
- */
-export function AmbienceCard({ table, heldId, busy, chosen = false, onTake }: AmbienceCardProps) {
-  const ambience = table.ambience;
-  // Without a location there is no ambience to tell, so the card only appears for a table the diner chose: it still lets them hold it.
-  if (!ambience && !chosen) return null;
-  const reason = unavailableReason(table);
-  return (
-    <section className="rb-card rb-ambience" aria-label={`Table ${table.label}, ${partyRange(table)}`}>
-      {ambience && <p className="rb-eyebrow">{lightWords(ambience.light)}</p>}
-      <h3 className="rb-suggestion-title">
-        Table {table.label} <span className="rb-muted">· {partyRange(table)}</span>
-      </h3>
-      {ambience && ambience.phrases.length > 0 && (
-        <ul className="rb-reasons">
-          {ambience.phrases.map((phrase) => (
-            <li key={phrase}>{phrase}</li>
-          ))}
-        </ul>
-      )}
-      {ambience?.view?.photo_url && <img className="rb-view-photo" src={ambience.view.photo_url} alt={ambience.view.text || "The view from this table"} loading="lazy" />}
-      {table.id === heldId && table.state !== "taken" ? (
-        <Badge tone="success">Held for you</Badge>
-      ) : reason ? (
-        <span className="rb-muted">{reason}</span>
-      ) : (
-        <Button busy={busy} onClick={() => onTake(table.id)}>
-          Hold this table
-        </Button>
-      )}
-    </section>
-  );
-}
-
 interface ConflictProps {
   message: string;
   options: DinerTable[];
@@ -129,12 +81,14 @@ interface TableListProps {
   tables: DinerTable[];
   map: DinerMap;
   heldId: number | null;
+  /** The table the card above shows, marked in the list so plan, card and list agree. */
+  focusId?: number | null;
   busy: boolean;
   onTake: (tableId: number) => void;
 }
 
 /** Every table that suits the party, as a list. Tables that do not suit are counted, not listed, to keep it short. */
-export function TableList({ tables, map, heldId, busy, onTake }: TableListProps) {
+export function TableList({ tables, map, heldId, focusId = null, busy, onTake }: TableListProps) {
   const suitable = tables.filter((t) => t.fits_party);
   const hidden = tables.length - suitable.length;
   const recommended = new Set(map.recommended?.table_ids ?? []);
@@ -143,7 +97,7 @@ export function TableList({ tables, map, heldId, busy, onTake }: TableListProps)
       <h3 className="rb-service-title">Tables that suit your party</h3>
       <ul>
         {suitable.map((table) => (
-          <li key={table.id} className="rb-table-row">
+          <li key={table.id} className={`rb-table-row${table.id === focusId ? " is-focus" : ""}`} aria-current={table.id === focusId ? "true" : undefined}>
             <div>
               <strong>Table {table.label}</strong> {recommended.has(table.id) && <Badge tone="warning">Suggested</Badge>}
               <div className="rb-badges">

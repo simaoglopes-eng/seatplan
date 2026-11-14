@@ -36,7 +36,7 @@ async function holdTable7(): Promise<void> {
   await screen.findByRole("heading", { name: "Choose your table" });
   fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
   await screen.findByRole("timer");
-  fireEvent.click(screen.getByRole("button", { name: "Continue with table 7" }));
+  fireEvent.click(screen.getByRole("button", { name: "Choose a chair" }));
 }
 
 async function fillDetailsAndBook(): Promise<void> {
@@ -71,6 +71,9 @@ describe("Where would you like to sit?", () => {
     fireEvent.click(within(group).getByLabelText(/Seat 2.*Back to the window/));
     fireEvent.click(screen.getByRole("button", { name: "Continue with seat 2" }));
 
+    // Back at the plan, the chair is a request inside the form: it can be changed or taken back.
+    expect(await screen.findByText("Chair requested: 7-2")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Remove request" })).toBeTruthy();
     await fillDetailsAndBook();
     await screen.findByRole("heading", { name: "You are booked, Ana" });
     expect(callsTo(calls, "POST", `${API}/bookings`)[0]?.body).toMatchObject({ seat_id: 72 });
@@ -100,6 +103,19 @@ describe("Where would you like to sit?", () => {
     expect(await screen.findByRole("heading", { name: "Your details" })).toBeTruthy();
   });
 
+  it("takes the chair request back from the form, and the booking is for the table alone", async () => {
+    const calls = mockApi({ ...ROUTES, [`POST ${API}/bookings`]: () => CONFIRMATION });
+    await holdTable7();
+    fireEvent.click(await screen.findByLabelText(/Seat 1.*Facing the window/));
+    fireEvent.click(screen.getByRole("button", { name: "Continue with seat 1" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Remove request" }));
+    expect(screen.queryByText(/Chair requested/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Choose a chair" })).toBeTruthy();
+    await fillDetailsAndBook();
+    await screen.findByRole("heading", { name: "You are booked, Ana" });
+    expect(callsTo(calls, "POST", `${API}/bookings`)[0]?.body).not.toHaveProperty("seat_id");
+  });
+
   it("lets the diner go back to the map without losing the hold", async () => {
     mockApi(ROUTES);
     await holdTable7();
@@ -116,7 +132,7 @@ describe("Where would you like to sit?", () => {
     await screen.findByRole("heading", { name: "Choose your table" });
     fireEvent.click(screen.getAllByRole("button", { name: "Hold table 8" })[0]);
     await screen.findByRole("timer");
-    fireEvent.click(screen.getByRole("button", { name: /Continue with table/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Choose a chair" }));
     // The new table has to be asked again: nothing is pre-selected.
     expect(await screen.findByRole("heading", { name: /Where would you like to sit/ })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Continue with seat 1/ })).toBeNull();

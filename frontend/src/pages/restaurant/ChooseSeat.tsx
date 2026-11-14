@@ -19,7 +19,7 @@ interface ChooseSeatProps {
   /** The chair picked earlier, if the diner came back to this step. */
   seatId: number | null;
   /** Continue with this chair, or with none (null). */
-  onDone: (seatId: number | null) => void;
+  onDone: (seatId: number | null, label?: string | null) => void;
   onBackToMap: () => void;
 }
 
@@ -55,7 +55,7 @@ export function ChooseSeat({ venueId, hold, secondsLeft, seatId, onDone, onBackT
         <Button variant="ghost" onClick={() => onDone(null)}>
           Skip
         </Button>
-        <Button disabled={chosen === null} onClick={() => onDone(picked)}>
+        <Button disabled={chosen === null} onClick={() => onDone(picked, chosen ? `${hold.tableLabel}-${chosen.label}` : null)}>
           {chosen === null ? "Pick a chair to continue" : `Continue with seat ${chosen.label}`}
         </Button>
       </div>

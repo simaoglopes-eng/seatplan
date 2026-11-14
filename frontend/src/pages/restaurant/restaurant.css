@@ -936,3 +936,24 @@
   gap: var(--space-3);
   min-height: var(--touch-target);
 }
+
+/* ---------- Table step v3: one card, the light preview under the plan, the chair folded into the form ---------- */
+.rb-map-main { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.rb-table-card { display: flex; flex-direction: column; gap: var(--space-2); }
+.rb-table-card-top { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.rb-table-card-top .rb-eyebrow { margin: 0; }
+.rb-table-card-reason { margin: 0; }
+.rb-table-card-more { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.rb-details-summary { margin: 0; }
+.rb-chair-request { border-top: 1px solid var(--c-border); padding-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
+.rb-chair-request-title { margin: 0; font-size: var(--fs-md); }
+.rb-chair-request p { margin: 0; }
+.rb-chair-request-chosen { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.rb-table-row.is-focus { background: var(--c-primary-soft); border-radius: var(--radius-md); }
+.rb-light-cursor { padding: var(--space-3); border: 1px solid var(--c-border); border-radius: var(--radius-lg); background: var(--c-surface); }
+
+/* ---------- Confirmation v3: the result first, the next action right under it ---------- */
+.rb-confirm-actions { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+.rb-confirm-actions p { margin: 0; }
+.rb-copy { display: flex; flex-direction: column; gap: var(--space-2); }
+.rb-copy-details summary { cursor: pointer; min-height: var(--touch-target); display: inline-flex; align-items: center; color: var(--c-primary); }
