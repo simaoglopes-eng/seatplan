@@ -61,6 +61,8 @@ export default function DiscoverPage() {
   const [allCuisines, setAllCuisines] = useState(false);
   const [view, setView] = useState<"list" | "map">("list");
   const [highlighted, setHighlighted] = useState<string | null>(null);
+  // True while the numbered diagram stands in for a map whose tiles failed.
+  const [diagram, setDiagram] = useState(false);
   const [results, setResults] = useState<Results>({ status: "loading" });
   const [loadingMore, setLoadingMore] = useState(false);
   const [moreError, setMoreError] = useState("");
@@ -163,6 +165,8 @@ export default function DiscoverPage() {
     () => items.filter((c) => c.lat !== null && c.lng !== null).map((c) => ({ id: c.public_id, name: c.name, lat: c.lat as number, lng: c.lng as number })),
     [items],
   );
+  // The diagram numbers its pins in list order; cards wear the same numbers.
+  const pinNumbers = useMemo(() => new Map(pins.map((pin, index) => [pin.id, index + 1])), [pins]);
   const selectPin = (id: string): void => {
     setHighlighted(id);
     const card = document.getElementById(`card-${id}`);
@@ -268,7 +272,7 @@ export default function DiscoverPage() {
               ) : (
                 <div className="discover-cards">
                   {results.items.map((card) => (
-                    <RestaurantCard key={card.public_id} card={card} when={when} highlighted={highlighted === card.public_id} onHighlight={setHighlighted} />
+                    <RestaurantCard key={card.public_id} card={card} when={when} highlighted={highlighted === card.public_id} onHighlight={setHighlighted} number={diagram ? pinNumbers.get(card.public_id) : undefined} />
                   ))}
                 </div>
               )}
@@ -288,7 +292,7 @@ export default function DiscoverPage() {
         {showMap && (
           <div className="discover-map-column">
             <Suspense fallback={<Skeleton label="Loading the map" lines={4} />}>
-              <ResultsMap pins={pins} highlightedId={highlighted} onSelect={selectPin} center={place} />
+              <ResultsMap pins={pins} highlightedId={highlighted} onSelect={selectPin} center={place} onFallback={setDiagram} />
             </Suspense>
           </div>
         )}

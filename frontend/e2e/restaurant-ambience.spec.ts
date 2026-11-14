@@ -20,7 +20,7 @@ for (const width of [1440, 390]) test(`diner sees rooms, daylight and night and 
   // A later cursor moment repaints light without acquiring a hold.
   await page.getByRole("button", { name: "Change time", exact: true }).click();
   await page.getByRole("button", { name: "21:00 Available", exact: true }).click();
-  const cursor = page.getByRole("slider", { name: "See how the light changes during your meal" });
+  const cursor = page.getByRole("slider", { name: "Preview room light (does not change booking time)" });
   const last = await cursor.getAttribute("max");
   await cursor.fill(last!);
   await expect(page.locator(".room-night")).toHaveCount(1);

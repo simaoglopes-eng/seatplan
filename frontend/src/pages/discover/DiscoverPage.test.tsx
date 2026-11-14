@@ -5,7 +5,16 @@ import type { RestaurantCard } from "../../api/discovery";
 import DiscoverPage from "./DiscoverPage";
 
 // Leaflet needs a real browser layout; the map has its own browser test.
-vi.mock("../../maps/ResultsMap", () => ({ default: ({ pins }: { pins: unknown[] }) => <div data-testid="map">{pins.length} pins</div> }));
+vi.mock("../../maps/ResultsMap", () => ({
+  default: ({ pins, onFallback }: { pins: unknown[]; onFallback?: (on: boolean) => void }) => (
+    <div data-testid="map">
+      {pins.length} pins
+      <button type="button" onClick={() => onFallback?.(true)}>
+        simulate failed tiles
+      </button>
+    </div>
+  ),
+}));
 
 function card(index: number, patch: Partial<RestaurantCard> = {}): RestaurantCard {
   return {
@@ -268,6 +277,20 @@ describe("DiscoverPage: on a phone", () => {
     fireEvent.click(within(drawer).getByRole("button", { name: /^Show / }));
     expect(screen.getByRole("button", { name: "Filters (1)" })).toBeTruthy();
     expect(screen.getByRole("button", { name: /^Porto · 1 May, 20:00 · 2 people$/ })).toBeTruthy();
+  });
+});
+
+describe("DiscoverPage: when the map tiles fail", () => {
+  it("numbers the cards like the pins of the diagram that replaces the map, and only then", async () => {
+    server(() => ({ items: [card(1), card(2, { lat: null, lng: null })], total: 2 }));
+    renderPage();
+    const first = (await screen.findByRole("heading", { name: "Casa 1" })).closest("article") as HTMLElement;
+    expect(first.querySelector(".discover-card-number")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "simulate failed tiles" }));
+    await waitFor(() => expect(first.querySelector(".discover-card-number")?.textContent).toBe("1"));
+    // A restaurant with no pin has no number: there is nothing on the diagram to match.
+    const second = screen.getByRole("heading", { name: "Casa 2" }).closest("article") as HTMLElement;
+    expect(second.querySelector(".discover-card-number")).toBeNull();
   });
 });
 

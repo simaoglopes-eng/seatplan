@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { SchematicMap } from "./SchematicMap";
 import "./maps.css";
 
 export interface ResultPin {
@@ -21,17 +22,26 @@ interface Props {
   onSelect: (id: string) => void;
   /** Where the diner searched from, shown as a small dot. */
   center?: { lat: number; lng: number } | null;
+  /** Tells the page when the tiles failed and a numbered diagram took the map's place, so cards can show the same numbers. */
+  onFallback?: (active: boolean) => void;
 }
+
+// If no tile has loaded after this long (or the browser is offline), the map is replaced by a diagram.
+const TILE_PATIENCE_MS = 6000;
 
 const LISBON = { lat: 38.7223, lng: -9.1393 };
 
-export default function ResultsMap({ pins, highlightedId, onSelect, center }: Props) {
+export default function ResultsMap({ pins, highlightedId, onSelect, center, onFallback }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const markers = useRef(new Map<string, L.Marker>());
   const select = useRef(onSelect);
   select.current = onSelect;
   const [failed, setFailed] = useState(false);
+  const [fallback, setFallback] = useState(typeof navigator !== "undefined" && navigator.onLine === false);
+  const tell = useRef(onFallback);
+  tell.current = onFallback;
+  useEffect(() => tell.current?.(fallback), [fallback]);
 
   useEffect(() => {
     if (!host.current) return;
@@ -42,9 +52,20 @@ export default function ResultsMap({ pins, highlightedId, onSelect, center }: Pr
       referrerPolicy: "strict-origin-when-cross-origin",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(view);
+    let loaded = 0;
+    tiles.on("tileload", () => {
+      loaded += 1;
+      setFallback(false);
+      setFailed(false);
+    });
     tiles.on("tileerror", () => setFailed(true));
+    // No tile after a while: show the diagram instead of a grey box. A tile that arrives later brings the map back.
+    const patience = window.setTimeout(() => {
+      if (loaded === 0) setFallback(true);
+    }, TILE_PATIENCE_MS);
     const pinsOnMap = markers.current;
     return () => {
+      window.clearTimeout(patience);
       // A pan or zoom still animating when the map is removed throws inside Leaflet.
       view.stop();
       view.remove();
@@ -84,8 +105,10 @@ export default function ResultsMap({ pins, highlightedId, onSelect, center }: Pr
 
   return (
     <>
-      <div ref={host} className="discover-map" role="region" aria-label="Map of the restaurants found" />
-      {failed && <p role="status">Map tiles are unavailable. The list shows every restaurant.</p>}
+      {/* The Leaflet map stays mounted (hidden) while the diagram is shown, so it can recover if tiles arrive. */}
+      <div ref={host} className="discover-map" role="region" aria-label="Map of the restaurants found" hidden={fallback} />
+      {fallback && <SchematicMap pins={pins} highlightedId={highlightedId} onSelect={onSelect} centre={center} />}
+      {failed && !fallback && <p role="status">Map tiles are loading slowly. The list shows every restaurant.</p>}
     </>
   );
 }

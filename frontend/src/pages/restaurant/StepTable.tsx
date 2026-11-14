@@ -13,7 +13,7 @@ import { SeatMap } from "../../seatmap/SeatMap";
 import { errorMessage, formatDate, people } from "./format";
 import { HoldCountdown } from "./HoldCountdown";
 import { LightCursorControl } from "./LightCursor";
-import { DINER_KEY, MapKey, ROOM_KEY } from "./MapKey";
+import { DINER_KEY, MapKey, SCENE_NOTE } from "./MapKey";
 import { RoomTabs } from "./RoomTabs";
 import { StepHeading } from "./StepHeading";
 import { AmbienceCard, ConflictNotice, SuggestionCard, TableList } from "./TablePanels";
@@ -233,7 +233,8 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
               }}
             />
           )}
-          <MapKey entries={DINER_KEY} scenes={map.rooms ? ROOM_KEY : []} />
+          <MapKey entries={DINER_KEY} />
+          {map.rooms && <p className="rb-muted rb-scene-note">{SCENE_NOTE}</p>}
         </div>
       </div>
       {canShowLight && <LightCursorControl steps={steps} index={cursor.index} onChange={cursor.setIndex} failed={cursor.failed} bookingTime={time} sunset={sunsetOf(map)} />}

@@ -89,18 +89,21 @@ export function MapKey({ entries, scenes = [], label = "Map key" }: { entries: K
   );
 }
 
-/** The key for the diner's table map. */
+/**
+ * The key for the diner's table map: three looks and no more. The wheelchair badge sits on the
+ * tables that are accessible and needs no entry of its own; why a table is unavailable is said in its
+ * card and to screen readers.
+ */
 export const DINER_KEY: KeyEntry[] = [
-  { state: "free", name: "Free", hint: "Tap to hold it for 5 minutes" },
-  { state: "mine", name: "Yours", hint: "Held for you" },
-  { state: "held", name: "Being chosen", hint: "Someone else is choosing it" },
-  { state: "taken", name: "Booked", hint: "Already taken for this time" },
-  { state: "blocked", name: "Does not suit", hint: "Too small, too big or missing a need" },
-  { state: "free", name: "Accessible", hint: "Step-free, room for a wheelchair", accessible: true },
-  { state: "free", name: "Suggested", hint: "Our best match for your party", halo: true },
+  { state: "free", name: "Available", hint: "Tap a table to see it, then hold it for 5 minutes" },
+  { state: "mine", name: "Your table", hint: "The one selected or held for you" },
+  { state: "taken", name: "Unavailable", hint: "Booked, being chosen by someone else, or not right for your party" },
 ];
 
-/** Added to the key when the map shows rooms. */
+/** What the sun, the night and the view icon mean; said once, next to the light preview, not in the key. */
+export const SCENE_NOTE = "On the plan, striped yellow is where the sun reaches the floor, dark blue is after sunset, and an eye marks a window with a view.";
+
+/** Kept for the staff and owner screens that still list the room layers in a key. */
 export const ROOM_KEY: SceneEntry[] = [
   { scene: "sun", name: "Direct sun", hint: "Striped areas: the sun reaches the floor" },
   { scene: "night", name: "After dark", hint: "The room is shaded dark blue once the sun has set" },

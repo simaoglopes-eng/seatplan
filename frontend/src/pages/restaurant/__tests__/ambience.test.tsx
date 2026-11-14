@@ -204,17 +204,35 @@ describe("Light cursor", () => {
 });
 
 describe("Map key", () => {
-  it("explains sun, night and views only when there are rooms to show them", async () => {
+  it("shows three looks and no more: available, your table and unavailable", async () => {
     mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => roomsMap() });
     await reachTableStep();
     const key = screen.getByRole("list", { name: "Map key" });
-    for (const name of ["Direct sun", "After dark", "View"]) expect(within(key).getByText(name)).toBeTruthy();
+    expect(within(key).getAllByRole("listitem").map((li) => li.querySelector("strong")?.textContent)).toEqual(["Available", "Your table", "Unavailable"]);
   });
 
-  it("keeps the old key when there are no rooms", async () => {
+  it("explains sun, night and the view once, in a sentence by the plan, only when there are rooms", async () => {
+    mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => roomsMap() });
+    await reachTableStep();
+    expect(screen.getByText(/striped yellow is where the sun reaches the floor, dark blue is after sunset/)).toBeTruthy();
+  });
+
+  it("says nothing about sun when there are no rooms", async () => {
     mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => dinerMap() });
     await reachTableStep();
-    expect(within(screen.getByRole("list", { name: "Map key" })).queryByText("Direct sun")).toBeNull();
+    expect(screen.queryByText(/striped yellow/)).toBeNull();
+    expect(within(screen.getByRole("list", { name: "Map key" })).getAllByRole("listitem")).toHaveLength(3);
+  });
+
+  it("draws booked, being chosen and not-suiting tables with one look, but still names each reason to a screen reader", async () => {
+    const map = dinerMap({ 9: { state: "held" }, 10: { state: "taken" } });
+    mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => map });
+    await reachTableStep();
+    for (const [table, words] of [["9", "someone else is choosing it"], ["10", "booked"]] as const) {
+      const option = screen.getByRole("option", { name: new RegExp(`^Table ${table},`) });
+      expect(option.getAttribute("aria-label")).toContain(words);
+      expect(option.getAttribute("class")).toContain("state-taken");
+    }
   });
 });
 

@@ -31,8 +31,10 @@ export function describeDinerTables(map: DinerMap): DescribeItem {
     if (item.kind !== "table") return null;
     const table = byId.get(item.table.id);
     if (!table) return null;
-    // item.table carries the state as drawn (our own hold is "mine"), not the server's.
-    const parts = [`Table ${table.label}`, partyRange(table), DINER_STATE_WORDS[item.table.state ?? "free"]];
+    // The map draws three looks (available, yours, unavailable), but a screen reader keeps the whole story:
+    // booked, being chosen by someone else, or not suiting the party. Our own hold is the one thing only the drawn state knows.
+    const spoken: SeatState = item.table.state === "mine" ? "mine" : dinerState(table, null);
+    const parts = [`Table ${table.label}`, partyRange(table), DINER_STATE_WORDS[spoken]];
     if (table.accessible) parts.push("accessible");
     return parts.join(", ");
   };
@@ -52,8 +54,17 @@ export function dinerState(table: DinerTable, heldId: number | null): SeatState 
   return "free";
 }
 
+/**
+ * The diner's map draws only three looks: available (open ring), your table (green, ticked) and
+ * unavailable (one neutral look for booked, being chosen by someone else, and not suiting the party).
+ * The reason stays in the spoken name of the table and in its card, not in more symbols.
+ */
+export function drawnState(state: SeatState): SeatState {
+  return state === "held" || state === "blocked" ? "taken" : state;
+}
+
 export function tablesForMap(map: DinerMap, heldId: number | null): MapTable[] {
-  return map.tables.map((table) => ({ ...table, state: dinerState(table, heldId) }));
+  return map.tables.map((table) => ({ ...table, state: drawnState(dinerState(table, heldId)) }));
 }
 
 /** A table the diner could pick right now. */

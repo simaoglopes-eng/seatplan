@@ -11,9 +11,11 @@ interface Props {
   when: SearchWhen | null;
   highlighted: boolean;
   onHighlight: (id: string | null) => void;
+  /** The pin number on the diagram that replaces the map when tiles fail; the card wears the same number. */
+  number?: number;
 }
 
-export function RestaurantCard({ card, when, highlighted, onHighlight }: Props) {
+export function RestaurantCard({ card, when, highlighted, onHighlight, number }: Props) {
   const distance = formatDistance(card.distance_m);
   const room = ambienceLine(card.features);
   const price = priceText(card.price_level);
@@ -28,10 +30,16 @@ export function RestaurantCard({ card, when, highlighted, onHighlight }: Props) 
       onBlur={() => onHighlight(null)}
     >
       <Link to={restaurantHref(card, when)} className="discover-card-photo" tabIndex={-1} aria-hidden="true">
+        {number !== undefined && (
+          <span className="discover-card-number" aria-hidden="true">
+            {number}
+          </span>
+        )}
         {card.cover_url ? <img src={card.cover_url} alt={card.cover_alt ?? ""} loading="lazy" width={640} height={400} /> : <span className="discover-card-nophoto">No photo yet</span>}
       </Link>
       <div className="discover-card-body">
         <h3 id={`name-${card.public_id}`}>
+          {number !== undefined && <span className="visually-hidden">{number}. </span>}
           <Link to={restaurantHref(card, when)}>{card.name}</Link>
         </h3>
         {card.cover_url && card.cover_alt && <p className="visually-hidden">Photo: {card.cover_alt}</p>}

@@ -909,3 +909,10 @@ were retained and the report restored before the next verification.
     screen readers. A tap on another table replaces it; hovering shows another card and gives way back; a table the diner chose stays. The light slider's
     label is "Preview room light (does not change booking time)", its track is the booked stay drawn in brass ("Your booking 19:15 -> 20:45"), the
     sunset is a tick on it when it falls inside the stay, and a line says "Previewing the room at 13:45. Your booking is at 19:30."
+
+31c. **A map that never breaks, and a diner key of three** (claude/ux-v2, step 3). (a) If no map tile has loaded after 6 s, or the browser is offline, the
+    results map (and the one on a restaurant's page) is replaced by a diagram on paper: numbered pins in list order, the searcher's place, a north arrow
+    and a scale bar with a round number; the cards then wear the same numbers; a tile that arrives later brings the real map back. Pins are buttons.
+    (b) The diner's table map draws three looks only: Available (open ring), Your table (green, ticked) and Unavailable (one neutral look for booked, being
+    chosen by someone else, and not suiting the party). The reason stays in each table's spoken name and in its card. The wheelchair badge stays on accessible
+    tables only. What the sun stripes, the dark veil and the eye mean is said once in a sentence under the map, not as legend rows.

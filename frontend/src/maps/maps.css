@@ -9,3 +9,19 @@
 .discover-map .leaflet-control-attribution { color: #222; background: #fff; }
 .discover-map .leaflet-control-attribution a { color: #174d70; }
 .discover-map .leaflet-control-zoom a { min-width: 44px; min-height: 44px; line-height: 44px; }
+
+/* The diagram that replaces the map when tiles cannot load: paper, a faint grid, numbered pins. */
+.schematic { display: flex; flex-direction: column; height: 100%; min-height: 20rem; border: 1px solid var(--c-border-strong); border-radius: var(--radius-lg); background: var(--c-surface-sunk); overflow: hidden; }
+.schematic-svg { flex: 1 1 auto; width: 100%; min-height: 0; }
+.schematic-grid { stroke: var(--c-border); stroke-width: 0.25; }
+.schematic-north path { fill: var(--c-text-muted); }
+.schematic-north text, .schematic-centre text, .schematic-scale text { fill: var(--c-text-muted); font-size: 3px; font-family: var(--font-body); }
+.schematic-centre rect { fill: var(--c-accent); }
+.schematic-scale line { stroke: var(--c-text-muted); stroke-width: 0.5; }
+.schematic-pin { cursor: pointer; outline: none; }
+.schematic-pin-hit { fill: transparent; }
+.schematic-pin-disc { fill: var(--c-primary); stroke: var(--c-surface); stroke-width: 0.8; }
+.schematic-pin.is-active .schematic-pin-disc { fill: var(--c-accent); }
+.schematic-pin-number { fill: var(--c-on-primary); font-size: 3.4px; font-weight: 700; font-family: var(--font-body); pointer-events: none; }
+.schematic-pin:focus-visible .schematic-pin-hit { stroke: var(--c-focus); stroke-width: 0.8; fill: none; }
+.schematic-note { margin: 0; padding: var(--space-2) var(--space-3); font-size: var(--fs-sm); color: var(--c-text-muted); border-top: 1px solid var(--c-border); background: var(--c-surface); }
