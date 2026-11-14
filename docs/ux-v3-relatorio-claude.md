@@ -30,7 +30,9 @@ Capture numbers are the ones in `SeatPlan_Prompt_Redesign_UX.md` and the `seatpl
 
 ## Checks
 
-- Vitest, typecheck, contrast: see the last lines of the run below.
-- Playwright: whole suite.
+- Vitest: 63 files, 471 tests pass. Typecheck clean. Contrast: 172 checks, 0 failures.
+- Playwright (whole suite, desktop and mobile projects): 74 passed on the first full run. The one failure (a diner picks a chair) was the API's "Too many attempts"
+  rate limit after several suite runs in a row; it passes alone on fresh servers (3 of 3 in `restaurant.spec.ts`).
+- "After" captures: `C:\Users\marti\seatplan-screenshots-claude\` (102, same names as the originals; the script is `seatplan-screenshots\take_screenshots.cjs`).
 - `scripts/check_forbidden_paths.py --base main`: "Protected event paths unchanged."
 - Two root causes found on the way: dialogs faded their whole panel (opacity), so axe saw half-faded text in the filters drawer; and a few e2e specs depended on old words (they were updated with the change).
