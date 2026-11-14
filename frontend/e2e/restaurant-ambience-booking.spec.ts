@@ -18,7 +18,7 @@ test("a diner books a table with a chair in a two-room restaurant and changes th
   await rooms.getByRole("tab", { name: /River hall/ }).click();
 
   await page.getByRole("button", { name: "Choose for me" }).click();
-  await page.getByRole("button", { name: /^Continue with table / }).click();
+  await page.getByRole("button", { name: "Choose a chair" }).click();
   await expect(page.getByRole("heading", { name: /Where would you like to sit/ })).toBeVisible();
   await page.getByRole("radio").first().check();
   await page.getByRole("button", { name: /^Continue with seat / }).click();
@@ -28,14 +28,15 @@ test("a diner books a table with a chair in a two-room restaurant and changes th
   await page.getByRole("button", { name: "Confirm booking" }).click();
   await expect(page.getByRole("heading", { name: "You are booked, Ambience" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Open my booking" }).click();
-  const before = (await page.getByText(/You asked for seat/).textContent()) ?? "";
-  await page.getByRole("button", { name: "Change seat" }).click();
+  await page.getByRole("link", { name: "Manage booking" }).click();
+  const chair = page.locator(".rb-summary dd", { hasText: /^Seat / });
+  const before = (await chair.textContent()) ?? "";
+  await page.getByRole("button", { name: "Request a different chair" }).click();
   const other = page.getByRole("radio").nth(1);
   await other.check();
-  await page.getByRole("button", { name: "Save seat" }).click();
-  await expect(page.getByRole("button", { name: "Change seat" })).toBeVisible();
-  await expect(page.getByText(/You asked for seat/)).not.toHaveText(before);
+  await page.getByRole("button", { name: "Save chair request" }).click();
+  await expect(page.getByText("Chair request updated.")).toBeVisible();
+  await expect(chair).not.toHaveText(before);
 });
 
 test("a time that is no longer free in the link lands on the list of times", async ({ page, request }) => {
@@ -52,7 +53,7 @@ test("a diner confirms from the form beside the plan, without leaving the map", 
   await expect(page.getByRole("heading", { name: "Choose your table" })).toBeVisible();
   // The suggested table is already selected, so reserving it is one tap on its card.
   await expect(page.getByRole("option", { selected: true })).toHaveCount(1);
-  await page.getByRole("button", { name: "Hold this table" }).first().click();
+  await page.getByRole("button", { name: /^Hold table .* & continue$/ }).first().click();
   const panel = page.getByRole("form", { name: "Your details" });
   await expect(panel).toBeVisible();
   await expect(page.getByRole("option").first()).toBeVisible(); // the plan is still there

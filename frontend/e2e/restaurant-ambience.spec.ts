@@ -20,7 +20,7 @@ for (const width of [1440, 390]) test(`diner sees rooms, daylight and night and 
   // A later cursor moment repaints light without acquiring a hold.
   await page.getByRole("button", { name: "Change time", exact: true }).click();
   await page.getByRole("button", { name: "21:00 Available", exact: true }).click();
-  const cursor = page.getByRole("slider", { name: "Preview room light (does not change booking time)" });
+  const cursor = page.getByRole("slider", { name: "Preview light (does not change your booking)" });
   const last = await cursor.getAttribute("max");
   await cursor.fill(last!);
   await expect(page.locator(".room-night")).toHaveCount(1);
@@ -28,7 +28,7 @@ for (const width of [1440, 390]) test(`diner sees rooms, daylight and night and 
   await expect(page.getByRole("button", { name: "Pick a table to continue" })).toBeDisabled();
   await page.screenshot({ path: join(tmpdir(), `seatplan-37-night-${width}.png`), fullPage: true });
   await page.getByRole("button", { name: "Hold table Garden 1", exact: true }).last().click();
-  await page.getByRole("button", { name: "Continue with table Garden 1" }).click();
+  await page.getByRole("button", { name: "Choose a chair" }).click();
   const chair = page.getByRole("radio", { name: /^Seat 2/ });
   await chair.check();
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
@@ -38,7 +38,7 @@ for (const width of [1440, 390]) test(`diner sees rooms, daylight and night and 
   await page.getByRole("button", { name: "Confirm booking" }).click();
   await expect(page.getByRole("heading", { name: "You are booked, Acceptance" })).toBeVisible();
   await expect(page.getByText(/Seat 2/).first()).toBeVisible();
-  await page.getByRole("link", { name: "Open my booking" }).click();
+  await page.getByRole("link", { name: "Manage booking" }).click();
   await expect(page.getByText(/Seat 2/).first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await info.attach("night-booking", { body: `Room: Garden; seat: 2; viewport: ${width}`, contentType: "text/plain" });
@@ -69,13 +69,13 @@ test("two diners race for one table, one wins and the other can take an alternat
     expect(responses.map(r => r.status()).sort()).toEqual([201, 409]);
     const winner = responses[0].status() === 201 ? page : other;
     const loser = winner === page ? other : page;
-    await expect(winner.getByRole("button", { name: "Continue with table River 1" })).toBeEnabled();
+    await expect(winner.getByRole("form", { name: "Your details" })).toBeVisible();
     await expect(loser.getByRole("alert").filter({ hasText: "Sorry, that table is gone" })).toBeVisible();
     // Remove the barrier before requesting a different table.
     await page.unroute(`**/api/r/${venue.id}/hold`);
     await other.unroute(`**/api/r/${venue.id}/hold`);
     await loser.getByRole("button", { name: "Hold table Garden 1", exact: true }).last().click();
-    await expect(loser.getByRole("button", { name: "Continue with table Garden 1" })).toBeEnabled();
+    await expect(loser.getByRole("form", { name: "Your details" })).toBeVisible();
     expect(otherErrors).toEqual([]);
   } finally {
     await other.close();

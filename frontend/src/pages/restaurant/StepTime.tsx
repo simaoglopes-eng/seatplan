@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { getSlots } from "../../api/restaurant";
 import type { PartyNeeds, TimeSlot } from "../../api/restaurant";
 import { Button, EmptyState, ErrorState, Skeleton } from "../../design/components";
-import { errorMessage, formatDate, people } from "./format";
+import { errorMessage, formatDate, people, toMinutes } from "./format";
 import { SlotButton } from "./SlotButton";
 import { StepHeading } from "./StepHeading";
 import { useLoad } from "./useLoad";
@@ -16,6 +16,8 @@ import { WaitlistDialog } from "./WaitlistDialog";
 interface StepTimeProps {
   venueId: string;
   needs: PartyNeeds;
+  /** The time asked for on the way in (from a search), if any: when it is gone we point to the closest ones. */
+  wanted?: string | null;
   onPick: (time: string) => void;
   onBack: () => void;
 }
@@ -36,7 +38,23 @@ export function upcomingSlots(slots: TimeSlot[]): TimeSlot[] {
   return slots.filter((slot) => slot.reason !== "past");
 }
 
-export function StepTime({ venueId, needs, onPick, onBack }: StepTimeProps) {
+/**
+ * The times closest to the one the diner asked for, when that one cannot be booked: up to `count`
+ * bookable times, nearest first. Nothing is hidden: they are only marked in the full list.
+ */
+export function closestTimes(slots: TimeSlot[], wanted: string | null | undefined, count = 3): string[] {
+  if (!wanted) return [];
+  const exact = slots.find((slot) => slot.time === wanted);
+  if (exact && exact.status !== "full") return [];
+  const target = toMinutes(wanted);
+  return slots
+    .filter((slot) => slot.status !== "full")
+    .sort((a, b) => Math.abs(toMinutes(a.time) - target) - Math.abs(toMinutes(b.time) - target))
+    .slice(0, count)
+    .map((slot) => slot.time);
+}
+
+export function StepTime({ venueId, needs, wanted, onPick, onBack }: StepTimeProps) {
   const { state, reload } = useLoad(() => getSlots(venueId, needs.date, needs.party), `${needs.date}|${needs.party}`);
   const [waitlistTime, setWaitlistTime] = useState<string | null>(null);
   const pick = (slot: TimeSlot): void => (slot.status === "full" ? setWaitlistTime(slot.time) : onPick(slot.time));
@@ -61,7 +79,7 @@ export function StepTime({ venueId, needs, onPick, onBack }: StepTimeProps) {
           <p>{state.data.closed_reason}</p>
         </EmptyState>
       )}
-      {state.status === "ready" && !state.data.closed_reason && <OpenDay slots={state.data.slots} needs={needs} back={back} onPick={pick} />}
+      {state.status === "ready" && !state.data.closed_reason && <OpenDay slots={state.data.slots} needs={needs} wanted={wanted ?? null} back={back} onPick={pick} />}
       <WaitlistDialog venueId={venueId} needs={needs} time={waitlistTime} onClose={() => setWaitlistTime(null)} />
     </section>
   );
@@ -70,12 +88,13 @@ export function StepTime({ venueId, needs, onPick, onBack }: StepTimeProps) {
 interface OpenDayProps {
   slots: TimeSlot[];
   needs: PartyNeeds;
+  wanted: string | null;
   back: ReactNode;
   onPick: (slot: TimeSlot) => void;
 }
 
 /** An open day: its upcoming times, or why there are none. */
-function OpenDay({ slots, needs, back, onPick }: OpenDayProps) {
+function OpenDay({ slots, needs, wanted, back, onPick }: OpenDayProps) {
   const upcoming = upcomingSlots(slots);
   if (upcoming.length === 0 && slots.length > 0) {
     return (
@@ -94,19 +113,25 @@ function OpenDay({ slots, needs, back, onPick }: OpenDayProps) {
   return (
     <>
       {upcoming.length < slots.length && <p className="rb-muted">Times that have already passed are not shown.</p>}
-      <SlotGroups slots={upcoming} onPick={onPick} />
+      <SlotGroups slots={upcoming} wanted={wanted} onPick={onPick} />
       <div className="rb-actions">{back}</div>
     </>
   );
 }
 
-function SlotGroups({ slots, onPick }: { slots: TimeSlot[]; onPick: (slot: TimeSlot) => void }) {
+function SlotGroups({ slots, wanted, onPick }: { slots: TimeSlot[]; wanted: string | null; onPick: (slot: TimeSlot) => void }) {
   const allFull = slots.every((slot) => slot.status === "full");
+  const near = closestTimes(slots, wanted);
   return (
     <>
       {allFull && (
         <p className="rb-notice" role="status">
           Every time is booked on this day. Pick a time to join its waitlist, or try another date.
+        </p>
+      )}
+      {near.length > 0 && wanted && (
+        <p className="rb-notice" role="status">
+          {wanted} cannot be booked. The closest times are marked: {near.join(", ")}.
         </p>
       )}
       {groupByService(slots).map((group) => (
@@ -115,7 +140,7 @@ function SlotGroups({ slots, onPick }: { slots: TimeSlot[]; onPick: (slot: TimeS
           <ul className="rb-slots">
             {group.slots.map((slot) => (
               <li key={slot.time}>
-                <SlotButton slot={slot} onPick={onPick} />
+                <SlotButton slot={slot} near={near.includes(slot.time)} onPick={onPick} />
               </li>
             ))}
           </ul>

@@ -303,7 +303,12 @@
   place-items: center;
   padding: var(--space-4);
   background: var(--c-overlay);
-  animation: fade-in var(--dur-base) var(--ease-out);
+  animation: backdrop-in var(--dur-base) var(--ease-out);
+}
+
+/* Only the dimming fades in. Fading the whole backdrop (opacity) would also fade the dialog's text for a few frames. */
+@keyframes backdrop-in {
+  from { background-color: transparent; }
 }
 
 .dialog {
@@ -335,9 +340,10 @@
   animation: slide-in-right var(--dur-base) var(--ease-out);
 }
 
+/* The panel slides; it never fades, so its text keeps full contrast from the first frame (the backdrop does the fading). */
 @keyframes slide-in-right {
-  from { transform: translateX(2rem); opacity: 0; }
-  to { transform: none; opacity: 1; }
+  from { transform: translateX(2rem); }
+  to { transform: none; }
 }
 
 .dialog-title {

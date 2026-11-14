@@ -32,11 +32,14 @@ describe("Manage booking page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancel booking" }));
     const dialog = await screen.findByRole("dialog", { name: "Cancel this booking?" });
     // Keeping the booking closes the dialog without a request.
-    fireEvent.click(within(dialog).getByRole("button", { name: "Keep my booking" }));
+    // The safe way out is where focus starts, and it closes the dialog without a request.
+    expect(document.activeElement).toBe(within(dialog).getByRole("button", { name: "Keep booking" }));
+    expect(within(dialog).getByText("Casa Linho")).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Keep booking" }));
     expect(callsTo(calls, "DELETE", "/api/b/tok123")).toHaveLength(0);
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel booking" }));
-    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Yes, cancel it" }));
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Cancel booking" }));
     expect(await screen.findByText(/This booking is cancelled/)).toBeTruthy();
     expect(callsTo(calls, "DELETE", "/api/b/tok123")).toHaveLength(1);
     expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
@@ -50,6 +53,7 @@ describe("Manage booking page", () => {
     });
     renderManage();
     await screen.findByText("Ana Pereira");
+    fireEvent.click(screen.getByRole("button", { name: "Change time or party size" }));
     // 20:00 is full, so it is not offered; 12:30 is.
     await screen.findByRole("option", { name: /12:30/ });
     expect(screen.queryByRole("option", { name: /20:00/ })).toBeNull();
@@ -62,6 +66,7 @@ describe("Manage booking page", () => {
   it("offers party sizes up to the restaurant's real limit from the booking link", async () => {
     mockApi({ "GET /api/b/tok123": () => BOOKING, [`GET /api/r/${VENUE}/slots`]: () => SLOTS });
     renderManage();
+    fireEvent.click(await screen.findByRole("button", { name: "Change time or party size" }));
     const select = (await screen.findByLabelText("Party size")) as HTMLSelectElement;
     expect(Array.from(select.options).map((o) => o.value)).toEqual(["1", "2", "3", "4", "5", "6"]);
   });
@@ -73,11 +78,29 @@ describe("Manage booking page", () => {
       "PATCH /api/b/tok123": () => ({ ...BOOKING, max_party: undefined, time: "12:30", end_time: "14:30" }),
     });
     renderManage();
+    fireEvent.click(await screen.findByRole("button", { name: "Change time or party size" }));
     await screen.findByRole("option", { name: /12:30/ });
     fireEvent.change(screen.getByLabelText("Time"), { target: { value: "12:30" } });
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
     await screen.findByText(/12:30 to 14:30/);
+    // The form closes after saving; opening it again still offers the real limit.
+    fireEvent.click(screen.getByRole("button", { name: "Change time or party size" }));
     expect((screen.getByLabelText("Party size") as HTMLSelectElement).options).toHaveLength(6);
+  });
+
+  it("starts with the summary and three things to do, and opens one at a time", async () => {
+    mockApi({ "GET /api/b/tok123": () => BOOKING, [`GET /api/r/${VENUE}/slots`]: () => SLOTS, [`GET /api/r/${VENUE}/seats`]: () => ({ tables: [], seats: [] }) });
+    renderManage();
+    await screen.findByText("Ana Pereira");
+    const actions = screen.getByRole("group", { name: "Manage this booking" });
+    expect(within(actions).getAllByRole("button").map((b) => b.textContent)).toEqual(["Change time or party size", "Request a chair", "Cancel booking"]);
+    expect(screen.queryByLabelText("Party size")).toBeNull(); // nothing is open until the diner says what they want
+    const time = within(actions).getByRole("button", { name: "Change time or party size" });
+    fireEvent.click(time);
+    expect(time.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(within(actions).getByRole("button", { name: "Request a chair" }));
+    expect(screen.queryByLabelText("Party size")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Chair request" })).toBeTruthy();
   });
 
   it("says a cancelled booking has no table, instead of 'No table yet'", async () => {
@@ -95,7 +118,7 @@ describe("Manage booking page", () => {
     });
     renderManage();
     fireEvent.click(await screen.findByRole("button", { name: "Cancel booking" }));
-    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Yes, cancel it" }));
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Cancel booking" }));
     expect(await screen.findByText("None, the booking is cancelled")).toBeTruthy();
     expect(screen.queryByText("Table 7")).toBeNull();
   });

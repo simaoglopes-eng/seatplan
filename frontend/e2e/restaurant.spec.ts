@@ -14,13 +14,8 @@ test("a diner books a table, then cancels through the manage link", async ({ pag
 
   await expect(page.getByRole("heading", { name: "Choose your table" })).toBeVisible();
   await page.getByRole("button", { name: "Choose for me" }).click();
-  const next = page.getByRole("button", { name: /^Continue with table / });
-  await expect(next).toBeEnabled();
-  await next.click();
-
-  // The chair is optional: this diner skips it.
-  await expect(page.getByRole("heading", { name: /Where would you like to sit/ })).toBeVisible();
-  await page.getByRole("button", { name: "Skip" }).click();
+  // The table is held and the details form opens beside the plan; the chair is optional and this diner skips it.
+  await expect(page.getByRole("form", { name: "Your details" })).toBeVisible();
 
   await page.getByLabel("Name for the booking").fill("Tess Diner");
   await page.getByLabel("Email", { exact: true }).fill("tess.diner@example.com");
@@ -28,13 +23,13 @@ test("a diner books a table, then cancels through the manage link", async ({ pag
   await expect(page.getByRole("heading", { name: "You are booked, Tess" })).toBeVisible();
 
   // The confirmation page alone is enough to manage the booking.
-  await page.getByRole("link", { name: "Open my booking" }).click();
+  await page.getByRole("link", { name: "Manage booking" }).click();
   await expect(page).toHaveURL(/\/b\/[^/]+$/);
   const token = lastPart(new URL(page.url()).pathname);
   await expect(page.getByRole("heading", { name: "Your booking" })).toBeVisible();
 
   await page.getByRole("button", { name: "Cancel booking" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Yes, cancel it" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel booking" }).click();
   await expect(page.getByText("This booking is cancelled.")).toBeVisible();
 
   const stored = await request.get(`/api/b/${token}`);
@@ -49,7 +44,7 @@ test("a diner picks a chair and sees it on the confirmation", async ({ page, req
   await page.getByRole("button", { name: /^\d\d:\d\d Available$/ }).first().click();
   await expect(page.getByRole("heading", { name: "Choose your table" })).toBeVisible();
   await page.getByRole("button", { name: "Choose for me" }).click();
-  await page.getByRole("button", { name: /^Continue with table / }).click();
+  await page.getByRole("button", { name: "Choose a chair" }).click();
 
   await expect(page.getByRole("heading", { name: /Where would you like to sit/ })).toBeVisible();
   // The demo's chairs are labelled like "W2-2": take the second one, whatever the table is called.

@@ -957,3 +957,10 @@
 .rb-confirm-actions p { margin: 0; }
 .rb-copy { display: flex; flex-direction: column; gap: var(--space-2); }
 .rb-copy-details summary { cursor: pointer; min-height: var(--touch-target); display: inline-flex; align-items: center; color: var(--c-primary); }
+
+.rb-slot-near { border-width: 2px; border-color: var(--c-accent-bright); }
+.rb-slot-near-tag { display: block; margin-top: var(--space-1); font-size: var(--fs-xs); font-weight: var(--fw-bold); color: var(--c-accent); }
+
+/* ---------- Manage booking v3: what the diner wants to do, one at a time ---------- */
+.rb-manage-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.rb-manage-actions .rb-danger-link { margin-left: auto; color: var(--c-danger); }

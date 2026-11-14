@@ -20,17 +20,20 @@ function SlotIcon({ status }: { status: SlotStatus }) {
 
 interface SlotButtonProps {
   slot: TimeSlot;
+  /** One of the times closest to the one the diner asked for. */
+  near?: boolean;
   onPick: (slot: TimeSlot) => void;
 }
 
-export function SlotButton({ slot, onPick }: SlotButtonProps) {
+export function SlotButton({ slot, near = false, onPick }: SlotButtonProps) {
   return (
-    <button type="button" className={`rb-slot rb-slot-${slot.status}`} onClick={() => onPick(slot)}>
+    <button type="button" className={`rb-slot rb-slot-${slot.status}${near ? " rb-slot-near" : ""}`} onClick={() => onPick(slot)}>
       <span className="rb-slot-time tabular">{slot.time}</span>
       <span className="rb-slot-status">
         <SlotIcon status={slot.status} />
         {SLOT_TEXT[slot.status]}
       </span>
+      {near && <span className="rb-slot-near-tag">Closest</span>}
     </button>
   );
 }
