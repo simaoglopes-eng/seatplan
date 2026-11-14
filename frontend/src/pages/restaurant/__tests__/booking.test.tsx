@@ -61,12 +61,12 @@ describe("Booking page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Confirm booking" }));
 
     // Step 5: summary, manage link, email note.
-    expect(await screen.findByRole("heading", { name: "You are booked, Ana" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Booking confirmed." })).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/bookings`)[0]?.body).toMatchObject({ hold_id: "hold-token-41", name: "Ana Pereira", email: "ana@example.com", party: 2 });
     const link = screen.getByLabelText("Your manage link") as HTMLInputElement;
     expect(link.value).toBe(`${window.location.origin}/b/tok123`);
-    expect(screen.getByText(/calendar invite is on its way/)).toBeTruthy();
-    expect(screen.getByText("Booking confirmed")).toBeTruthy();
+    expect(screen.getByText(/Confirmation email/)).toBeTruthy();
+    expect(screen.getByText(/Your table at .* is reserved/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Manage booking" }).getAttribute("href")).toBe(`${window.location.origin}/b/tok123`);
     fireEvent.click(screen.getByRole("button", { name: "Copy private link" }));
     expect(await screen.findByText(/Link copied/)).toBeTruthy();

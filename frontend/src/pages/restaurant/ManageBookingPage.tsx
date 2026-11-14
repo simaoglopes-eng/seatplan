@@ -6,11 +6,12 @@ import { useParams } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { cancelBooking, getBooking } from "../../api/restaurant";
 import type { BookingView } from "../../api/restaurant";
-import { Button, Dialog, EmptyState, ErrorState, PageShell, Skeleton, useToast } from "../../design/components";
-import { BookingSummary } from "./BookingSummary";
+import { Badge, Button, Dialog, EmptyState, ErrorState, PageShell, Skeleton, useToast } from "../../design/components";
+import { BookingRows } from "./BookingSummary";
 import { ChangeBookingForm } from "./ChangeBookingForm";
 import { ChangeSeat } from "./ChangeSeat";
 import { errorMessage, formatDate, people } from "./format";
+import { DirectionsLink, VenueCard, usePublicVenue } from "./VenueCard";
 import { useLoad } from "./useLoad";
 import "./restaurant.css";
 
@@ -20,7 +21,7 @@ export default function ManageBookingPage() {
   return (
     <PageShell title="Your booking">
       <div className="rb-page">
-        <h1 className="rb-title">Your booking</h1>
+        <h1 className="rb-title rb5-page-title">Manage your booking</h1>
         {state.status === "loading" && <Skeleton lines={5} label="Loading your booking" />}
         {state.status === "error" && <ManageError error={state.error} onRetry={() => reload()} />}
         {state.status === "ready" && <ManageBooking token={token} booking={state.data} onUpdate={setData} />}
@@ -62,23 +63,53 @@ function ManageBooking({ token, booking, onUpdate }: { token: string; booking: B
   };
   const toggle = (which: "time" | "chair"): void => setPanel(panel === which ? null : which);
   const hasChairs = (booking.table_ids ?? []).length > 0;
+  const venue = usePublicVenue(booking.venue_public_id);
+  const statusBadge = booking.status === "confirmed" ? <Badge tone="success">Confirmed</Badge> : booking.status === "cancelled" ? <Badge tone="danger">Cancelled</Badge> : null;
   return (
     <>
+      <p className="rb5-manage-sub">
+        <span className="rb-muted">{booking.venue_name}</span> {statusBadge}
+      </p>
       {booking.status === "cancelled" && (
         <p className="rb-notice" role="status">
           This booking is cancelled. The table is free for someone else.
         </p>
       )}
-      <BookingSummary booking={booking} />
-      {isEditable(booking) ? (
+      <div className="rb5-two rb5-manage">
+        <section className="rb-card rb5-details-card" aria-label="Reservation details">
+          <h2 className="rb5-card-title">Reservation details</h2>
+          <BookingRows booking={booking} />
+          <div className="rb5-reference">
+            <span className="rb-muted">Reference {booking.public_id.slice(0, 8).toUpperCase()}</span>
+            <DirectionsLink venue={venue} />
+          </div>
+        </section>
+        <div className="rb5-manage-side">
+          <VenueCard booking={booking} venue={venue} />
+          {renderActions()}
+        </div>
+      </div>
+      <p>
+        <a href={`/r/${encodeURIComponent(booking.venue_public_id)}`}>Make another booking at {booking.venue_name}</a>
+      </p>
+    </>
+  );
+
+  function renderActions() {
+    if (!isEditable(booking)) {
+      return booking.status !== "cancelled" ? <p className="rb-muted">This booking can no longer be changed online. Please contact the restaurant.</p> : null;
+    }
+    return (
+      <section className="rb-card rb5-change" aria-label="Make a change">
+        <h2 className="rb5-card-title">Make a change</h2>
         <>
           <div className="rb-manage-actions" role="group" aria-label="Manage this booking">
             <Button variant="secondary" aria-expanded={panel === "time"} aria-controls="rb-panel-time" onClick={() => toggle("time")}>
-              Change time or party size
+              Change time or guests
             </Button>
             {hasChairs && (
               <Button variant="secondary" aria-expanded={panel === "chair"} aria-controls="rb-panel-chair" onClick={() => toggle("chair")}>
-                {booking.seat ? "Request a different chair" : "Request a chair"}
+                {booking.seat ? "Change chair request" : "Request a chair"}
               </Button>
             )}
             <Button variant="ghost" className="rb-danger-link" onClick={() => setCancelling(true)}>
@@ -105,14 +136,9 @@ function ManageBooking({ token, booking, onUpdate }: { token: string; booking: B
           )}
           <CancelDialog token={token} booking={booking} open={cancelling} onClose={() => setCancelling(false)} onCancelled={update} />
         </>
-      ) : (
-        booking.status !== "cancelled" && <p className="rb-muted">This booking can no longer be changed online. Please contact the restaurant.</p>
-      )}
-      <p>
-        <a href={`/r/${encodeURIComponent(booking.venue_public_id)}`}>Make another booking at {booking.venue_name}</a>
-      </p>
-    </>
-  );
+      </section>
+    );
+  }
 }
 
 /** The safe way out ("Keep booking") comes first, so it is where focus starts; Escape also keeps the booking. */

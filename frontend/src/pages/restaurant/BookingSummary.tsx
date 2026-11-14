@@ -3,7 +3,7 @@
 import type { BookingStatus, BookingView } from "../../api/restaurant";
 import { Badge } from "../../design/components";
 import type { BadgeTone } from "../../design/components";
-import { formatDate, people, tablesText } from "./format";
+import { formatDate, guests, people, tablesText } from "./format";
 import { prefWords } from "./prefs";
 
 const STATUS_TEXT: Record<BookingStatus, { label: string; tone: BadgeTone }> = {
@@ -31,6 +31,54 @@ function needsText(booking: BookingView): string {
   if (booking.needs_accessible) needs.push("Accessible table");
   if (booking.high_chairs > 0) needs.push(booking.high_chairs === 1 ? "1 high chair" : `${booking.high_chairs} high chairs`);
   return needs.length > 0 ? needs.join(", ") : "None";
+}
+
+/** What matters at the door, one fact per row: used beside the restaurant card on the confirmation and the manage page. */
+export function BookingRows({ booking }: { booking: BookingView }) {
+  const wishes = prefWords(booking.prefs);
+  const needs = needsText(booking);
+  return (
+    <dl className="rb5-rows">
+      <div>
+        <dt>Date</dt>
+        <dd>{formatDate(booking.date)}</dd>
+      </div>
+      <div>
+        <dt>Arrival</dt>
+        <dd className="tabular">
+          {booking.time} · {guests(booking.party_size)}
+        </dd>
+      </div>
+      <div>
+        <dt>Table</dt>
+        <dd>{tableText(booking)}</dd>
+      </div>
+      {booking.seat && (
+        <div>
+          <dt>Chair request</dt>
+          <dd>{seatText(booking.seat)}</dd>
+        </div>
+      )}
+      {needs !== "None" && (
+        <div>
+          <dt>Needs</dt>
+          <dd>{needs}</dd>
+        </div>
+      )}
+      {wishes && (
+        <div>
+          <dt>Your wishes</dt>
+          <dd>{wishes}</dd>
+        </div>
+      )}
+      {booking.notes && (
+        <div>
+          <dt>Notes</dt>
+          <dd>{booking.notes}</dd>
+        </div>
+      )}
+    </dl>
+  );
 }
 
 /** `hideStatus` leaves the status row out where the page already says it in a heading ("Booking confirmed"). */

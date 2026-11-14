@@ -27,7 +27,7 @@ describe("Manage booking page", () => {
       "DELETE /api/b/tok123": () => ({ ...BOOKING, status: "cancelled" }),
     });
     renderManage();
-    expect(await screen.findByText("Ana Pereira")).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Reservation details" })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel booking" }));
     const dialog = await screen.findByRole("dialog", { name: "Cancel this booking?" });
@@ -52,21 +52,21 @@ describe("Manage booking page", () => {
       "PATCH /api/b/tok123": () => ({ ...BOOKING, time: "12:30", end_time: "14:30" }),
     });
     renderManage();
-    await screen.findByText("Ana Pereira");
-    fireEvent.click(screen.getByRole("button", { name: "Change time or party size" }));
+    await screen.findByRole("heading", { name: "Reservation details" });
+    fireEvent.click(screen.getByRole("button", { name: "Change time or guests" }));
     // 20:00 is full, so it is not offered; 12:30 is.
     await screen.findByRole("option", { name: /12:30/ });
     expect(screen.queryByRole("option", { name: /20:00/ })).toBeNull();
     fireEvent.change(screen.getByLabelText("Time"), { target: { value: "12:30" } });
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    expect(await screen.findByText(/12:30 to 14:30/)).toBeTruthy();
+    expect(await screen.findByText(/^12:30 · 4 guests$/)).toBeTruthy();
     expect(callsTo(calls, "PATCH", "/api/b/tok123")[0]?.body).toEqual({ time: "12:30", party_size: 4 });
   });
 
   it("offers party sizes up to the restaurant's real limit from the booking link", async () => {
     mockApi({ "GET /api/b/tok123": () => BOOKING, [`GET /api/r/${VENUE}/slots`]: () => SLOTS });
     renderManage();
-    fireEvent.click(await screen.findByRole("button", { name: "Change time or party size" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Change time or guests" }));
     const select = (await screen.findByLabelText("Party size")) as HTMLSelectElement;
     expect(Array.from(select.options).map((o) => o.value)).toEqual(["1", "2", "3", "4", "5", "6"]);
   });
@@ -78,24 +78,24 @@ describe("Manage booking page", () => {
       "PATCH /api/b/tok123": () => ({ ...BOOKING, max_party: undefined, time: "12:30", end_time: "14:30" }),
     });
     renderManage();
-    fireEvent.click(await screen.findByRole("button", { name: "Change time or party size" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Change time or guests" }));
     await screen.findByRole("option", { name: /12:30/ });
     fireEvent.change(screen.getByLabelText("Time"), { target: { value: "12:30" } });
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    await screen.findByText(/12:30 to 14:30/);
+    await screen.findByText(/^12:30 · 4 guests$/);
     // The form closes after saving; opening it again still offers the real limit.
-    fireEvent.click(screen.getByRole("button", { name: "Change time or party size" }));
+    fireEvent.click(screen.getByRole("button", { name: "Change time or guests" }));
     expect((screen.getByLabelText("Party size") as HTMLSelectElement).options).toHaveLength(6);
   });
 
   it("starts with the summary and three things to do, and opens one at a time", async () => {
     mockApi({ "GET /api/b/tok123": () => BOOKING, [`GET /api/r/${VENUE}/slots`]: () => SLOTS, [`GET /api/r/${VENUE}/seats`]: () => ({ tables: [], seats: [] }) });
     renderManage();
-    await screen.findByText("Ana Pereira");
+    await screen.findByRole("heading", { name: "Reservation details" });
     const actions = screen.getByRole("group", { name: "Manage this booking" });
-    expect(within(actions).getAllByRole("button").map((b) => b.textContent)).toEqual(["Change time or party size", "Request a chair", "Cancel booking"]);
+    expect(within(actions).getAllByRole("button").map((b) => b.textContent)).toEqual(["Change time or guests", "Request a chair", "Cancel booking"]);
     expect(screen.queryByLabelText("Party size")).toBeNull(); // nothing is open until the diner says what they want
-    const time = within(actions).getByRole("button", { name: "Change time or party size" });
+    const time = within(actions).getByRole("button", { name: "Change time or guests" });
     fireEvent.click(time);
     expect(time.getAttribute("aria-expanded")).toBe("true");
     fireEvent.click(within(actions).getByRole("button", { name: "Request a chair" }));

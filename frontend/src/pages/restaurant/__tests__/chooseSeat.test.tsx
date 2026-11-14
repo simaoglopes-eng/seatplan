@@ -75,7 +75,7 @@ describe("Where would you like to sit?", () => {
     expect(await screen.findByText("Chair requested: 7-2")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Remove request" })).toBeTruthy();
     await fillDetailsAndBook();
-    await screen.findByRole("heading", { name: "You are booked, Ana" });
+    await screen.findByRole("heading", { name: "Booking confirmed." });
     expect(callsTo(calls, "POST", `${API}/bookings`)[0]?.body).toMatchObject({ seat_id: 72 });
     expect(screen.getByText(/Seat 2, back to the window/i)).toBeTruthy();
   });
@@ -85,7 +85,7 @@ describe("Where would you like to sit?", () => {
     await holdTable7();
     fireEvent.click(await screen.findByRole("button", { name: "Continue without a request" }));
     await fillDetailsAndBook();
-    await screen.findByRole("heading", { name: "You are booked, Ana" });
+    await screen.findByRole("heading", { name: "Booking confirmed." });
     expect(callsTo(calls, "POST", `${API}/bookings`)[0]?.body).not.toHaveProperty("seat_id");
   });
 
@@ -112,7 +112,7 @@ describe("Where would you like to sit?", () => {
     expect(screen.queryByText(/Chair requested/)).toBeNull();
     expect(screen.getByRole("button", { name: "Choose a chair" })).toBeTruthy();
     await fillDetailsAndBook();
-    await screen.findByRole("heading", { name: "You are booked, Ana" });
+    await screen.findByRole("heading", { name: "Booking confirmed." });
     expect(callsTo(calls, "POST", `${API}/bookings`)[0]?.body).not.toHaveProperty("seat_id");
   });
 

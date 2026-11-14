@@ -59,7 +59,7 @@ describe("The details form beside the map", () => {
     fireEvent.change(within(panel).getByLabelText("Name for the booking"), { target: { value: "Ana Pereira" } });
     fireEvent.change(within(panel).getByLabelText("Email"), { target: { value: "ana@example.com" } });
     fireEvent.click(within(panel).getByRole("button", { name: "Confirm booking" }));
-    expect(await screen.findByRole("heading", { name: "You are booked, Ana" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Booking confirmed." })).toBeTruthy();
     const body = callsTo(calls, "POST", `${API}/bookings`)[0]?.body as Record<string, unknown>;
     expect(body).toMatchObject({ name: "Ana Pereira", email: "ana@example.com", hold_id: "hold-token-41" });
     expect(body.seat_id).toBeUndefined(); // no chair was asked for
@@ -87,7 +87,7 @@ describe("The details form beside the map", () => {
     expect((await screen.findByLabelText("Name for the booking") as HTMLInputElement).value).toBe("Ana Pereira");
     expect(screen.getByText("Chair requested: 7-1")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Confirm booking" }));
-    expect(await screen.findByRole("heading", { name: "You are booked, Ana" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Booking confirmed." })).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/bookings`)[0]?.body).toMatchObject({ seat_id: 71 });
   });
 

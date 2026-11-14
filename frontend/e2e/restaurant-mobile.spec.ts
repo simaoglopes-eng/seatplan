@@ -49,5 +49,5 @@ test("on a phone: one action per moment, a suggestion in another room, and a cha
   await page.getByLabel("Name for the booking").fill("Phone Diner");
   await page.getByLabel("Email", { exact: true }).fill("phone.diner@example.com");
   await page.getByRole("button", { name: "Confirm booking" }).click();
-  await expect(page.getByRole("heading", { name: "You are booked, Phone" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Booking confirmed." })).toBeVisible();
 });

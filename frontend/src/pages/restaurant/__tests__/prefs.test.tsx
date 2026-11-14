@@ -72,7 +72,7 @@ describe("Wishes in the booking flow", () => {
     fireEvent.change(screen.getByLabelText("Name for the booking"), { target: { value: "Ana Pereira" } });
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ana@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: "Confirm booking" }));
-    await screen.findByRole("heading", { name: "You are booked, Ana" });
+    await screen.findByRole("heading", { name: "Booking confirmed." });
     expect(callsTo(calls, "POST", `${API}/bookings`)[0]?.body).toMatchObject({ prefs: ["sun", "view"] });
     expect(screen.getByText("sunny table, with a view")).toBeTruthy();
   });

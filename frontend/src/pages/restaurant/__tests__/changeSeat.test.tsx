@@ -42,7 +42,7 @@ describe("Chair request on the manage page", () => {
       "PATCH /api/b/tok123": (call) => ({ ...SEATED, seat: { id: (call.body as { seat_id: number }).seat_id, label: "2", table_id: 7, phrase: "Back to the window" } }),
     });
     renderManage();
-    fireEvent.click(await screen.findByRole("button", { name: "Request a different chair" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Change chair request" }));
     expect(await screen.findByText("Chair requested: 7-1, facing the window.")).toBeTruthy();
     expect(await screen.findByLabelText(/Seat 2 · Back to the window/)).toBeTruthy();
     expect(callsTo(calls, "GET", `${API}/seats`)[0]?.query.get("table_ids")).toBe("7");
@@ -63,7 +63,7 @@ describe("Chair request on the manage page", () => {
       "PATCH /api/b/tok123": () => BOOKING,
     });
     renderManage();
-    fireEvent.click(await screen.findByRole("button", { name: "Request a different chair" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Change chair request" }));
     fireEvent.click(await screen.findByRole("button", { name: "Remove request" }));
     expect(await screen.findByText("Chair request removed.")).toBeTruthy();
     expect(screen.queryByText("Chair requested")).toBeNull();

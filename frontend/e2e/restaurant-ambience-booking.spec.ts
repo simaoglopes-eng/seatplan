@@ -26,12 +26,12 @@ test("a diner books a table with a chair in a two-room restaurant and changes th
   await page.getByLabel("Name for the booking").fill("Ambience Diner");
   await page.getByLabel("Email", { exact: true }).fill("ambience.diner@example.com");
   await page.getByRole("button", { name: "Confirm booking" }).click();
-  await expect(page.getByRole("heading", { name: "You are booked, Ambience" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Booking confirmed." })).toBeVisible();
 
   await page.getByRole("link", { name: "Manage booking" }).click();
-  const chair = page.locator(".rb-summary dd", { hasText: /^Seat / });
+  const chair = page.locator(".rb5-rows dd", { hasText: /^Seat / });
   const before = (await chair.textContent()) ?? "";
-  await page.getByRole("button", { name: "Request a different chair" }).click();
+  await page.getByRole("button", { name: "Change chair request" }).click();
   const other = page.getByRole("radio").nth(1);
   await other.check();
   await page.getByRole("button", { name: "Save chair request" }).click();
@@ -60,5 +60,5 @@ test("a diner confirms from the form beside the plan, without leaving the map", 
   await panel.getByLabel("Name for the booking").fill("Panel Diner");
   await panel.getByLabel("Email", { exact: true }).fill("panel.diner@example.com");
   await panel.getByRole("button", { name: "Confirm booking" }).click();
-  await expect(page.getByRole("heading", { name: "You are booked, Panel" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Booking confirmed." })).toBeVisible();
 });

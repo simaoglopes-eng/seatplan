@@ -42,7 +42,7 @@ test("on a phone, from a discovery time to a confirmed booking without a chair",
   await page.getByLabel("Name for the booking").fill("Journey Diner");
   await page.getByLabel("Email", { exact: true }).fill("journey.diner@example.com");
   await page.getByRole("button", { name: "Confirm booking" }).click();
-  await expect(page.getByRole("heading", { name: "You are booked, Journey" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Booking confirmed." })).toBeVisible();
   await expect(page.getByRole("link", { name: "Manage booking" })).toBeVisible();
   expect(await sideways(page)).toBe(false);
 });
@@ -58,7 +58,7 @@ test("on a phone, from a discovery time to a confirmed booking with a chair requ
   await page.getByLabel("Name for the booking").fill("Chair Journey");
   await page.getByLabel("Email", { exact: true }).fill("chair.journey@example.com");
   await page.getByRole("button", { name: "Confirm booking" }).click();
-  await expect(page.getByRole("heading", { name: "You are booked, Chair" })).toBeVisible();
-  await expect(page.getByText(/Chair requested/).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Booking confirmed." })).toBeVisible();
+  await expect(page.getByText("Chair request", { exact: true })).toBeVisible();
   expect(await sideways(page)).toBe(false);
 });
