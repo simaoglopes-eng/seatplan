@@ -1,0 +1,113 @@
+/*
+  The Restaurants look: a white base, petrol-blue actions, amber for sun.
+
+  PageShell sets data-surface="restaurants" on <html> for the diner, owner and
+  staff routes ("/", "/restaurants/...", "/r/...", "/b/...", "/owner...",
+  "/staff/..."), and on no other route. So this file changes only those
+  pages: the events pages and the login for events keep the linen and
+  bottle-green look from tokens.css.
+
+  It only re-defines token values; no stylesheet needs to know about it.
+  Every pair is checked by scripts/contrast.mjs (WCAG 2.2 AA), the same
+  way as tokens.css.
+*/
+
+:root[data-surface="restaurants"] {
+  /* ---------- Colour: light ---------- */
+  --c-bg: #f7f9fc;
+  --c-surface: #ffffff;
+  --c-surface-sunk: #e8eef4;   /* the floor under a plan */
+  --c-surface-strong: #cdd8e2; /* tables drawn on the floor */
+  --c-text: #142633;
+  --c-text-muted: #475569;
+  --c-border: #d9e2ea;
+  --c-border-strong: #64748b;
+
+  --c-primary: #075b73;        /* petrol blue: the one action in a decision area */
+  --c-primary-hover: #054a5e;
+  --c-on-primary: #ffffff;
+  --c-primary-soft: #dceff4;
+
+  --c-accent: #805000;         /* amber, dark enough for text: sun and "recommended" */
+  --c-accent-bright: #b07000;
+  --c-accent-soft: #fff2cd;
+
+  --c-danger: #a32532;
+  --c-danger-soft: #fbe3e5;
+
+  --c-focus: #005fcc;
+  --c-overlay: rgb(20 38 51 / 0.45);
+
+  --seat-free-fill: #ffffff;
+  --seat-free-stroke: #334155;
+  --seat-held: #805000;
+  --seat-held-soft: #fff2cd;
+  --seat-taken: #4b5b69;
+  --seat-taken-mark: #ffffff;
+  --seat-mine: #075b73;
+  --seat-mine-mark: #ffffff;
+  --seat-blocked: #64748b;
+  --seat-blocked-soft: #e2e8f0;
+  --seat-highlight: #b07000;
+
+  /* ---------- Type: one family, headings included ---------- */
+  --font-display: var(--font-body);
+
+  /* ---------- Shape: 12 px cards, 10 px controls ---------- */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+
+  --shadow-sm: 0 1px 2px rgb(20 38 51 / 0.08);
+  --shadow-md: 0 4px 14px rgb(20 38 51 / 0.1), 0 1px 3px rgb(20 38 51 / 0.08);
+  --shadow-lg: 0 18px 48px rgb(20 38 51 / 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-surface="restaurants"] {
+    --c-bg: #101820;
+    --c-surface: #17232e;
+    --c-surface-sunk: #0b1219;
+    --c-surface-strong: #2a3a48;
+    --c-text: #f4f7fb;
+    --c-text-muted: #b0bfcd;
+    --c-border: #354655;
+    --c-border-strong: #758a9d;
+
+    --c-primary: #78d4e8;
+    --c-primary-hover: #96e0f0;
+    --c-on-primary: #102632;
+    --c-primary-soft: #16363f;
+
+    --c-accent: #ffd480;
+    --c-accent-bright: #ffd480;
+    --c-accent-soft: #4a3419;
+
+    --c-danger: #ffadb5;
+    --c-danger-soft: #40202a;
+
+    --c-focus: #9ac2ff;
+    --c-overlay: rgb(0 0 0 / 0.6);
+
+    --seat-free-fill: #17232e;
+    --seat-free-stroke: #c5d2de;
+    --seat-held: #ffd480;
+    --seat-held-soft: #4a3419;
+    --seat-taken: #8fa0b0;
+    --seat-taken-mark: #0b1219;
+    --seat-mine: #78d4e8;
+    --seat-mine-mark: #0b1219;
+    --seat-blocked: #6b7c8c;
+    --seat-blocked-soft: #1f2b36;
+    --seat-highlight: #ffd480;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 4px 14px rgb(0 0 0 / 0.45);
+    --shadow-lg: 0 18px 48px rgb(0 0 0 / 0.6);
+  }
+}
+
+/* Ordinary actions are rounded rectangles; capsules stay for filters and indicators. */
+:root[data-surface="restaurants"] .btn {
+  border-radius: var(--radius-md);
+}

@@ -2,7 +2,14 @@
 // landmark and a footer. Pages only supply their content.
 import { useEffect } from "react";
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+
+const RESTAURANT_ROOTS = ["/restaurants", "/r", "/b", "/owner", "/staff"];
+
+/** The routes of the Restaurants product (diner, owner, staff). Events and their sign-ins are not in it. */
+export function isRestaurantRoute(pathname: string): boolean {
+  return pathname === "/" || RESTAURANT_ROOTS.some((root) => pathname === root || pathname.startsWith(`${root}/`));
+}
 
 interface PageShellProps {
   /** Sets the browser tab title, so tabs and history are readable. */
@@ -33,6 +40,18 @@ export function PageShell({ title, children, width = "normal", headerActions }: 
   useEffect(() => {
     document.title = `${title} · SeatPlan`;
   }, [title]);
+
+  // The Restaurants look (restaurant-theme.css) applies to <html> on its own routes only.
+  const { pathname } = useLocation();
+  const restaurants = isRestaurantRoute(pathname);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (restaurants) root.dataset.surface = "restaurants";
+    else delete root.dataset.surface;
+    return () => {
+      delete root.dataset.surface;
+    };
+  }, [restaurants]);
 
   return (
     <div className="shell">
