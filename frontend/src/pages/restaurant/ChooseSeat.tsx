@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { getTableSeats } from "../../api/restaurant";
 import { Button, Skeleton } from "../../design/components";
+import { guests } from "./format";
 import { HoldCountdown } from "./HoldCountdown";
 import { SeatPicker } from "./SeatPicker";
 import { StepHeading } from "./StepHeading";
@@ -15,6 +16,8 @@ import { useLoad } from "./useLoad";
 interface ChooseSeatProps {
   venueId: string;
   hold: Hold;
+  /** The party size, for the "2 guests" chip. */
+  party?: number;
   secondsLeft: number | null;
   /** The chair picked earlier, if the diner came back to this step. */
   seatId: number | null;
@@ -25,7 +28,7 @@ interface ChooseSeatProps {
 
 export { seatLabel } from "./SeatPicker";
 
-export function ChooseSeat({ venueId, hold, secondsLeft, seatId, onDone, onBackToMap }: ChooseSeatProps) {
+export function ChooseSeat({ venueId, hold, party, secondsLeft, seatId, onDone, onBackToMap }: ChooseSeatProps) {
   const tableIds = hold.tableIds ?? [hold.tableId];
   const { state } = useLoad(() => getTableSeats(venueId, tableIds), tableIds.join(","));
   const [picked, setPicked] = useState<number | null>(seatId);
@@ -41,22 +44,36 @@ export function ChooseSeat({ venueId, hold, secondsLeft, seatId, onDone, onBackT
   const chosen = data.seats.find((s) => s.id === picked) ?? null;
 
   return (
-    <section className="rb-step">
-      <StepHeading>Request a chair (optional)</StepHeading>
-      <p className="rb-muted">
-        Table {hold.tableLabel} is yours. This only tells the restaurant which chair you would like; it does not change your booking.
+    <section className="rb-step rb5-chair">
+      <div className="rb5-chair-top">
+        <Button variant="ghost" onClick={onBackToMap}>
+          <span aria-hidden="true">‹</span> Your details
+        </Button>
+        {secondsLeft !== null && <HoldCountdown variant="chip" tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />}
+      </div>
+      <StepHeading>Request a chair</StepHeading>
+      <p className="rb-muted">Optional · The restaurant will see your preference. It does not change your booking.</p>
+      <p className="rb5-chair-table">
+        <strong>Table {hold.tableLabel}</strong>
+        {party ? <span className="rb5-chip">{guests(party)}</span> : null}
       </p>
-      {secondsLeft !== null && <HoldCountdown tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />}
       <SeatPicker label={`Chairs at table ${hold.tableLabel}`} data={data} picked={picked} onPick={setPicked} />
-      <div className="rb-actions rb-actions-sticky">
-        <Button variant="secondary" onClick={onBackToMap}>
-          Back to your details
+      <div className="rb-card rb5-chair-note" aria-live="polite">
+        {chosen ? (
+          <>
+            <strong>{chosen.phrase ? `${hold.tableLabel}-${chosen.label} · ${chosen.phrase}` : `${hold.tableLabel}-${chosen.label}`}</strong>
+            <p className="rb-muted">A chair request is subject to the restaurant's confirmation.</p>
+          </>
+        ) : (
+          <p className="rb-muted">Pick a chair on the plan or from the list. A chair request is subject to the restaurant's confirmation.</p>
+        )}
+      </div>
+      <div className="rb5-chair-actions">
+        <Button disabled={chosen === null} onClick={() => onDone(picked, chosen ? `${hold.tableLabel}-${chosen.label}` : null)}>
+          Save chair request <span aria-hidden="true">→</span>
         </Button>
         <Button variant="ghost" onClick={() => onDone(null)}>
-          Skip
-        </Button>
-        <Button disabled={chosen === null} onClick={() => onDone(picked, chosen ? `${hold.tableLabel}-${chosen.label}` : null)}>
-          {chosen === null ? "Pick a chair to continue" : `Continue with seat ${chosen.label}`}
+          Continue without a request
         </Button>
       </div>
     </section>

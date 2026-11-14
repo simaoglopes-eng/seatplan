@@ -43,7 +43,7 @@ async function holdTable7(): Promise<void> {
   fireEvent.click(await screen.findByRole("button", { name: /19:30/ }));
   await screen.findByRole("heading", { name: "Choose your table" });
   expect(screen.queryByRole("form", { name: "Your details" })).toBeNull(); // nothing to confirm before a table is held
-  fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
+  fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
   await screen.findByRole("timer");
 }
 
@@ -82,7 +82,7 @@ describe("The details form beside the map", () => {
     fireEvent.change(within(panel).getByLabelText("Email"), { target: { value: "ana@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: "Choose a chair" }));
     fireEvent.click(await screen.findByLabelText(/Seat 1 · Facing the window/));
-    fireEvent.click(screen.getByRole("button", { name: /^Continue with seat 1/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Save chair request" }));
     // Back at the plan, the same form has the same words already in it, and shows the request.
     expect((await screen.findByLabelText("Name for the booking") as HTMLInputElement).value).toBe("Ana Pereira");
     expect(screen.getByText("Chair requested: 7-1")).toBeTruthy();

@@ -51,7 +51,7 @@ test("a diner picks a chair and sees it on the confirmation", async ({ page, req
   const second = page.getByRole("radio").nth(1);
   const seat = ((await second.evaluate((el) => el.parentElement?.textContent ?? "")).split(" · ")[0] ?? "").trim();
   await second.check();
-  await page.getByRole("button", { name: /^Continue with seat / }).click();
+  await page.getByRole("button", { name: "Save chair request" }).click();
 
   await page.getByLabel("Name for the booking").fill("Chair Diner");
   await page.getByLabel("Email", { exact: true }).fill("chair.diner@example.com");

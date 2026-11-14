@@ -21,6 +21,23 @@ export function formatDate(iso: string): string {
   return date.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 }
 
+/** "2026-11-12" -> "Thu 12 Nov": the short form for one-line summaries. */
+export function shortDate(iso: string): string {
+  const [year, month, day] = iso.split("-").map(Number);
+  if (!year || !month || !day) return iso;
+  return new Date(year, month - 1, day).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }).replace(",", "");
+}
+
+/** 2 -> "2 guests", 1 -> "1 guest". */
+export function guests(count: number): string {
+  return count === 1 ? "1 guest" : `${count} guests`;
+}
+
+/** A table's name for a heading: "R1", but "Table 7" when the label is only a number. */
+export function tableName(label: string): string {
+  return /^\d+$/.test(label) ? `Table ${label}` : label;
+}
+
 /** "2026-11-12" -> "Thursday". */
 export function weekdayName(iso: string): string {
   const [year, month, day] = iso.split("-").map(Number);

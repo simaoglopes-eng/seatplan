@@ -65,7 +65,7 @@ describe("Wishes in the booking flow", () => {
     await screen.findByRole("heading", { name: "Choose your table" });
     expect(callsTo(calls, "GET", `${API}/map`)[0]?.query.get("prefs")).toBe("sun,view");
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
     await screen.findByRole("timer");
     expect(callsTo(calls, "POST", `${API}/hold`)[0]?.body).toMatchObject({ table_id: 7, prefs: ["sun", "view"] });
     await screen.findByRole("heading", { name: "Your details" });
@@ -89,7 +89,7 @@ describe("Wishes in the booking flow", () => {
     fireEvent.click(await screen.findByRole("button", { name: /19:30/ }));
     await screen.findByRole("heading", { name: "Choose your table" });
     expect(callsTo(calls, "GET", `${API}/map`)[0]?.query.has("prefs")).toBe(false);
-    fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
     await screen.findByRole("timer");
     expect(callsTo(calls, "POST", `${API}/hold`)[0]?.body).not.toHaveProperty("prefs");
   });

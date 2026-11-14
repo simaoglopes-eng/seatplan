@@ -46,3 +46,10 @@ export async function dinerMap(page: Page, id: string, day: string, time = "13:0
   await page.getByRole("button", { name: `${time} Available`, exact: true }).click();
   await expect(page.getByRole("heading", { name: "Choose your table" })).toBeVisible();
 }
+
+/** Holds a table the way a diner can from the list: switch to List, select the table, then hold it from its card. */
+export async function holdTable(page: Page, label: string) {
+  await page.getByRole("button", { name: "List", exact: true }).click();
+  await page.getByRole("button", { name: `Select table ${label}`, exact: true }).click();
+  await page.getByRole("button", { name: `Hold ${label} & continue`, exact: true }).click();
+}

@@ -1,16 +1,19 @@
 // One card for the table in front of the diner: our suggestion on arrival, the table they pointed
-// at, or the one they hold. It says which room, how many people, why we suggest it, the light
-// and the view, and carries the one action for that table. Replaces the separate "suggestion" and
-// "ambience" cards, which showed the same table twice.
+// at, or the one they hold. It says which room, which kind of table, the view, how many it seats
+// and the light, and carries the one action for that table. The reasons we give for a suggestion
+// sit behind "Why this table", so the card stays short beside the plan.
 import type { DinerTable } from "../../api/restaurant";
 import { Badge, Button } from "../../design/components";
 import { lightWords } from "./ambienceView";
+import { tableName } from "./format";
 import { partyRange, unavailableReason } from "./tableView";
 
 interface TableCardProps {
   table: DinerTable;
   /** The room the table is in; null for a restaurant with a single room. */
   roomName: string | null;
+  /** The zone the table sits in ("Window"), if the restaurant named one. */
+  zone: string | null;
   /** True when this is the table we suggest. */
   recommended: boolean;
   /** Why we suggest it, in plain words. Only shown for the suggestion. */
@@ -31,40 +34,47 @@ function lines(reasons: string[], phrases: string[]): string[] {
   });
 }
 
-export function TableCard({ table, roomName, recommended, reasons, heldId, busy, onTake }: TableCardProps) {
+export function TableCard({ table, roomName, zone, recommended, reasons, heldId, busy, onTake }: TableCardProps) {
   const ambience = table.ambience;
   const reason = unavailableReason(table);
   const held = table.id === heldId && table.state !== "taken";
   const text = lines(recommended ? reasons : [], ambience?.phrases ?? []);
+  const meta = [ambience?.view?.text, `Seats ${table.max_party}`, ambience ? lightWords(ambience.light) : null].filter(Boolean).join(" · ");
   return (
     <section className="rb-card rb-table-card" aria-label={`Table ${table.label}, ${partyRange(table)}`}>
-      <div className="rb-table-card-top">
-        {recommended && !held && <Badge tone="warning">Recommended</Badge>}
-        {ambience && <p className="rb-eyebrow">{lightWords(ambience.light)}</p>}
+      <div className="rb-table-card-head">
+        <div>
+          {roomName && <p className="rb-table-room">{roomName}</p>}
+          <h3 className="rb-table-title">
+            {tableName(table.label)}
+            {zone ? ` · ${zone} table` : ""}
+          </h3>
+        </div>
+        {recommended && !held && <Badge tone="success">Recommended</Badge>}
       </div>
-      <h3 className="rb-suggestion-title">
-        Table {table.label}{" "}
-        <span className="rb-muted">
-          · {roomName ? `${roomName} · ` : ""}
-          {partyRange(table)}
-        </span>
-      </h3>
-      {text.length > 0 && (
-        <ul className="rb-reasons">
-          {text.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-      )}
+      <p className="rb-muted rb-table-meta">{meta}</p>
       {ambience?.view?.photo_url && <img className="rb-view-photo" src={ambience.view.photo_url} alt={ambience.view.text || "The view from this table"} loading="lazy" />}
+      {text.length > 0 && (
+        <details className="rb-why">
+          <summary>Why this table</summary>
+          <ul className="rb-reasons">
+            {text.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </details>
+      )}
       {held ? (
         <Badge tone="success">Held for you</Badge>
       ) : reason ? (
         <p className="rb-muted rb-table-card-reason">{reason}</p>
       ) : (
-        <Button busy={busy} onClick={() => onTake(table.id)}>
-          Hold table {table.label} &amp; continue
-        </Button>
+        <>
+          <Button busy={busy} onClick={() => onTake(table.id)}>
+            Hold {table.label} &amp; continue <span aria-hidden="true">{"→"}</span>
+          </Button>
+          <p className="rb-muted rb-table-note">You will have five minutes to finish after holding the table.</p>
+        </>
       )}
     </section>
   );

@@ -34,7 +34,7 @@ async function holdTable7(): Promise<void> {
   fireEvent.click(await screen.findByRole("button", { name: "See free times" }));
   fireEvent.click(await screen.findByRole("button", { name: /19:30/ }));
   await screen.findByRole("heading", { name: "Choose your table" });
-  fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
+  fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
   await screen.findByRole("timer");
   fireEvent.click(screen.getByRole("button", { name: "Choose a chair" }));
 }
@@ -69,7 +69,7 @@ describe("Where would you like to sit?", () => {
     expect(within(group).getByLabelText(/Seat 1.*Facing the window/)).toBeTruthy();
     expect((within(group).getByLabelText(/Seat 3/) as HTMLInputElement).disabled).toBe(true); // blocked
     fireEvent.click(within(group).getByLabelText(/Seat 2.*Back to the window/));
-    fireEvent.click(screen.getByRole("button", { name: "Continue with seat 2" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save chair request" }));
 
     // Back at the plan, the chair is a request inside the form: it can be changed or taken back.
     expect(await screen.findByText("Chair requested: 7-2")).toBeTruthy();
@@ -83,7 +83,7 @@ describe("Where would you like to sit?", () => {
   it("can be skipped: no chair is sent and the booking is for the table", async () => {
     const calls = mockApi({ ...ROUTES, [`POST ${API}/bookings`]: () => CONFIRMATION });
     await holdTable7();
-    fireEvent.click(await screen.findByRole("button", { name: "Skip" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Continue without a request" }));
     await fillDetailsAndBook();
     await screen.findByRole("heading", { name: "You are booked, Ana" });
     expect(callsTo(calls, "POST", `${API}/bookings`)[0]?.body).not.toHaveProperty("seat_id");
@@ -107,7 +107,7 @@ describe("Where would you like to sit?", () => {
     const calls = mockApi({ ...ROUTES, [`POST ${API}/bookings`]: () => CONFIRMATION });
     await holdTable7();
     fireEvent.click(await screen.findByLabelText(/Seat 1.*Facing the window/));
-    fireEvent.click(screen.getByRole("button", { name: "Continue with seat 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save chair request" }));
     fireEvent.click(await screen.findByRole("button", { name: "Remove request" }));
     expect(screen.queryByText(/Chair requested/)).toBeNull();
     expect(screen.getByRole("button", { name: "Choose a chair" })).toBeTruthy();
@@ -119,7 +119,7 @@ describe("Where would you like to sit?", () => {
   it("lets the diner go back to the map without losing the hold", async () => {
     mockApi(ROUTES);
     await holdTable7();
-    fireEvent.click(await screen.findByRole("button", { name: "Back to your details" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Your details" }));
     expect(await screen.findByRole("heading", { name: "Your details" })).toBeTruthy();
     expect(screen.getByRole("timer")).toBeTruthy();
   });
@@ -128,13 +128,15 @@ describe("Where would you like to sit?", () => {
     mockApi({ ...ROUTES, [`POST ${API}/bookings`]: () => CONFIRMATION });
     await holdTable7();
     fireEvent.click(await screen.findByLabelText(/Seat 1/));
-    fireEvent.click(screen.getByRole("button", { name: "Back to your details" }));
+    fireEvent.click(screen.getByRole("button", { name: "Your details" }));
     await screen.findByRole("heading", { name: "Your details" });
-    fireEvent.click(screen.getAllByRole("button", { name: "Hold table 8" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Choose a different table" }));
+    fireEvent.click(await screen.findByRole("option", { name: /Table 8,/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Hold 8 & continue" }));
     await screen.findByRole("timer");
     fireEvent.click(screen.getByRole("button", { name: "Choose a chair" }));
     // The new table has to be asked again: nothing is pre-selected.
     expect(await screen.findByRole("heading", { name: /Request a chair/ })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Continue with seat 1/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Save chair request", hidden: false }).hasAttribute("disabled")).toBe(true);
   });
 });

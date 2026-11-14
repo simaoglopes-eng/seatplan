@@ -3,6 +3,7 @@
 // It is a step of its own (after the optional chair), and also the form in the side panel next to
 // the map once a table is held (variant "panel"), so a diner can confirm without leaving the plan.
 import { useState } from "react";
+import type { ReactNode } from "react";
 import type { FormEvent } from "react";
 import { ApiError } from "../../api/client";
 import { createBooking } from "../../api/restaurant";
@@ -24,7 +25,7 @@ interface StepDetailsProps {
   /** The chair's code ("R3-1"), for the request summary in the panel. */
   seatLabel?: string | null;
   /** One line about the booking (table, room, day, time, party), shown in the panel next to the timer. */
-  summary?: string;
+  summary?: ReactNode;
   /** Panel only: open the optional chair request, and take the request back. */
   onChooseSeat?: () => void;
   onClearSeat?: () => void;
@@ -79,13 +80,22 @@ export function StepDetails(props: StepDetailsProps) {
 
   return (
     <form className={panel ? "rb-card rb-form rb-details-panel" : "rb-step rb-form"} onSubmit={submit} noValidate aria-label={panel ? "Your details" : undefined}>
-      {panel ? <h3 className="rb-suggestion-title">Confirm your booking</h3> : <StepHeading>Your details</StepHeading>}
-      {panel && summary && <p className="rb-muted rb-details-summary">{summary}</p>}
-      <HoldCountdown tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />
-      <Field label="Name for the booking" autoComplete="name" required {...bind("name")} />
-      <Field label="Email" hint="We send the confirmation and a calendar invite here." type="email" autoComplete="email" inputMode="email" required {...bind("email")} />
-      <Field label="Phone (optional)" hint="Only used if we need to reach you on the day." type="tel" autoComplete="tel" {...bind("phone")} />
-      <Field label="Notes for the restaurant (optional)" hint="Allergies, a birthday, a pram..." {...bind("notes")} />
+      {panel ? (
+        <div className="rb5-details-head">
+          <StepHeading>Your details</StepHeading>
+          <HoldCountdown variant="chip" tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />
+        </div>
+      ) : (
+        <>
+          <StepHeading>Your details</StepHeading>
+          <HoldCountdown tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />
+        </>
+      )}
+      {panel && summary && <p className="rb5-summary-band">{summary}</p>}
+      <Field label="Name for the booking" autoComplete="name" required placeholder="e.g. Maria Costa" {...bind("name")} />
+      <Field label="Email" hint="We send the confirmation and a calendar invite here." type="email" autoComplete="email" inputMode="email" required placeholder="e.g. maria@example.com" {...bind("email")} />
+      <Field label="Phone (optional)" hint="Only used if we need to reach you on the day." type="tel" autoComplete="tel" placeholder="Phone number" {...bind("phone")} />
+      <Field label="Notes for the restaurant (optional)" hint="Allergies, a birthday, a pram..." placeholder="Add a note" {...bind("notes")} />
       {panel && onChooseSeat && <ChairRequest seatId={seatId} seatLabel={seatLabel ?? null} onChoose={onChooseSeat} onClear={onClearSeat} />}
       {problem && (
         <p className="rb-notice rb-notice-error" role="alert">
@@ -99,7 +109,7 @@ export function StepDetails(props: StepDetailsProps) {
           </Button>
         )}
         <Button type="submit" busy={busy} disabled={secondsLeft === 0}>
-          Confirm booking
+          Confirm booking {panel && <span aria-hidden="true">→</span>}
         </Button>
       </div>
     </form>
@@ -110,13 +120,18 @@ export function StepDetails(props: StepDetailsProps) {
 function ChairRequest({ seatId, seatLabel, onChoose, onClear }: { seatId: number | null; seatLabel: string | null; onChoose: () => void; onClear?: () => void }) {
   return (
     <section className="rb-chair-request" aria-label="Chair request">
-      <h4 className="rb-chair-request-title">Request a chair (optional)</h4>
-      <p className="rb-muted">We will pass your preference to the restaurant. It does not change your booking.</p>
-      {seatId === null ? (
-        <Button variant="secondary" onClick={onChoose}>
-          Choose a chair
-        </Button>
-      ) : (
+      <div className="rb5-chair-row">
+        <div>
+          <h4 className="rb-chair-request-title">Request a chair</h4>
+          <p className="rb-muted">Optional · The restaurant will see your request. It does not change your booking.</p>
+        </div>
+        {seatId === null && (
+          <Button variant="secondary" onClick={onChoose}>
+            Choose a chair
+          </Button>
+        )}
+      </div>
+      {seatId !== null && (
         <div className="rb-chair-request-chosen">
           <p>
             <strong>Chair requested{seatLabel ? `: ${seatLabel}` : ""}</strong>

@@ -12,10 +12,10 @@ test("on a phone: one action per moment, a suggestion in another room, and a cha
   await expect(page.getByRole("heading", { name: "Choose your table" })).toBeVisible();
 
   // The card comes first and holds the one main action; there is no second, disabled "continue" bar.
-  const hold = page.getByRole("button", { name: /^Hold table .* & continue$/ });
+  const hold = page.getByRole("button", { name: /^Hold .* & continue/ });
   await expect(hold).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Pick a table to continue" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Change time", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit date, time and guests" })).toBeVisible();
   const steps = page.getByRole("navigation", { name: "Booking steps" });
   await expect(steps.locator('[aria-current="step"]')).toContainText("Table");
 
@@ -27,7 +27,7 @@ test("on a phone: one action per moment, a suggestion in another room, and a cha
   for (let i = 0; i < count; i += 1) if ((await tabs.nth(i).getAttribute("aria-selected")) !== "true") other = i;
   expect(other).toBeGreaterThanOrEqual(0);
   await tabs.nth(other).click();
-  const show = page.getByRole("button", { name: /^Show table .* in / });
+  const show = page.getByRole("button", { name: /^Show .* in / });
   await expect(show).toBeVisible();
   await expect(hold).toHaveCount(0);
   await show.click();
@@ -42,7 +42,7 @@ test("on a phone: one action per moment, a suggestion in another room, and a cha
   await expect(page.getByRole("heading", { name: /Request a chair/ })).toBeVisible();
   await expect(steps.locator('[aria-current="step"]')).toContainText("Details");
   await page.getByRole("radio").first().check();
-  await page.getByRole("button", { name: /^Continue with seat / }).click();
+  await page.getByRole("button", { name: "Save chair request" }).click();
   await expect(page.getByText(/Chair requested/)).toBeVisible();
   await expect(steps.locator('[aria-current="step"]')).toContainText("Details");
 

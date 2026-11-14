@@ -47,7 +47,7 @@ describe("Booking page", () => {
     expect(callsTo(calls, "GET", `${API}/slots`)[0]?.query.get("party")).toBe("2");
     // The suggestion card explains why, then holds the table with a visible countdown.
     expect(screen.getByText("By the window")).toBeTruthy();
-    fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
     expect(await screen.findByRole("timer")).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/hold`)[0]?.body).toMatchObject({ table_id: 7, time: "19:30", party: 2 });
 
@@ -109,7 +109,7 @@ describe("Booking page", () => {
       },
     });
     await reachTableStep();
-    fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("Table 7 was just taken by someone else.");
@@ -132,7 +132,7 @@ describe("Booking page", () => {
       [`GET /api/live/venue-${VENUE}-${todayIso()}/version`]: () => ({ version: ++version }),
     });
     await reachTableStep();
-    fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
     await screen.findByRole("timer");
     held = true;
     // The page polls every 2 seconds (no EventSource in jsdom), so the change must show within about 2 s.
@@ -151,7 +151,7 @@ describe("Booking page", () => {
     await reachTableStep();
     expect(screen.getByRole("option", { name: "Table 8, 2 to 4 people, free" })).toBeTruthy();
     expect(screen.getByRole("option", { name: "Table 10, 1 to 2 people, does not suit your party" })).toBeTruthy();
-    fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
     await screen.findByRole("timer");
     expect(screen.getByRole("option", { name: /^Table 7, 2 to 4 people, held for you, accessible/ })).toBeTruthy();
     const names = screen.getAllByRole("option").map((option) => option.getAttribute("aria-label") ?? "");
@@ -190,11 +190,13 @@ describe("Booking page", () => {
       [`DELETE ${API}/hold/hold-token-1`]: () => new Response(null, { status: 204 }),
     });
     await reachTableStep();
-    fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
-    await screen.findByText(/^Table 7 · .*19:30/);
-    // The list button's name is "Hold" plus hidden words; jsdom drops the space between them.
-    fireEvent.click(screen.getAllByRole("button", { name: /^Hold\s*table 8$/ })[0]);
-    await screen.findByText(/^Table 8 · .*19:30/);
+    fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
+    expect(within(await screen.findByRole("form", { name: "Your details" })).getByText(/Table 7/)).toBeTruthy();
+    // Another table: give this one back, then hold the other from the plan.
+    fireEvent.click(screen.getByRole("button", { name: "Choose a different table" }));
+    fireEvent.click(await screen.findByRole("option", { name: /Table 8,/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Hold 8 & continue" }));
+    expect(within(await screen.findByRole("form", { name: "Your details" })).getByText(/Table 8/)).toBeTruthy();
     expect(callsTo(calls, "DELETE", `${API}/hold/hold-token-1`)).toHaveLength(1);
   });
 
@@ -207,9 +209,9 @@ describe("Booking page", () => {
       [`DELETE ${API}/hold/hold-token-41`]: () => new Response(null, { status: 204 }),
     });
     await reachTableStep();
-    fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
     await screen.findByRole("form", { name: "Your details" });
-    fireEvent.click(screen.getByRole("button", { name: "Change time" }));
+    fireEvent.click(screen.getByRole("button", { name: "Change date or time" }));
     await screen.findByRole("heading", { name: "Pick a time" });
     expect(callsTo(calls, "DELETE", `${API}/hold/hold-token-41`)).toHaveLength(1);
   });
@@ -222,7 +224,7 @@ describe("Booking page", () => {
       [`POST ${API}/hold`]: () => apiError(429, "rate_limited", "You are already holding tables for this date. Book or release one first."),
     });
     await reachTableStep();
-    fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
     expect((await screen.findByRole("alert")).textContent).toContain("Book or release one first.");
   });
 
@@ -236,7 +238,7 @@ describe("Booking page", () => {
       [`POST ${API}/bookings`]: () => apiError(429, "rate_limited", message),
     });
     await reachTableStep();
-    fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
     await screen.findByRole("heading", { name: "Your details" });
     fireEvent.change(screen.getByLabelText("Name for the booking"), { target: { value: "Ana Pereira" } });
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ana@example.com" } });

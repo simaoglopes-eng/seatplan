@@ -109,9 +109,13 @@ describe("Table step with rooms", () => {
     });
     await reachTableStep();
     fireEvent.click(within(screen.getByRole("tablist", { name: "Rooms" })).getByRole("tab", { name: /Terrace/ }));
-    fireEvent.click(screen.getAllByRole("button", { name: "Hold table 8" })[0]); // from the list, which shows every room
+    fireEvent.click(screen.getByRole("button", { name: "List" }));
+    fireEvent.click(screen.getByRole("button", { name: "Select table 8" })); // from the list, which shows every room
+    fireEvent.click(screen.getByRole("button", { name: "Hold 8 & continue" }));
     expect(await screen.findByRole("timer")).toBeTruthy();
-    expect(within(screen.getByRole("tablist", { name: "Rooms" })).getByRole("tab", { name: /Main room/ }).getAttribute("aria-selected")).toBe("true");
+    // The held table is in the Main room: the form says so, and "Your table" shows that room's plan.
+    expect(within(await screen.findByRole("form", { name: "Your details" })).getByText(/Main room/)).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Your table" })).toBeTruthy();
   });
 });
 
@@ -128,7 +132,7 @@ describe("Ambience card", () => {
     expect(within(card).getByText("Direct sun until 14:00")).toBeTruthy();
     expect(within(card).getByText("View of the river")).toBeTruthy();
     expect(within(card).getByRole("img", { name: "river" }).getAttribute("src")).toBe("/api/photos/abc");
-    fireEvent.click(within(card).getByRole("button", { name: "Hold table 7 & continue" }));
+    fireEvent.click(within(card).getByRole("button", { name: "Hold 7 & continue" }));
     expect(await screen.findByRole("timer")).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/hold`)[0]?.body).toMatchObject({ table_id: 7 });
   });
@@ -152,7 +156,7 @@ describe("Ambience card", () => {
 });
 
 describe("Light cursor", () => {
-  it("steps through the stay and redraws the light once things settle, without touching the hold", async () => {
+  it("steps through the stay and redraws the light once things settle, without touching the booking", async () => {
     const calls = mockApi({
       [`GET ${API}`]: () => INFO,
       [`GET ${API}/slots`]: () => SLOTS,
@@ -161,8 +165,6 @@ describe("Light cursor", () => {
       [`GET ${API}/ambience`]: () => answer(),
     });
     await reachTableStep();
-    fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);
-    await screen.findByRole("timer");
     const mapCalls = callsTo(calls, "GET", `${API}/map`).length;
 
     const slider = screen.getByRole("slider", { name: /Preview light.*does not change your booking/i }) as HTMLInputElement;
@@ -177,7 +179,7 @@ describe("Light cursor", () => {
     expect([asked.get("time"), asked.get("moment"), asked.get("party")]).toEqual(["19:30", "14:15", "2"]);
 
     await waitFor(() => expect(document.querySelector(".room-night")).not.toBeNull());
-    expect(screen.getByRole("timer")).toBeTruthy(); // the hold survived
+    expect(screen.getByRole("button", { name: "Hold 7 & continue" })).toBeTruthy(); // the table in front of the diner did not change
     expect(callsTo(calls, "GET", `${API}/map`)).toHaveLength(mapCalls); // and the map was not fetched again
     expect(slider.getAttribute("aria-valuetext")).toContain("14:15");
   });
@@ -251,7 +253,7 @@ describe("Choosing a table on the map", () => {
     expect(callsTo(calls, "POST", `${API}/hold`)).toHaveLength(0);
     expect(await screen.findByText(/Table 8 selected\. Use Hold table 8 and continue to reserve it\./)).toBeTruthy();
     const card = screen.getByRole("region", { name: /Table 8/ });
-    fireEvent.click(within(card).getByRole("button", { name: "Hold table 8 & continue" }));
+    fireEvent.click(within(card).getByRole("button", { name: "Hold 8 & continue" }));
     expect(await screen.findByRole("timer")).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/hold`)[0]?.body).toMatchObject({ table_id: 8 });
   });
@@ -269,7 +271,7 @@ describe("Choosing a table on the map", () => {
     fireEvent.click(screen.getByRole("option", { name: /Table 7,/ }));
     const card = await screen.findByRole("region", { name: /Table 7/ });
     expect(within(card).queryByText(/sun|shade|dark/i)).toBeNull(); // nothing is claimed about the light
-    fireEvent.click(within(card).getByRole("button", { name: "Hold table 7 & continue" }));
+    fireEvent.click(within(card).getByRole("button", { name: "Hold 7 & continue" }));
     expect(await screen.findByRole("timer")).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/hold`)).toHaveLength(1);
   });
@@ -299,7 +301,7 @@ describe("Step 2: suggested table already selected, and an unambiguous light pre
     fireEvent.pointerEnter(screen.getByRole("option", { name: /Table 8,/ }));
     expect(screen.getByRole("region", { name: /Table 8/ })).toBeTruthy();
     fireEvent.pointerLeave(screen.getByRole("option", { name: /Table 8,/ }));
-    fireEvent.click(within(screen.getByRole("region", { name: /Table 7/ })).getByRole("button", { name: "Hold table 7 & continue" }));
+    fireEvent.click(within(screen.getByRole("region", { name: /Table 7/ })).getByRole("button", { name: "Hold 7 & continue" }));
     expect(await screen.findByRole("timer")).toBeTruthy();
     expect(callsTo(calls, "POST", `${API}/hold`)[0]?.body).toMatchObject({ table_id: 7 });
   });
@@ -318,7 +320,7 @@ describe("Step 2: suggested table already selected, and an unambiguous light pre
     mockApi({ [`GET ${API}`]: () => INFO, [`GET ${API}/slots`]: () => SLOTS, [`GET ${API}/map`]: () => roomsMap(), [`GET ${API}/ambience`]: () => answer() });
     await reachTableStep();
     const slider = screen.getByRole("slider", { name: "Preview light (does not change your booking)" }) as HTMLInputElement;
-    expect(screen.getByText("Your booking 13:00 → 14:30")).toBeTruthy();
+    expect(screen.getByText("Booking stays at 19:30")).toBeTruthy();
     expect(screen.getByText(/Light preview at 13:00\./)).toBeTruthy();
     fireEvent.change(slider, { target: { value: "3" } });
     expect(screen.getByText(/Light preview at 13:45\./)).toBeTruthy();

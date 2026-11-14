@@ -28,10 +28,37 @@ function spokenMessage(seconds: number): string {
 interface HoldCountdownProps {
   tableLabel: string;
   secondsLeft: number;
+  /** "chip" is the small "Held for 4:38" beside a heading; "banner" is the full sentence. */
+  variant?: "banner" | "chip";
 }
 
-export function HoldCountdown({ tableLabel, secondsLeft }: HoldCountdownProps) {
+export function HoldCountdown({ tableLabel, secondsLeft, variant = "banner" }: HoldCountdownProps) {
   const urgent = secondsLeft <= 60;
+  if (variant === "chip") {
+    return (
+      <div className={`rb-hold-chip${urgent ? " rb-hold-chip-urgent" : ""}`}>
+        <svg className="rb-hold-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="13" r="8" />
+          <path d="M12 9v4l2.5 2.5M9.5 3h5" />
+        </svg>
+        {secondsLeft > 0 ? (
+          <span>
+            Held for{" "}
+            <strong className="tabular" role="timer" aria-label={`${formatCountdown(secondsLeft)} minutes`}>
+              {formatCountdown(secondsLeft)}
+            </strong>
+            <span className="visually-hidden"> (table {tableLabel})</span>
+            {urgent && <span className="rb-hold-flag"> (almost up)</span>}
+          </span>
+        ) : (
+          <span>Hold ended</span>
+        )}
+        <span className="visually-hidden" role="status" aria-live="polite">
+          {spokenMessage(secondsLeft)}
+        </span>
+      </div>
+    );
+  }
   return (
     <div className={`rb-hold ${urgent ? "rb-hold-urgent" : ""}`.trim()}>
       <svg className="rb-hold-icon" viewBox="0 0 24 24" aria-hidden="true">

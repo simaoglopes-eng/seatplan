@@ -3,6 +3,7 @@
 // Five steps, one screen each: 1 date and party, 2 time, 3 table, 4 details,
 // 5 confirmation. This file only draws: the answers so far live in
 // useBookingFlow.ts, and each step lives in its own file.
+import { useEffect, useRef } from "react";
 import { Navigate, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { getRestaurant } from "../../api/restaurant";
@@ -19,6 +20,7 @@ import { STEP, useBookingFlow } from "./useBookingFlow";
 import { linkedTime, useLinkedTime } from "./useLinkedTime";
 import { useLoad } from "./useLoad";
 import "./restaurant.css";
+import "./booking-v5.css";
 
 // Three stages for the diner: When (date, party and time), Table, Details. The confirmation is the end, not a stage.
 const STEPS = ["When", "Table", "Details"];
@@ -95,16 +97,17 @@ function BookingFlow({ venueId, info }: { venueId: string; info: RestaurantInfo 
   const flow = useBookingFlow(info, link);
   const linked = useLinkedTime(venueId, link, flow);
   const { step, needs, time, hold } = flow;
+  const stage = stageOf(step, hold !== null && flow.secondsLeft !== 0, flow.choosingSeat);
   if (linked.checking) return <Skeleton lines={3} label="Checking that time" />;
   return (
     <>
       {linked.notice && step === STEP.time && <p role="status" className="rb-muted">{linked.notice}</p>}
       {/* Once a table is held the form is on screen, and asking for a chair belongs to it: the indicator says Details. */}
-      <Stepper steps={STEPS} current={stageOf(step, hold !== null && flow.secondsLeft !== 0, flow.choosingSeat)} label="Booking steps" />
+      <StageBar name={info.name} stage={stage} showName={stage > 0 && step !== STEP.done} />
       {step === STEP.party && <StepParty info={info} needs={needs} onChange={flow.setNeeds} onNext={() => flow.go(STEP.time)} focusOnMount={false} />}
       {step === STEP.time && <StepTime venueId={venueId} needs={needs} wanted={linkedTime(needs, link)} onPick={flow.pickTime} onBack={() => flow.go(STEP.party)} />}
       {step === STEP.table && flow.choosingSeat && hold && (
-        <ChooseSeat venueId={venueId} hold={hold} secondsLeft={flow.secondsLeft} seatId={flow.seatId} onDone={flow.chooseSeat} onBackToMap={flow.backToMap} />
+        <ChooseSeat venueId={venueId} hold={hold} party={needs.party} secondsLeft={flow.secondsLeft} seatId={flow.seatId} onDone={flow.chooseSeat} onBackToMap={flow.backToMap} />
       )}
       {step === STEP.table && time && !flow.choosingSeat && (
         <StepTable
@@ -136,5 +139,28 @@ function BookingFlow({ venueId, info }: { venueId: string; info: RestaurantInfo 
       )}
       {step === STEP.done && flow.confirmation && <Confirmation confirmation={flow.confirmation} />}
     </>
+  );
+}
+
+/** The restaurant and the day above the stages, the three stages on wide screens, "2 of 3 · Table" on a phone. */
+function StageBar({ name, stage, showName }: { name: string; stage: number; showName: boolean }) {
+  const shown = Math.min(stage, STEPS.length - 1);
+  const ref = useRef<HTMLDivElement>(null);
+  // A new stage (or arriving on a time chosen elsewhere) starts at the top of the booking, not wherever the page was.
+  useEffect(() => {
+    if (stage > 0 && stage < STEPS.length) ref.current?.scrollIntoView?.({ block: "start" });
+  }, [stage]);
+  return (
+    <div className="rb5-stagebar" id="booking-stages" ref={ref}>
+      <div className="rb5-stage-meta">{showName && <strong>{name}</strong>}</div>
+      <div className="rb5-stage-nav">
+        <Stepper steps={STEPS} current={stage} label="Booking steps" />
+        {stage < STEPS.length && (
+          <p className="rb5-stage-count" aria-hidden="true">
+            {shown + 1} of {STEPS.length} · {STEPS[shown]}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }

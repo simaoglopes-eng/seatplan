@@ -21,7 +21,7 @@ test("a diner books a table with a chair in a two-room restaurant and changes th
   await page.getByRole("button", { name: "Choose a chair" }).click();
   await expect(page.getByRole("heading", { name: /Request a chair/ })).toBeVisible();
   await page.getByRole("radio").first().check();
-  await page.getByRole("button", { name: /^Continue with seat / }).click();
+  await page.getByRole("button", { name: "Save chair request" }).click();
 
   await page.getByLabel("Name for the booking").fill("Ambience Diner");
   await page.getByLabel("Email", { exact: true }).fill("ambience.diner@example.com");
@@ -53,7 +53,7 @@ test("a diner confirms from the form beside the plan, without leaving the map", 
   await expect(page.getByRole("heading", { name: "Choose your table" })).toBeVisible();
   // The suggested table is already selected, so reserving it is one tap on its card.
   await expect(page.getByRole("option", { selected: true })).toHaveCount(1);
-  await page.getByRole("button", { name: /^Hold table .* & continue$/ }).first().click();
+  await page.getByRole("button", { name: /^Hold .* & continue/ }).first().click();
   const panel = page.getByRole("form", { name: "Your details" });
   await expect(panel).toBeVisible();
   await expect(page.getByRole("option").first()).toBeVisible(); // the plan is still there

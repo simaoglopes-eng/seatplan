@@ -55,8 +55,9 @@ describe("One card per table", () => {
     const cards = screen.getAllByRole("region", { name: /^Table \d/ });
     expect(cards).toHaveLength(1);
     expect(within(cards[0]).getByText("Recommended")).toBeTruthy();
-    expect(within(cards[0]).getByRole("heading", { name: /Table 7.*Main room/ })).toBeTruthy();
-    expect(within(cards[0]).getByRole("button", { name: "Hold table 7 & continue" })).toBeTruthy();
+    expect(within(cards[0]).getByRole("heading", { name: /Table 7/ })).toBeTruthy();
+    expect(within(cards[0]).getByText("Main room")).toBeTruthy();
+    expect(within(cards[0]).getByRole("button", { name: "Hold 7 & continue" })).toBeTruthy();
     expect(screen.queryByText("Our suggestion")).toBeNull();
     // "Choose for me" is still there, but as the quiet alternative.
     expect(screen.getByRole("button", { name: "Choose for me" })).toBeTruthy();
@@ -80,7 +81,7 @@ describe("One card per table", () => {
     expect(screen.queryByRole("region", { name: /^Table 7/ })).toBeNull();
     // Another room's table is never offered for holding from here: only a way to go and look at it.
     expect(screen.getByText("Table 7 is in Main room")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Show table 7 in Main room" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show Table 7 in Main room" }));
     expect(within(screen.getByRole("tablist", { name: "Rooms" })).getByRole("tab", { name: /Main room/ }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByRole("region", { name: /^Table 7/ })).toBeTruthy();
   });
@@ -92,7 +93,7 @@ describe("The key follows the hold", () => {
     await reachTableStep();
     const names = () => within(screen.getByRole("list", { name: "Map key" })).getAllByRole("listitem").map((li) => li.querySelector("strong")?.textContent);
     expect(names()).toEqual(["Available", "Selected", "Unavailable"]);
-    fireEvent.click(screen.getByRole("button", { name: "Hold table 7 & continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
     await screen.findByRole("timer");
     expect(names()).toEqual(["Available", "Held for you", "Unavailable"]);
   });
@@ -102,12 +103,13 @@ describe("The details form beside the plan", () => {
   it("carries the countdown and one line about the booking, so nothing is far from the confirm button", async () => {
     mockApi(routes());
     await reachTableStep();
-    fireEvent.click(screen.getByRole("button", { name: "Hold table 7 & continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
     const form = await screen.findByRole("form", { name: "Your details" });
     expect(within(form).getByRole("timer")).toBeTruthy();
-    expect(within(form).getByText(/^Table 7 · Main room · .* at 19:30 · 2 people$/)).toBeTruthy();
+    expect(within(form).getByText("Table 7 · Main room")).toBeTruthy();
+    expect(within(form).getByText(/, 19:30 · 2 guests$/)).toBeTruthy();
     expect(screen.getAllByRole("timer")).toHaveLength(1); // the countdown is not shown twice
-    expect(within(form).getByText("Request a chair (optional)")).toBeTruthy();
+    expect(within(form).getByText("Request a chair")).toBeTruthy();
     expect(within(form).getByRole("button", { name: "Confirm booking" })).toBeTruthy();
   });
 
@@ -116,26 +118,26 @@ describe("The details form beside the plan", () => {
     await reachTableStep();
     const current = () => screen.getByRole("navigation", { name: "Booking steps" }).querySelector('[aria-current="step"]')?.textContent;
     expect(current()).toContain("Table");
-    fireEvent.click(screen.getByRole("button", { name: "Hold table 7 & continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
     await screen.findByRole("form", { name: "Your details" });
     expect(current()).toContain("Details");
     expect(screen.getByRole("heading", { name: "Your details" })).toBeTruthy();
     // One main action: no second "continue" bar, and "Change time" sits next to the date.
     expect(screen.queryByRole("button", { name: /Pick a table to continue|Continue with table/ })).toBeNull();
-    expect(screen.getByRole("button", { name: "Change time" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Change date or time" })).toBeTruthy();
   });
 
   it("has one main action before a hold too: the card's, with no disabled bar under it", async () => {
     mockApi(routes());
     await reachTableStep();
     expect(screen.queryByRole("button", { name: "Pick a table to continue" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Hold table 7 & continue" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Hold 7 & continue" })).toBeTruthy();
   });
 
   it("marks Your details as the current step while the chair is being chosen", async () => {
     mockApi({ ...routes(), [`GET ${API}/seats`]: () => ({ tables: [{ id: 7, label: "7", shape: "rect", x: 40, y: 40, w: 120, h: 60, rotation: 0 }], seats: [{ id: 71, table_id: 7, label: "1", x: 70, y: 30, state: "free", accessible: false, phrase: null }] }) });
     await reachTableStep();
-    fireEvent.click(screen.getByRole("button", { name: "Hold table 7 & continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));
     fireEvent.click(await screen.findByRole("button", { name: "Choose a chair" }));
     await screen.findByRole("heading", { name: /Request a chair/ });
     const steps = screen.getByRole("navigation", { name: "Booking steps" });
