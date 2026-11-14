@@ -26,6 +26,7 @@ const DONE_TEXT: Partial<Record<BookingStatus, string>> = {
 
 export function BookingActions({ venueId, booking, onChanged, onProblem, onMove }: BookingActionsProps) {
   const [busy, setBusy] = useState<BookingStatus | null>(null);
+  const [more, setMore] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const change = async (status: BookingStatus): Promise<void> => {
     if (busy) return;
@@ -44,21 +45,13 @@ export function BookingActions({ venueId, booking, onChanged, onProblem, onMove 
   return (
     <div className="st-actions" role="group" aria-label={`Actions for ${booking.name}`}>
       <p className="st-action-context">{booking.name} · {booking.time} · {booking.table_labels.join(" + ")}. Status updates take effect now.</p>
-      {nextActions(booking.status).map((action) => (
-        <Button key={action.status} variant={action.status === "no_show" || action.status === "completed" ? "secondary" : "primary"} disabled={busy !== null && busy !== action.status} busy={busy === action.status} onClick={() => void change(action.status)}>
-          {action.label}
-        </Button>
-      ))}
-      {open && (
-        <Button variant="secondary" disabled={busy !== null} onClick={() => onMove(booking)}>
-          Move or combine
-        </Button>
-      )}
-      {booking.status === "confirmed" && (
-        <Button variant="ghost" disabled={busy !== null} className="st-cancel-booking" onClick={() => setConfirmCancel(true)}>
-          Cancel booking
-        </Button>
-      )}
+      {nextActions(booking.status).filter(action=>action.status!=="no_show").map(action=><Button key={action.status} disabled={busy!==null && busy!==action.status} busy={busy===action.status} onClick={()=>void change(action.status)}>{action.label}</Button>)}
+      {(open || booking.status==="confirmed") && <Button variant="secondary" aria-expanded={more} onClick={()=>setMore(!more)}>More actions</Button>}
+      {more && <div className="st-more-actions" onKeyDown={event=>{if(event.key==="Escape"){setMore(false);event.currentTarget.previousElementSibling instanceof HTMLElement && event.currentTarget.previousElementSibling.focus();}}}>
+        {nextActions(booking.status).filter(action=>action.status==="no_show").map(action=><Button key={action.status} variant="secondary" disabled={busy!==null} onClick={()=>void change(action.status)}>{action.label}</Button>)}
+        {open && <Button variant="secondary" disabled={busy!==null} onClick={()=>onMove(booking)}>Move or combine</Button>}
+        {booking.status==="confirmed" && <Button variant="ghost" disabled={busy!==null} className="st-cancel-booking" onClick={()=>setConfirmCancel(true)}>Cancel booking</Button>}
+      </div>}
       <Dialog
         open={confirmCancel}
         title={`Cancel ${booking.name}'s booking?`}

@@ -36,7 +36,7 @@ describe("Staff page", () => {
     expect(screen.getByRole("list", { name: "Tables by status" }).textContent).toContain("2 Free");
 
     fireEvent.click(screen.getByRole("button", { name: "New walk-in" }));
-    const dialog = await screen.findByRole("dialog", { name: /Walk-in at/ });
+    const dialog = await screen.findByRole("dialog", { name: "New walk-in" });
     fireEvent.change(within(dialog).getByLabelText("How many people?"), { target: { value: "5" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Find a table" }));
 
@@ -66,7 +66,7 @@ describe("Staff page", () => {
     renderStaff();
     fireEvent.click(await screen.findByRole("option", { name: /^Table 3,/ }));
     fireEvent.click(screen.getByRole("button", { name: "New walk-in" }));
-    const dialog = await screen.findByRole("dialog", { name: /Walk-in at/ });
+    const dialog = await screen.findByRole("dialog", { name: "New walk-in" });
     fireEvent.change(within(dialog).getByLabelText("How many people?"), { target: { value: "5" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Find a table" }));
     fireEvent.click(await within(dialog).findByRole("button", { name: "Seat at Table 3" }));
@@ -85,6 +85,7 @@ describe("Staff page", () => {
     renderStaff();
     const arrivals = await screen.findByRole("list", { name: "Upcoming arrivals" });
     fireEvent.click(within(arrivals).getByRole("button", { name: /Rui Costa/ }));
+    fireEvent.click(screen.getByRole("button",{name:"More actions"}));
     fireEvent.click(screen.getByRole("button", { name: "Move or combine" }));
     const dialog = await screen.findByRole("dialog", { name: /Move Rui Costa/ });
     fireEvent.click(within(dialog).getByLabelText(/Table 3/));
@@ -120,7 +121,7 @@ describe("Staff page", () => {
     mockApi({ [`GET ${API}/floor`]: () => FLOOR, [`POST ${API}/whatif`]: () => WHATIF_TABLE_3 });
     renderStaff();
     fireEvent.click(await screen.findByRole("button", { name: "New walk-in" }));
-    const dialog = await screen.findByRole("dialog", { name: /Walk-in at/ });
+    const dialog = await screen.findByRole("dialog", { name: "New walk-in" });
     const find = within(dialog).getByRole("button", { name: "Find a table" });
     find.focus();
     fireEvent.click(find);
@@ -134,12 +135,12 @@ describe("Staff page", () => {
     mockApi({ [`GET ${API}/floor`]: () => FLOOR, [`POST ${API}/whatif`]: () => WHATIF_TABLE_3 });
     renderStaff();
     fireEvent.click(await screen.findByRole("button", { name: "New walk-in" }));
-    let dialog = await screen.findByRole("dialog", { name: /Walk-in at/ });
+    let dialog = await screen.findByRole("dialog", { name: "New walk-in" });
     fireEvent.click(within(dialog).getByRole("button", { name: "Find a table" }));
     await within(dialog).findByText("Only free table for 5");
-    fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
     fireEvent.click(screen.getByRole("button", { name: "New walk-in" }));
-    dialog = await screen.findByRole("dialog", { name: /Walk-in at/ });
+    dialog = await screen.findByRole("dialog", { name: "New walk-in" });
     expect(within(dialog).queryByText("Only free table for 5")).toBeNull();
     expect(within(dialog).getByRole("button", { name: "Find a table" })).toBeTruthy();
   });

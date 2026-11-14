@@ -52,8 +52,8 @@
 .rp-hero-layout .rb-steps {font-size:.8125rem;margin-bottom:1.5rem}
 .rp-hero-layout:has(.when-times) .rp-book {grid-column:1;grid-row:1}
 .rp-hero-layout:has(.when-times) .rp-gallery {grid-column:2;grid-row:1}
-.rp-hero-layout:not(:has(.when-party,.when-times)) {grid-template-columns:1fr}
-.rp-hero-layout:not(:has(.when-party,.when-times)) .rp-gallery {display:none}
+.rp-hero-layout:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"],.rb-done) {grid-template-columns:1fr}
+.rp-hero-layout:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"],.rb-done) .rp-gallery {display:none}
 @media(max-width:60rem){.rp-hero-layout{grid-template-columns:1fr}.rp-hero-layout:has(.when-times) .rp-gallery{grid-column:1;grid-row:2}.rp-hero-layout:has(.when-times) .rp-book{grid-row:1}.rp-head h1{font-size:2.25rem}}
 @media(max-width:40rem){.rp-head{flex-wrap:nowrap;gap:.5rem}.rp-head-main{flex:1;min-width:0}.rp-head h1{font-size:2rem}.rp-cta{width:auto;min-width:5rem;font-size:.8125rem;padding:.5rem}.rp-hero-layout .rp-book{padding:1rem}.rp-hero-layout .rp-cover{aspect-ratio:16/8;max-height:11rem}.rp .discover-features{font-size:.75rem}}
 .rp {max-width:75rem;width:100%;margin:0 auto;position:relative;gap:1rem}
@@ -71,7 +71,7 @@
 .rp-hero-layout:has(.when-times) .rp-cover {height:12.5rem;aspect-ratio:auto;border-radius:0}
 .rp-hero-layout:has(.when-times) .rp-thumbs {display:none}
 .rp-hero-layout:has(.when-times) .rp-book>h2 {display:none}
-.rp-hero-layout:not(:has(.when-party,.when-times)) .rp-visit {display:none}
+.rp-hero-layout:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"],.rb-done) .rp-visit {display:none}
 .rp-hero-layout:has(.when-party) .when-party>.rb-step-title {display:none}
 .rp-hero-layout:has(.when-party) .when-party>.rb-actions>.btn {width:100%}
 .rp-hero-layout .rb-page>p[role=status] {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}

@@ -38,3 +38,10 @@ it("clears only the search term, retaining the applied booking and access contex
  expect([request.get("date"),request.get("time"),request.get("party"),request.get("lat")]).toEqual(["2030-05-01","20:00","4","38.7223"]);
  expect(request.getAll("features")).toEqual(["accessible"]);
 });
+it("finds the results from the desktop context bar and moves keyboard focus there",async()=>{
+ vi.stubGlobal("matchMedia",()=>({matches:true,addEventListener:()=>{},removeEventListener:()=>{}}));
+ render(<MemoryRouter><DiscoverPage/></MemoryRouter>);
+ fireEvent.change(screen.getByLabelText("Date"),{target:{value:"2030-05-01"}});
+ fireEvent.click(screen.getByRole("button",{name:/^Find a table/}));
+ expect(document.activeElement?.id).toBe("discover-results-title");
+});

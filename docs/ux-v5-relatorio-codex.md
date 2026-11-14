@@ -17,3 +17,11 @@ Em curso: 031, 034, 054; depois 088, 090, 091 e regressão de Eventos. A tabela 
 Página pública com galeria e formulário lado a lado, CTA junto ao nome no telemóvel; When reúne data/grupo/requisitos/horários, distingue seleção de avanço e bloqueia respostas antigas após mudar o contexto. Recuperação com hora original, alternativas concretas e início real do serviço. Galeria privada do preview preservada. Só uma das duas linhas autorizadas de BookingPage.tsx foi alterada.
 
 Capturas 031/034/054 e 054-narrow.png na pasta externa; comparação com as referências realizada. Diferenças justificadas nas decisões: ilustrações do seed, mais horários reais e resumo sem duplicar estado. Vitest: 491 passaram antes de iniciar staff. Playwright: 29 passaram; três falhas revelaram um seletor de título antigo, endereço agora repetido no resumo e galeria escondida no preview. Corrigidos os três; a execução seguinte passou 11/12, restando o seletor ambíguo de endereço, agora delimitado por exact:true. A bateria final volta a verificar tudo.
+
+## Checkpoint: 088, 090, 091
+
+Planta e próximas chegadas lado a lado, navegação lateral e referência temporal compacta; slider por Change floor time e Return to now. Seleção sincroniza chegada/mesa(s), Confirmed, Seat now e More actions. Walk-in compacto com hora/data/serviço efetivos, requisitos, procura separada da confirmação, fecho por Escape/X/Cancel e foco devolvido.
+
+Os testes cobrem serviço fechado, ausência de mesa e conflito depois da sugestão (obriga a procurar novamente). 495 Vitest passaram, incluindo o bloqueio de horários antigos enquanto carrega outra data; 83 Playwright passaram, incluindo os fluxos de Eventos. A comparação visual final compactou Cuisine/Price no painel móvel e pôs a recuperação 054 antes dos controlos; a bateria final volta a correr sobre esses ajustes.
+
+Verificação de fecho deste lote: typecheck, 495 Vitest/67 ficheiros, build, 172 contrastes e 83 Playwright passaram sobre a versão final (inclui os ajustes 024/054). Ruff e formatação: verdes, 215 ficheiros. Sem repetições isoladas de testes por rate limit.

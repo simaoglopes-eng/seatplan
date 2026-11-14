@@ -146,3 +146,16 @@
  .is-map-view .discover-top { display:block;position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%); }
 }
 @media(max-width:720px){.discover-route.is-map-view .discover-map-column{height:calc(100dvh - 9.25rem)}}
+/* Keep the collapsed cuisine and price controls above the fixed mobile footer. */
+@media(max-width:40rem){
+ .discover-drawer {gap:.5rem}
+ .discover-drawer section,.discover-drawer>.discover-chips {padding-bottom:.5rem}
+ .discover-drawer h3 {margin-bottom:.5rem}
+ .discover-drawer .discover-filter-note {font-size:.75rem;line-height:1.4;margin:0}
+ .discover-filter-selects summary {list-style:none}
+ .discover-filter-selects summary::-webkit-details-marker {display:none}
+ .discover-filter-selects summary strong {position:relative;padding:.5rem .75rem;min-height:2.75rem;box-sizing:border-box}
+ .discover-filter-selects summary strong::after {content:'⌄';position:absolute;right:.75rem}
+ .discover-card h3 a {position:relative}
+ .discover-card h3 a::after {content:'';position:absolute;inset:-.75rem 0;min-height:2.75rem}
+}

@@ -53,3 +53,13 @@
 .when-times .rb-slot.is-selected {background:var(--c-primary)!important;color:var(--c-on-primary)!important}
 .when-continue {position:sticky;bottom:0;padding:1rem 0;background:var(--c-surface);z-index:2}
 .when-show-all {font:inherit;font-weight:600;min-height:2.75rem;background:transparent;border:0;color:var(--c-primary);text-align:left;text-decoration:underline}
+.when-times:has(.when-recovery)>.rb-step-title {order:0}
+.when-times:has(.when-recovery)>.when-recovery {order:1;margin:0;padding:1rem;font-size:.875rem}
+.when-times:has(.when-recovery)>.when-fields {order:2}
+.when-times:has(.when-recovery)>.when-alternative-group {order:3;border-top:1px solid var(--c-border);padding-top:1rem}
+.when-times:has(.when-recovery)>.when-show-all {order:4}
+.when-times:has(.when-recovery)>.when-service {order:5}
+.when-times:has(.when-recovery)>.when-continue {order:6}
+.when-alternative-group h3 {font-family:inherit;font-size:1rem;margin:0 0 1rem}
+.when-alternatives {margin-top:0;font-variant-numeric:tabular-nums}
+.when-alternatives a[aria-current=time] {background:var(--c-primary-soft);border-color:var(--c-primary);border-width:2px}

@@ -29,10 +29,10 @@ export function SelectionPanel(props: SelectionPanelProps) {
   const shown = bookingHere ?? booking;
   return (
     <div className="st-selection">
-      {table && <TableHeader table={table} />}
+      {table && !shown && <TableHeader table={table} />}
       {table && table.status === "free" && <FreeTableActions {...props} table={table} />}
       {shown && <BookingDetails booking={shown} />}
-      {shown && <BookingActions venueId={props.venueId} booking={shown} onChanged={props.onChanged} onProblem={props.onProblem} onMove={props.onMove} />}
+      {shown && <BookingActions key={shown.id} venueId={props.venueId} booking={shown} onChanged={props.onChanged} onProblem={props.onProblem} onMove={props.onMove} />}
     </div>
   );
 }
@@ -65,13 +65,13 @@ function BookingDetails({ booking }: { booking: StaffBooking }) {
   return (
     <div className="st-booking">
       <p className="st-booking-name">
-        <strong>{booking.name}</strong>, {people(booking.party_size)}
+        <strong>{booking.name}</strong>
       </p>
       <p className="rb-muted tabular">
-        {booking.time} to {booking.end_time}, {tablesText(booking.table_labels)}
+        {booking.time} to {booking.end_time} · {people(booking.party_size)} · {tablesText(booking.table_labels)}
         {booking.source === "walk_in" && ", walk-in"}
       </p>
-      <div className="rb-badges">
+      <div className="rb-badges"><Badge>{booking.status === "confirmed" ? "Confirmed" : booking.status}</Badge>
         {booking.needs_accessible && <Badge tone="info">Accessible table</Badge>}
         {booking.high_chairs > 0 && <Badge>High chairs: {booking.high_chairs}</Badge>}
       </div>

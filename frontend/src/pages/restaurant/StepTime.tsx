@@ -138,9 +138,10 @@ function SlotGroups({ slots, wanted, onPick, selected, starts }: { starts?: Rest
           Every time is booked on this day. Pick a time to join its waitlist, or try another date.
         </p>
       )}
-      {near.length > 0 && wanted && (
-        <div className="when-recovery" role="status"><h3>{wanted} is not available</h3><p>Your date, party and requirements are unchanged. Choose another time below.</p>{!slots.some(s=>s.time===wanted) && nextService && <p>{nextService.name} starts at {nextService.start}.</p>}<div className="when-alternatives">{near.map(time=><a href={`#when-slot-${time}`} key={time} onClick={(event)=>{event.preventDefault();onPick(slots.find(s=>s.time===time)!);}}><strong>{time}</strong>{" "}<span>{Math.abs(toMinutes(time)-toMinutes(wanted))} min {time<wanted?"earlier":"later"}</span></a>)}</div></div>
-      )}
+      {near.length > 0 && wanted && <>
+        <div className="when-recovery" role="status"><strong>{wanted} is not available.</strong><p>Your date, party and requirements are unchanged.</p>{!slots.some(s=>s.time===wanted) && nextService && <p>{nextService.name} starts at {nextService.start}.</p>}</div>
+        <section className="when-alternative-group" aria-label="Next available times"><h3>Next available times</h3><div className="when-alternatives">{near.map(time=><a href={`#when-slot-${time}`} key={time} aria-current={selected===time ? "time" : undefined} onClick={event=>{event.preventDefault();onPick(slots.find(s=>s.time===time)!);}}><strong>{time}</strong>{" "}<span>{selected===time ? "Selected · " : ""}{Math.abs(toMinutes(time)-toMinutes(wanted))} min {time<wanted?"earlier":"later"}</span></a>)}</div></section>
+      </>}
       {near.length>0 && <button type="button" className="when-show-all" aria-expanded={allTimes} onClick={()=>setAllTimes(!allTimes)}>{allTimes ? "Hide all service times" : "See all service times"}</button>}
       {(near.length===0 || allTimes) && groups.map((group) => (
         <details key={group.service} className="rb-service when-service" open={group.service===preferred}>

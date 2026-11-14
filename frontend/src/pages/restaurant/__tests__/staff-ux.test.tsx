@@ -11,11 +11,12 @@ afterEach(()=>vi.unstubAllGlobals());
 it("uses the inspected time outside service in both walk-in preview and confirmation context",async()=>{
  const calls=mockApi({[`GET ${API}/floor`]:call=>({...FLOOR,time:call.query.get("time")}),[`POST ${API}/whatif`]:()=>WHATIF_TABLE_3});
  show();
+ fireEvent.click(await screen.findByRole("button",{name:"Change floor time"}));
  const slider=await screen.findByRole("slider",{name:"View floor time"});
  fireEvent.change(slider,{target:{value:"165"}});
  await screen.findByText("Viewing 02:45 · Outside service");
  fireEvent.click(screen.getByRole("button",{name:"New walk-in"}));
- const dialog=screen.getByRole("dialog",{name:"Walk-in at 02:45"});
+ const dialog=screen.getByRole("dialog",{name:"New walk-in"});
  expect(within(dialog).getByText(/Effective booking time/).textContent).toContain("02:45");
  fireEvent.click(within(dialog).getByRole("button",{name:"Find a table"}));
  await within(dialog).findByText("Only free table for 5");
@@ -41,7 +42,7 @@ it("never applies optimiser moves without the final explicit confirmation",async
 it("requires a fresh walk-in proposal after the chosen table conflicts",async()=>{
  const calls=mockApi({[`GET ${API}/floor`]:()=>FLOOR,[`POST ${API}/whatif`]:()=>WHATIF_TABLE_3,[`POST ${API}/walkins`]:()=>new Response(JSON.stringify({error:{code:"seat_taken",message:"That table was just taken."}}),{status:409})});
  show();fireEvent.click(await screen.findByRole("button",{name:"New walk-in"}));
- const dialog=screen.getByRole("dialog",{name:/Walk-in at/});
+ const dialog=screen.getByRole("dialog",{name:"New walk-in"});
  fireEvent.click(within(dialog).getByRole("button",{name:"Find a table"}));
  fireEvent.click(await within(dialog).findByRole("button",{name:"Seat at Table 3"}));
  await within(dialog).findByRole("alert");
@@ -96,4 +97,13 @@ it("identifies an unpublished restaurant through the existing owner profile when
  expect(await screen.findByText("Draft dining room")).toBeTruthy();
  expect(screen.getByRole("link",{name:"My restaurants"}).getAttribute("href")).toBe("/owner");
  expect(callsTo(calls,"GET",`/api/r/${VENUE}`)).toHaveLength(0);
+});
+it("offers no seating confirmation when a walk-in search finds no table",async()=>{
+ const calls=mockApi({[`GET ${API}/floor`]:()=>FLOOR,[`POST ${API}/whatif`]:()=>({possible:false,table_ids:null,tables:[],reasons:["Every suitable table is occupied"],displaced:[]})});
+ show();fireEvent.click(await screen.findByRole("button",{name:"New walk-in"}));
+ const dialog=screen.getByRole("dialog",{name:"New walk-in"});
+ fireEvent.click(within(dialog).getByRole("button",{name:"Find a table"}));
+ expect(await within(dialog).findByText(/No table can take/)).toBeTruthy();
+ expect(within(dialog).queryByRole("button",{name:/^Seat at/})).toBeNull();
+ expect(callsTo(calls,"POST",`${API}/walkins`)).toHaveLength(0);
 });

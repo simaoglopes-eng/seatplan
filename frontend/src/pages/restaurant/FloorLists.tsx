@@ -86,9 +86,10 @@ export function ArrivalsList({ arrivals, selectedId, onSelect, services = [] }: 
           <button type="button" className="st-arrival-button" aria-pressed={booking.id === selectedId} onClick={() => onSelect(booking.id)}>
             <span className="st-arrival-time tabular">{booking.time}</span>
             <span>
-              <strong>{booking.name}</strong>, {people(booking.party_size)}
-              <span className="st-arrival-table">{tablesText(booking.table_labels)}</span>
+              <strong>{booking.name}</strong>
+              <span className="st-arrival-table">{people(booking.party_size)} · {tablesText(booking.table_labels)}</span>
             </span>
+            <Badge>Confirmed</Badge>
           </button>
           <span className="rb-badges">
             {booking.needs_accessible && <Badge tone="info">Accessible</Badge>}

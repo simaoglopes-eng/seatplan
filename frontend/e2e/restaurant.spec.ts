@@ -9,8 +9,9 @@ test("a diner books a table, then cancels through the manage link", async ({ pag
   await page.goto(`${links.restaurant_booking}?date=${isoDaysFromToday(2)}&party=2`);
 
   await page.getByRole("button", { name: "See free times" }).click();
-  await expect(page.getByRole("heading", { name: "Pick a time" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Choose a time" })).toBeVisible();
   await page.getByRole("button", { name: /^\d\d:\d\d Available$/ }).first().click();
+  await page.getByRole("button", { name:/^Choose a table at/ }).click();
 
   await expect(page.getByRole("heading", { name: "Choose your table" })).toBeVisible();
   await page.getByRole("button", { name: "Choose for me" }).click();
@@ -42,6 +43,7 @@ test("a diner picks a chair and sees it on the confirmation", async ({ page, req
   await page.goto(`${links.restaurant_booking}?date=${isoDaysFromToday(3)}&party=2`);
   await page.getByRole("button", { name: "See free times" }).click();
   await page.getByRole("button", { name: /^\d\d:\d\d Available$/ }).first().click();
+  await page.getByRole("button", { name:/^Choose a table at/ }).click();
   await expect(page.getByRole("heading", { name: "Choose your table" })).toBeVisible();
   await page.getByRole("button", { name: "Choose for me" }).click();
   await page.getByRole("button", { name: "Choose a chair" }).click();
@@ -66,6 +68,7 @@ test("staff seat a walk-in from the live floor", async ({ page, request }) => {
   await expect(page.getByRole("heading", { name: "Service floor" })).toBeVisible();
 
   // Move the floor to 20:00 (dinner), so the test does not depend on the clock.
+  await page.getByRole("button",{name:"Change floor time"}).click();
   const slider = page.getByRole("slider", { name: "View floor time" });
   const seated = page.locator(".st-count-seated .st-count-number");
   if (await slider.inputValue() !== String(20 * 60)) {
@@ -82,7 +85,7 @@ test("staff seat a walk-in from the live floor", async ({ page, request }) => {
   const seatedBefore = Number(await seated.innerText());
 
   await page.getByRole("button", { name: "New walk-in" }).click();
-  const dialog = page.getByRole("dialog", { name: "Walk-in at 20:00" });
+  const dialog = page.getByRole("dialog", { name: "New walk-in" });
   await dialog.getByLabel("How many people?").selectOption("2");
   await dialog.getByRole("button", { name: "Find a table" }).click();
   const seatButton = dialog.getByRole("button", { name: /^Seat at / });
