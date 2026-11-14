@@ -118,7 +118,7 @@ describe("The details form beside the plan", () => {
     expect(current()).toContain("Table");
     fireEvent.click(screen.getByRole("button", { name: "Hold table 7 & continue" }));
     await screen.findByRole("form", { name: "Your details" });
-    expect(current()).toContain("Your details");
+    expect(current()).toContain("Details");
     expect(screen.getByRole("heading", { name: "Your details" })).toBeTruthy();
     // One main action: no second "continue" bar, and "Change time" sits next to the date.
     expect(screen.queryByRole("button", { name: /Pick a table to continue|Continue with table/ })).toBeNull();
@@ -139,6 +139,6 @@ describe("The details form beside the plan", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Choose a chair" }));
     await screen.findByRole("heading", { name: /Request a chair/ });
     const steps = screen.getByRole("navigation", { name: "Booking steps" });
-    expect(steps.querySelector('[aria-current="step"]')?.textContent).toContain("Your details");
+    expect(steps.querySelector('[aria-current="step"]')?.textContent).toContain("Details");
   });
 });

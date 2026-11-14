@@ -38,7 +38,7 @@ test("on a phone, from a discovery time to a confirmed booking without a chair",
   expect(await sideways(page)).toBe(false);
   await page.getByRole("button", { name: /^Hold table .* & continue$/ }).click();
   await expect(page.getByRole("form", { name: "Your details" })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Booking steps" }).locator('[aria-current="step"]')).toContainText("Your details");
+  await expect(page.getByRole("navigation", { name: "Booking steps" }).locator('[aria-current="step"]')).toContainText("Details");
   await page.getByLabel("Name for the booking").fill("Journey Diner");
   await page.getByLabel("Email", { exact: true }).fill("journey.diner@example.com");
   await page.getByRole("button", { name: "Confirm booking" }).click();

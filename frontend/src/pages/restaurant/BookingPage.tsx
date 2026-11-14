@@ -20,7 +20,16 @@ import { linkedTime, useLinkedTime } from "./useLinkedTime";
 import { useLoad } from "./useLoad";
 import "./restaurant.css";
 
-const STEPS = ["Date and party", "Time", "Table", "Your details", "Done"];
+// Three stages for the diner: When (date, party and time), Table, Details. The confirmation is the end, not a stage.
+const STEPS = ["When", "Table", "Details"];
+
+/** Which of the three stages is on screen. A held table, or a chair being requested, already belongs to Details. */
+function stageOf(step: number, holding: boolean, choosingSeat: boolean): number {
+  if (step === STEP.done) return STEPS.length;
+  if (step === STEP.details || (step === STEP.table && (holding || choosingSeat))) return 2;
+  if (step === STEP.table) return 1;
+  return 0;
+}
 
 export default function BookingPage() {
   const { venueId = "" } = useParams();
@@ -90,8 +99,8 @@ function BookingFlow({ venueId, info }: { venueId: string; info: RestaurantInfo 
   return (
     <>
       {linked.notice && step === STEP.time && <p role="status" className="rb-muted">{linked.notice}</p>}
-      {/* Once a table is held the form is on screen, and asking for a chair belongs to it: the indicator says Your details. */}
-      <Stepper steps={STEPS} current={step === STEP.table && (flow.choosingSeat || (hold !== null && flow.secondsLeft !== 0)) ? STEP.details : step} label="Booking steps" />
+      {/* Once a table is held the form is on screen, and asking for a chair belongs to it: the indicator says Details. */}
+      <Stepper steps={STEPS} current={stageOf(step, hold !== null && flow.secondsLeft !== 0, flow.choosingSeat)} label="Booking steps" />
       {step === STEP.party && <StepParty info={info} needs={needs} onChange={flow.setNeeds} onNext={() => flow.go(STEP.time)} focusOnMount={false} />}
       {step === STEP.time && <StepTime venueId={venueId} needs={needs} wanted={linkedTime(needs, link)} onPick={flow.pickTime} onBack={() => flow.go(STEP.party)} />}
       {step === STEP.table && flow.choosingSeat && hold && (

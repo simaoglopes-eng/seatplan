@@ -36,15 +36,15 @@ test("on a phone: one action per moment, a suggestion in another room, and a cha
   // Holding moves the screen to the details; the chair request stays inside that context.
   await hold.click();
   await expect(page.getByRole("form", { name: "Your details" })).toBeVisible();
-  await expect(steps.locator('[aria-current="step"]')).toContainText("Your details");
+  await expect(steps.locator('[aria-current="step"]')).toContainText("Details");
   await expect(page.getByRole("heading", { name: "Your details" })).toBeVisible();
   await page.getByRole("button", { name: "Choose a chair" }).click();
   await expect(page.getByRole("heading", { name: /Request a chair/ })).toBeVisible();
-  await expect(steps.locator('[aria-current="step"]')).toContainText("Your details");
+  await expect(steps.locator('[aria-current="step"]')).toContainText("Details");
   await page.getByRole("radio").first().check();
   await page.getByRole("button", { name: /^Continue with seat / }).click();
   await expect(page.getByText(/Chair requested/)).toBeVisible();
-  await expect(steps.locator('[aria-current="step"]')).toContainText("Your details");
+  await expect(steps.locator('[aria-current="step"]')).toContainText("Details");
 
   await page.getByLabel("Name for the booking").fill("Phone Diner");
   await page.getByLabel("Email", { exact: true }).fill("phone.diner@example.com");
