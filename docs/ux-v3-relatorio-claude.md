@@ -28,6 +28,11 @@ An outside review of the updated captures asked for four fixes; all four are in:
 Also: capture 018 was a script mistake (it looked for the wrong button name), so the validation messages never showed; fixed in `take_screenshots.cjs`.
 Still not done from that review: a one-screen chair picker inside the form (it is still its own view, but under the same step), and a more compact time block on the staff floor (Codex's half).
 
+## Integration check (throwaway)
+
+`claude/ux-v3` + `codex/ux-v3-discovery-ops` were merged in a separate worktree/branch (`claude/integration-check`, never pushed, `martim/restaurantes-impl` untouched). The merge is clean (no conflicts). On the merged tree: typecheck clean, vitest 487 pass, contrast 172/0, protected event paths unchanged, Playwright 83 pass (includes the events specs, Codex's discovery/staff specs, and a phone journey from a discovery time to confirmation with and without a chair request).
+Codex's requests to Claude (`docs/ux-v3-pedidos-ao-claude.md`) were done on this branch: staff sign-in title ("Sign in to open the service floor"), "Chair requested: ..." in the staff panel, "at the selected time" in the what-if answer. The cumulative "Too many attempts" flake did not appear in two full runs of 83.
+
 ## Not done, and why
 
 - **062, 063 (profile page):** only the cuisine counter and the reading width. Grouping "Contact and links" and the slug's URL and locked state needs the profile page split in two, which was left for a later pass.

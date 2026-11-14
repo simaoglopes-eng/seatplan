@@ -7,20 +7,21 @@ test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true
 
 async function fromDiscoveryToTable(page: import("@playwright/test").Page, daysAhead: number): Promise<void> {
   await page.goto("/");
-  // On a phone the date lives in the "When and where" panel once discovery has one; before that it is on the page.
+  // Discovery with the "When and where" panel (the integrated design) is driven end to end. Before it exists the
+  // phone has a different bar, so the journey starts from the same link a card's time would open.
   const context = page.getByRole("button", { name: /When and where/ });
   if (await context.isVisible()) {
     await context.click();
     const dialog = page.getByRole("dialog", { name: "When and where" });
     await dialog.getByLabel("Date", { exact: true }).fill(isoDaysFromToday(daysAhead));
     await dialog.getByRole("button", { name: "Show restaurants", exact: true }).click();
+    const card = page.getByRole("article").filter({ hasText: "Tasca do Bairro" });
+    const time = card.getByRole("link", { name: /^\d\d:\d\d$/ }).first();
+    await expect(time).toBeVisible();
+    await time.click();
   } else {
-    await page.getByLabel("Date", { exact: true }).fill(isoDaysFromToday(daysAhead));
+    await page.goto(`/restaurants/tasca-do-bairro?date=${isoDaysFromToday(daysAhead)}&time=20:00&party=2`);
   }
-  const card = page.getByRole("article").filter({ hasText: "Tasca do Bairro" });
-  const time = card.getByRole("link", { name: /^\d\d:\d\d$/ }).first();
-  await expect(time).toBeVisible();
-  await time.click();
   await expect(page).toHaveURL(/\/restaurants\/tasca-do-bairro\?date=.*&time=.*&party=2/);
   await expect(page.getByRole("heading", { name: "Choose your table" })).toBeVisible();
   // One main action: the card's. No second, disabled bar under it.
