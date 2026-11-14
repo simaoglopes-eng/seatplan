@@ -1,0 +1,55 @@
+.when-party,.when-times {max-width:100%;padding:0!important;box-shadow:none!important;border:0!important;background:transparent!important}
+.when-party .rb-step-title,.when-times .rb-step-title {font-family:var(--font-display);font-size:2rem;font-weight:400;line-height:1.2;margin:0 0 1.5rem}
+.when-fields {display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start}
+.when-fields .field {margin:0;min-width:0}
+.when-requirements {grid-column:1/-1}
+.when-requirements summary {min-height:2.75rem;display:flex;align-items:center;cursor:pointer;font-weight:600;font-size:.875rem}
+.when-requirements summary::before {content:'+';margin-right:.5rem}
+.when-requirements[open] summary::before {content:'−'}
+.when-fields .rb-needs {margin:0;padding:1rem 0;border:0;border-top:1px solid var(--c-border)}
+.when-fields .rb-needs:last-child {font-size:.875rem}
+.when-fields .rb-needs:last-child .rb-muted {font-size:.8125rem;margin:.5rem 0}
+.when-fields .rb-notice {grid-column:1/-1}
+.when-fields .field-hint {font-size:.75rem}
+.when-times .rb-service {margin:1rem 0}
+.when-times .rb-slots {display:grid;grid-template-columns:repeat(auto-fit,minmax(6.5rem,1fr));gap:.5rem}
+.when-times .rb-slot {width:100%;min-height:3.5rem;padding:.5rem;border-radius:var(--radius-md);background:var(--c-surface);border:1px solid var(--c-border-strong)}
+.when-times .rb-slot.is-selected {background:var(--c-primary);color:var(--c-on-primary);border-color:var(--c-primary)}
+.when-times .rb-slot.is-selected .rb-slot-status {color:inherit}
+.when-times .rb-slot-status {font-size:.75rem}
+.when-times .rb-slot-near-tag {font-size:.6875rem}
+.when-continue {margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--c-border)}
+.when-continue .btn {width:100%;min-height:3rem}
+.when-continue .rb-muted {font-size:.8125rem;text-align:center;margin:.5rem 0 0}
+.when-recovery {padding:1rem;margin:1rem 0;background:var(--c-accent-soft);border:1px solid var(--c-accent);border-radius:var(--radius-md)}
+.when-recovery h3 {margin:0 0 .5rem;font-family:var(--font-display);font-weight:400;font-size:1.5rem}
+.when-recovery p {margin:.5rem 0}
+.when-alternatives {display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
+.when-alternatives a {padding:.5rem 1rem;min-height:2.75rem;border:1px solid var(--c-border-strong);background:var(--c-surface);border-radius:var(--radius-md);color:var(--c-text);font:inherit}
+.when-alternatives a {text-decoration:none;text-align:center}
+.when-alternatives span {display:block;font-size:.75rem}
+@media(max-width:40rem){.when-fields{gap:.5rem}.when-times .rb-step-title,.when-party .rb-step-title{font-size:1.75rem}.when-times .rb-slots{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.when-party,.when-times {gap:1rem}
+.when-times .rb-step-title {font-size:3rem;margin-bottom:.5rem}
+.when-fields .field {display:flex;flex-direction:column;gap:.25rem}
+.when-fields .field-label {order:0}
+.when-fields .field-input,.when-fields .select-wrap {order:1}
+.when-fields .field-hint {order:2;margin:0}
+.when-times>.rb-muted {font-size:.8125rem}
+.when-times .rb-service {margin:0;padding-top:1rem;border-top:1px solid var(--c-border)}
+.when-service summary {min-height:2.75rem;cursor:pointer;list-style-position:inside;font-family:inherit}
+.when-times .rb-slot-time {font-family:inherit;font-size:.9375rem;font-weight:600}
+.when-times .rb-slots {grid-template-columns:repeat(5,minmax(0,1fr))}
+.when-times .rb-slot {min-height:3.25rem}
+.when-times .when-continue {margin-top:0}
+.when-times>.rb-actions {margin:0}
+@media(max-width:40rem){.when-times .rb-step-title{font-size:2rem}.when-times .rb-slots{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.when-times>.rb-muted {display:none}
+.when-times .when-fields>.field>.field-hint {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.when-times .rb-step-title {margin:0}
+.when-times .rb-service {padding-top:0}
+.when-times .rb-slot {min-height:3rem;padding:.375rem}
+.when-times .rb-service-title {margin:0;min-height:2.5rem;font-size:1rem}
+.when-times .rb-slot.is-selected {background:var(--c-primary)!important;color:var(--c-on-primary)!important}
+.when-continue {position:sticky;bottom:0;padding:1rem 0;background:var(--c-surface);z-index:2}
+.when-show-all {font:inherit;font-weight:600;min-height:2.75rem;background:transparent;border:0;color:var(--c-primary);text-align:left;text-decoration:underline}

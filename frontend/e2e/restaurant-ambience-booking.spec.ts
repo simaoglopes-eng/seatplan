@@ -44,7 +44,7 @@ test("a time that is no longer free in the link lands on the list of times", asy
   // 03:00 is never a seating time, so the server cannot find it free.
   await page.goto(`${links.showcase_miradouro_7}?date=${isoDaysFromToday(4)}&time=03:00&party=2`);
   await expect(page.getByText("03:00 is not free any more. Please pick another time.")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Pick a time" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pick another time" })).toBeVisible();
 });
 
 test("a diner confirms from the form beside the plan, without leaving the map", async ({ page, request }) => {

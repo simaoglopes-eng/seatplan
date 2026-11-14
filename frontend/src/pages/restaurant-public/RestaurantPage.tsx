@@ -73,12 +73,13 @@ function Page({ data }: { data: PublicRestaurant }) {
   const instagram = instagramHref(data.instagram);
 
   return (
-    <article className="rp">
+    <article className={`rp${data.preview ? " is-preview" : ""}`}>
       {data.preview && (
         <p role="status" className="rp-preview">
           Preview: this restaurant is not published yet. Only you can see this page.
         </p>
       )}
+      <Link className="rp-back" to="/">← Back to restaurants</Link>
       <header className="rp-head">
         <div className="rp-head-main">
           <h1>{data.name}</h1>
@@ -108,7 +109,7 @@ function Page({ data }: { data: PublicRestaurant }) {
           </a>
         )}
       </header>
-      <Gallery photos={data.photos} name={data.name} preview={data.preview} />
+      <div className="rp-hero-layout"><aside className="rp-visit" aria-label="Your visit"><Gallery photos={data.photos} name={data.name} preview={data.preview} /><div className="rp-visit-info"><p>Your visit</p><h2>{data.name}</h2><p>Located at {data.address}</p></div></aside>
 
       {/* The booking comes right after the identity: nothing has to be scrolled past to reserve. */}
       <section ref={book} id="book" className="rp-book" aria-labelledby="rp-book-title">
@@ -122,6 +123,7 @@ function Page({ data }: { data: PublicRestaurant }) {
         )}
       </section>
 
+      </div>
       <div className="rp-columns">
         <div>
           {data.description && (

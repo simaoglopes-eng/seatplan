@@ -62,6 +62,7 @@ describe("Wishes in the booking flow", () => {
     fireEvent.click(screen.getByLabelText("With a view"));
     fireEvent.click(screen.getByRole("button", { name: "See free times" }));
     fireEvent.click(await screen.findByRole("button", { name: /19:30/ }));
+  fireEvent.click(screen.getByRole("button", {name:"Choose a table at 19:30"}));
     await screen.findByRole("heading", { name: "Choose your table" });
     expect(callsTo(calls, "GET", `${API}/map`)[0]?.query.get("prefs")).toBe("sun,view");
 
@@ -87,6 +88,7 @@ describe("Wishes in the booking flow", () => {
     renderBooking();
     fireEvent.click(await screen.findByRole("button", { name: "See free times" }));
     fireEvent.click(await screen.findByRole("button", { name: /19:30/ }));
+  fireEvent.click(screen.getByRole("button", {name:"Choose a table at 19:30"}));
     await screen.findByRole("heading", { name: "Choose your table" });
     expect(callsTo(calls, "GET", `${API}/map`)[0]?.query.has("prefs")).toBe(false);
     fireEvent.click(screen.getAllByRole("button", { name: "Hold table 7" })[0]);

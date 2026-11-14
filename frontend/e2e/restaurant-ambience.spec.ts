@@ -20,6 +20,7 @@ for (const width of [1440, 390]) test(`diner sees rooms, daylight and night and 
   // A later cursor moment repaints light without acquiring a hold.
   await page.getByRole("button", { name: "Change time", exact: true }).click();
   await page.getByRole("button", { name: "21:00 Available", exact: true }).click();
+  await page.getByRole("button", { name:/^Choose a table at/ }).click();
   const cursor = page.getByRole("slider", { name: "Preview light (does not change your booking)" });
   const last = await cursor.getAttribute("max");
   await cursor.fill(last!);

@@ -102,7 +102,7 @@ function BookingFlow({ venueId, info }: { venueId: string; info: RestaurantInfo 
       {/* Once a table is held the form is on screen, and asking for a chair belongs to it: the indicator says Details. */}
       <Stepper steps={STEPS} current={stageOf(step, hold !== null && flow.secondsLeft !== 0, flow.choosingSeat)} label="Booking steps" />
       {step === STEP.party && <StepParty info={info} needs={needs} onChange={flow.setNeeds} onNext={() => flow.go(STEP.time)} focusOnMount={false} />}
-      {step === STEP.time && <StepTime venueId={venueId} needs={needs} wanted={linkedTime(needs, link)} onPick={flow.pickTime} onBack={() => flow.go(STEP.party)} />}
+      {step === STEP.time && <StepTime info={info} onChange={flow.setNeeds} venueId={venueId} needs={needs} wanted={linkedTime(needs, link)} onPick={flow.pickTime} onBack={() => flow.go(STEP.party)} />}
       {step === STEP.table && flow.choosingSeat && hold && (
         <ChooseSeat venueId={venueId} hold={hold} secondsLeft={flow.secondsLeft} seatId={flow.seatId} onDone={flow.chooseSeat} onBackToMap={flow.backToMap} />
       )}

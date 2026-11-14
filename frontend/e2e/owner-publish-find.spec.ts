@@ -38,13 +38,13 @@ test("a published restaurant is found by name, and unpublishing takes it off the
   await card.getByRole("link", { name }).click();
   await expect(page).toHaveURL(new RegExp(`/restaurants/${slug}$`));
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
-  await expect(page.getByText("Rua Augusta 1, Lisboa")).toBeVisible();
+  await expect(page.getByText("Rua Augusta 1, Lisboa",{exact:true})).toBeVisible();
   await expect(page.getByRole("heading", { name: "Book a table" })).toBeVisible();
 
   expect((await request.post(`/api/owner/restaurants/${venue}/unpublish`, { headers })).status()).toBe(200);
   await page.goto("/");
   await page.getByLabel("Restaurant or cuisine").fill(name);
-  await expect(page.getByRole("heading", { name: "No restaurants match your search" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: `No restaurants match “${name}”` })).toBeVisible();
   expect((await request.get(`/api/restaurants/${slug}`)).status()).toBe(404);
 });
 

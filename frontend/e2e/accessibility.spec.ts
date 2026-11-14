@@ -20,7 +20,7 @@ async function expectNoViolations(page: Page, what: string): Promise<void> {
 
 test("discovery page", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Find a table you will love" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Find a table you’ll love." })).toBeVisible();
   await expect(page.getByRole("button", { name: "Near me" })).toBeVisible();
   await expectNoViolations(page, "the discovery page");
 });
@@ -48,7 +48,7 @@ test("attendee invitation page", async ({ page, request }) => {
 test("diner booking page", async ({ page, request }) => {
   const links = await demoLinks(request);
   await page.goto(links.restaurant_booking);
-  await expect(page.getByRole("heading", { name: "When, and how many?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Book a table" })).toBeVisible();
   await expectNoViolations(page, "the booking page");
 });
 
