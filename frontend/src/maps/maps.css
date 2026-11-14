@@ -28,3 +28,7 @@
 
 .schematic-pin.is-active .schematic-pin-number { fill: var(--c-bg); }
 .discover-map .leaflet-marker-icon:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 5px; }
+/* The visible marker stays compact; its interactive box is a 44 px touch target. */
+.discover-pin span { width: 26px; height: 26px; margin: 9px; }
+.discover-pin-selected span { border-radius: var(--radius-sm); background: var(--c-primary); box-shadow: 0 0 0 3px var(--c-primary); }
+.schematic-selected-ring { fill: none; stroke: var(--c-primary); stroke-width: .8; }

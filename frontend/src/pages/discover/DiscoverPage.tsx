@@ -3,6 +3,7 @@
 // switch on a phone). One sticky command bar holds the search and the quick controls; the
 // secondary filters are in a drawer. Twenty results at a time, "Show more" for the rest.
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { searchRestaurants } from "../../api/discovery";
 import type { FeatureKey, RestaurantCard as Card, SearchQuery, SearchWhen } from "../../api/discovery";
 import { Button, Dialog, EmptyState, ErrorState, PageShell, Skeleton } from "../../design/components";
@@ -12,7 +13,7 @@ import { DiscoverBar } from "./DiscoverBar";
 import { FilterDrawer, QUICK_FEATURES } from "./FilterDrawer";
 import { PublicHeaderActions } from "./PublicHeaderActions";
 import { RestaurantCard } from "./RestaurantCard";
-import { completeWhen, cuisineLabel, DISCOVERY_FEATURE_LABELS, loadPlace, savePlace } from "./discoverModel";
+import { completeWhen, cuisineLabel, DISCOVERY_FEATURE_LABELS, loadPlace, restaurantHref, savePlace } from "./discoverModel";
 import type { Place } from "./discoverModel";
 import { loadDiscoveryState, saveDiscoveryState } from "./discoveryState";
 import "./discover.css";
@@ -191,7 +192,13 @@ export default function DiscoverPage() {
     if (wide) {
       card?.scrollIntoView?.({ block: "nearest", behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
       card?.querySelector<HTMLAnchorElement>("h3 a")?.focus({ preventScroll: true });
-    }
+    } else window.requestAnimationFrame(() => document.querySelector<HTMLButtonElement>("#discover-selected-result button")?.focus({preventScroll:true}));
+  };
+  const closePinSummary = (): void => {
+    // A hidden Leaflet map remains mounted behind the fallback diagram.
+    const pin = document.querySelector<HTMLElement>('.schematic-pin[aria-pressed="true"]') ?? document.querySelector<HTMLElement>(".discover-pin-selected");
+    setPinned(null);
+    window.requestAnimationFrame(() => pin?.focus({preventScroll:true}));
   };
   useEffect(() => {
     const persist = (): void => saveDiscoveryState({text,cuisines,prices,features,date,time,party,availableOnly,view,scroll:window.scrollY,pages:Math.max(1,Math.ceil(items.length/PAGE))});
@@ -210,7 +217,7 @@ export default function DiscoverPage() {
 
   return (
     <PageShell title="Find a table you will love" width="wide" headerActions={<PublicHeaderActions />}>
-      <section className="discover-top" aria-labelledby="discover-heading">
+      <section className={`discover-top${!wide && view === "map" ? " discover-top-compact" : ""}`} aria-labelledby="discover-heading">
         <h1 id="discover-heading">Find a table you will love</h1>
         <p className="discover-lede">See the room, the light and the view before you book.</p>
       </section>
@@ -280,6 +287,7 @@ export default function DiscoverPage() {
         {prices.map(level => <button key={level} type="button" className="discover-chip" aria-label={`Remove price level ${level}`} onClick={() => setPrices(prices.filter(p => p !== level))}>{"€".repeat(level)} ×</button>)}
         {features.filter(key => !wide || key === "accessible").map(key => <button key={key} type="button" className="discover-chip" aria-label={`Remove ${DISCOVERY_FEATURE_LABELS[key]}`} onClick={() => setFeatures(features.filter(f => f !== key))}>{DISCOVERY_FEATURE_LABELS[key]} ×</button>)}
       </div>
+      {!wide && features.includes("sun") && <p className="discover-filter-note">Light varies by table and time. Check it when you book.</p>}
 
       <div className="discover-view-switch" role="group" aria-label="Results view">
         <Button variant={view === "list" ? "primary" : "secondary"} aria-pressed={view === "list"} onClick={() => setView("list")}>List</Button>
@@ -308,7 +316,7 @@ export default function DiscoverPage() {
               ) : (
                 <div className="discover-cards">
                   {results.items.map((card) => (
-                    <RestaurantCard key={card.public_id} card={card} when={results.when} pending={updating} priorityFeatures={features} highlighted={(highlighted ?? pinned) === card.public_id} onHighlight={setHighlighted} number={diagram ? pinNumbers.get(card.public_id) : undefined} />
+                    <RestaurantCard key={card.public_id} card={card} when={results.when} navigationWhen={when} pending={updating} priorityFeatures={features} selected={pinned === card.public_id} highlighted={highlighted === card.public_id} onHighlight={setHighlighted} number={diagram ? pinNumbers.get(card.public_id) : undefined} />
                   ))}
                 </div>
               )}
@@ -328,9 +336,9 @@ export default function DiscoverPage() {
         {showMap && items.length > 0 && (
           <div className="discover-map-column">
             <Suspense fallback={<Skeleton label="Loading the map" lines={4} />}>
-              <ResultsMap pins={pins} highlightedId={highlighted ?? pinned} onSelect={selectPin} center={place} onFallback={setDiagram} />
+              <ResultsMap pins={pins} highlightedId={highlighted} selectedId={pinned} onSelect={selectPin} center={place} onFallback={setDiagram} />
             </Suspense>
-            {!wide && selectedCard && <div className="discover-pin-summary" aria-live="polite"><strong>{selectedCard.name}</strong><p>{selectedCard.cuisines.map(cuisineLabel).join(", ")}</p><a className="btn btn-primary" href={`/restaurants/${encodeURIComponent(selectedCard.slug)}`}>View restaurant</a><Button variant="ghost" onClick={() => setPinned(null)}>Close summary</Button></div>}
+            {!wide && selectedCard && <div id="discover-selected-result" className="discover-pin-summary" aria-live="polite"><div className="discover-pin-summary-head"><strong id="discover-selected-name">{selectedCard.name}</strong><Button variant="ghost" aria-label="Close summary" aria-describedby="discover-selected-name" onClick={closePinSummary}>Close</Button></div><p>{selectedCard.cuisines.map(cuisineLabel).join(", ")}</p><Link className="btn btn-primary" to={restaurantHref(selectedCard,when)}>View restaurant</Link></div>}
           </div>
         )}
       </div>

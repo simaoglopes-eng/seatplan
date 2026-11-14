@@ -19,6 +19,7 @@ export interface ResultPin {
 interface Props {
   pins: ResultPin[];
   highlightedId: string | null;
+  selectedId?: string | null;
   onSelect: (id: string) => void;
   /** Where the diner searched from, shown as a small dot. */
   center?: { lat: number; lng: number } | null;
@@ -31,7 +32,7 @@ const TILE_PATIENCE_MS = 6000;
 
 const LISBON = { lat: 38.7223, lng: -9.1393 };
 
-export default function ResultsMap({ pins, highlightedId, onSelect, center, onFallback }: Props) {
+export default function ResultsMap({ pins, highlightedId, selectedId = null, onSelect, center, onFallback }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const markers = useRef(new Map<string, L.Marker>());
@@ -84,7 +85,7 @@ export default function ResultsMap({ pins, highlightedId, onSelect, center, onFa
       const marker = L.marker([pin.lat, pin.lng], {
         title: pin.name,
         alt: `${pin.name} on the map`,
-        icon: L.divIcon({ className: "discover-pin", html: '<span aria-hidden="true"></span>', iconSize: [26, 26], iconAnchor: [13, 13] }),
+        icon: L.divIcon({ className: "discover-pin", html: '<span aria-hidden="true"></span>', iconSize: [44, 44], iconAnchor: [22, 22] }),
       }).addTo(view);
       marker.on("click", () => select.current(pin.id));
       markers.current.set(pin.id, marker);
@@ -99,15 +100,17 @@ export default function ResultsMap({ pins, highlightedId, onSelect, center, onFa
   useEffect(() => {
     markers.current.forEach((marker, id) => {
       marker.getElement()?.classList.toggle("discover-pin-active", id === highlightedId);
-      marker.setZIndexOffset(id === highlightedId ? 1000 : 0);
+      marker.getElement()?.classList.toggle("discover-pin-selected", id === selectedId);
+      marker.getElement()?.setAttribute("aria-current", id === selectedId ? "true" : "false");
+      marker.setZIndexOffset(id === highlightedId || id === selectedId ? 1000 : 0);
     });
-  }, [highlightedId, pins]);
+  }, [highlightedId, selectedId, pins]);
 
   return (
     <>
       {/* The Leaflet map stays mounted (hidden) while the diagram is shown, so it can recover if tiles arrive. */}
       <div ref={host} className="discover-map" role="region" aria-label="Map of the restaurants found" hidden={fallback} />
-      {fallback && <SchematicMap pins={pins} highlightedId={highlightedId} onSelect={onSelect} centre={center} />}
+      {fallback && <SchematicMap pins={pins} highlightedId={highlightedId} selectedId={selectedId} onSelect={onSelect} centre={center} />}
       {failed && !fallback && <p role="status">Map tiles are loading slowly. The list shows every restaurant.</p>}
     </>
   );

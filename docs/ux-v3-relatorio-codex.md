@@ -33,3 +33,11 @@ Verificado: typecheck; 463 Vitest em 60 ficheiros (12.68 s); build (314 ms, avis
 Primeira bateria com os dois novos e2e de staff: 77/79. Uma expectativa nova pressupunha que fora do serviço a API nunca propõe mesa; foi corrigida para verificar a prévia real e zero criação, preservando as regras do backend. O outro teste encontrou overflow real nos campos mobile do horário, corrigido com largura fluida. Bateria seguinte: 78/79, com falha por limite acumulado na reserva (`restaurant.spec.ts:16`), descrita nos pedidos à Claude. Sem correções fora do âmbito.
 
 Capturas: 37 IDs em `C:/Users/marti/seatplan-screenshots-codex/`, com `index.html` antes/depois e `manifest.json`. 087 está explicitamente marcada como não alterada, por depender de Login.tsx. 091 inclui prova fora de serviço; 095 inclui prévia real e confirmação de oito movimentos, sem aplicar; 097 inclui fechos e ações de guardar.
+
+## Grupo 4 — acabamento e prova 015, 025–026, 029–030
+
+Pins com alvo de toque maior; hover, seleção e foco distintos; contexto e hora/grupo conservados também na ligação do resumo do mapa; “Close” no topo do resumo mobile e foco devolvido ao pin visível. O diagrama e o Leaflet oculto não disputam o foco. Os links dos cartões usam o contexto atual mesmo quando as horas antigas estão temporariamente desativadas.
+
+O novo e2e de navegação do mapa falhou primeiro ao devolver foco ao Leaflet oculto. A correção escolhe o pin do diagrama visível e o teste passou, sem remover a asserção.
+
+Playwright final, em duas fatias com servidores/bases isolados: `npm run e2e -- --shard=1/2`: 40 passados (56.4 s); `npm run e2e -- --shard=2/2`: 40 passados (54.2 s). Cada ficheiro conserva os seus fluxos e as asserções, sem retries. A falha por limite acumulado da execução única de 79 testes permanece registada; não se apresenta essa execução como verde.

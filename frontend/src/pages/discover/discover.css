@@ -132,3 +132,22 @@
 .discover-filters-modal .dialog-body { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; padding-block: var(--space-2); }
 .discover-filters-modal .dialog-actions { border-top: 1px solid var(--c-border); padding-top: var(--space-3); }
 .discover-filters-modal .dialog-backdrop { animation: none; }
+.discover-card.is-highlighted { border-color: var(--c-accent); box-shadow: 0 0 0 2px var(--c-accent); }
+.discover-card.is-selected { border-color: var(--c-primary); box-shadow: 0 0 0 2px var(--c-primary); }
+.discover-selected-label { color: var(--c-primary); font-size: var(--fs-sm); font-weight: var(--fw-bold); margin: 0 0 var(--space-1); }
+.discover-top-compact { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 63.99rem) { .discover-map-column { top: auto; } }
+.discover-card-body, .discover-search-field > label { overflow-wrap: anywhere; }
+.discover-chip { max-width: 100%; white-space: normal; overflow-wrap: anywhere; padding-block: var(--space-2); line-height: 1.35; }
+.discover-pin-summary-head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); }
+.discover-pin-summary-head strong { overflow-wrap: anywhere; }
+@media (max-width: 63.99rem) {
+  .discover-card { grid-template-columns: minmax(0,28%) minmax(0,1fr); }
+  .discover-map-column { height: min(55dvh,calc(100dvh - 27rem)); min-height: 18rem; }
+}
+/* Text zoom may wrap the public header instead of widening the page. */
+@media (max-width: 40rem) {
+  :root:has(.discover-top) .shell-header { position: static; }
+  :root:has(.discover-top) .shell-header .shell-inner { flex-wrap: wrap; }
+  .discover-bar { top: 0; }
+}

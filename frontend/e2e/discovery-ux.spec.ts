@@ -46,3 +46,27 @@ test("filters fit a narrow phone, and each nearby time has its own link", async 
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await done.click();
 });
+
+test("mobile map keeps booking context and returns focus after closing a selected pin",async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.route("**/tile.openstreetmap.org/**",route=>route.abort());
+ await page.goto("/");await page.getByRole("article").first().waitFor();
+ await page.getByRole("button",{name:/When and where/}).click();
+ const context=page.getByRole("dialog",{name:"When and where"});
+ await context.getByLabel("Choose a city").selectOption("Lisboa");
+ await context.getByLabel("Date",{exact:true}).fill(isoDaysFromToday(9));
+ await context.getByRole("button",{name:"Show restaurants",exact:true}).click();
+ await page.getByRole("button",{name:"Map",exact:true}).click();
+ const diagram=page.getByRole("region",{name:"Diagram of where the restaurants are"});
+ await expect(diagram).toBeVisible({timeout:20_000});
+ const pin=diagram.getByRole("button").first();await pin.focus();await pin.press("Enter");
+ const close=page.getByRole("button",{name:"Close summary",exact:true});
+ await expect(close).toBeFocused();
+ const bounds=await close.boundingBox();expect(bounds!.y+bounds!.height).toBeLessThanOrEqual(844);
+ const target=new URL((await page.getByRole("link",{name:"View restaurant",exact:true}).getAttribute("href"))!,"http://localhost");
+ expect(target.searchParams.get("date")).toBe(isoDaysFromToday(9));expect(target.searchParams.get("party")).toBe("2");
+ await close.click();await expect(pin).toBeFocused();
+ await expect(page.getByRole("link",{name:"View restaurant",exact:true})).toHaveCount(0);
+ await page.getByRole("button",{name:"List",exact:true}).click();
+ await expect(page.getByRole("button",{name:/When and where/})).toContainText("Lisboa");
+});

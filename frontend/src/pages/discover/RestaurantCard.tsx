@@ -10,15 +10,18 @@ import { DISCOVERY_FEATURE_LABELS, cuisineLabel, formatDistance, priceText, rest
 interface Props {
   card: Card;
   when: SearchWhen | null;
+  /** The current request; old availability may remain visible, disabled, during refresh. */
+  navigationWhen?: SearchWhen | null;
   highlighted: boolean;
   onHighlight: (id: string | null) => void;
   /** The pin number on the diagram that replaces the map when tiles fail; the card wears the same number. */
   number?: number;
   pending?: boolean;
   priorityFeatures?: FeatureKey[];
+  selected?: boolean;
 }
 
-export function RestaurantCard({ card, when, highlighted, onHighlight, number, pending = false, priorityFeatures = [] }: Props) {
+export function RestaurantCard({ card, when, navigationWhen = when, highlighted, onHighlight, number, pending = false, priorityFeatures = [], selected = false }: Props) {
   const [failedPhoto, setFailedPhoto] = useState(false);
   const distance = formatDistance(card.distance_m);
   const featureOrder: FeatureKey[] = [...new Set([...priorityFeatures, "sun", "view", "terrace"] as FeatureKey[])];
@@ -26,7 +29,8 @@ export function RestaurantCard({ card, when, highlighted, onHighlight, number, p
   const price = priceText(card.price_level);
   return (
     <article
-      className={`discover-card${highlighted ? " is-highlighted" : ""}`}
+      className={`discover-card${highlighted ? " is-highlighted" : ""}${selected ? " is-selected" : ""}`}
+      aria-current={selected ? "true" : undefined}
       id={`card-${card.public_id}`}
       aria-labelledby={`name-${card.public_id}`}
       onMouseEnter={() => onHighlight(card.public_id)}
@@ -34,7 +38,7 @@ export function RestaurantCard({ card, when, highlighted, onHighlight, number, p
       onFocus={() => onHighlight(card.public_id)}
       onBlur={() => onHighlight(null)}
     >
-      <Link to={restaurantHref(card, when)} className="discover-card-photo" tabIndex={-1} aria-hidden="true">
+      <Link to={restaurantHref(card, navigationWhen)} className="discover-card-photo" tabIndex={-1} aria-hidden="true">
         {number !== undefined && (
           <span className="discover-card-number" aria-hidden="true">
             {number}
@@ -43,9 +47,10 @@ export function RestaurantCard({ card, when, highlighted, onHighlight, number, p
         {card.cover_url && !failedPhoto ? <img src={card.cover_url} onError={() => setFailedPhoto(true)} alt={card.cover_alt ?? ""} loading="lazy" width={640} height={400} /> : <span className="discover-card-nophoto">Photo unavailable</span>}
       </Link>
       <div className="discover-card-body">
+        {selected && <p className="discover-selected-label">Selected on map</p>}
         <h3 id={`name-${card.public_id}`}>
           {number !== undefined && <span className="visually-hidden">{number}. </span>}
-          <Link to={restaurantHref(card, when)}>{card.name}</Link>
+          <Link to={restaurantHref(card, navigationWhen)}>{card.name}</Link>
         </h3>
         {card.cover_url && card.cover_alt && <p className="visually-hidden">Photo: {card.cover_alt}</p>}
         <p className="discover-card-line">

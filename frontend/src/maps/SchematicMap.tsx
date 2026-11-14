@@ -11,11 +11,12 @@ import "./maps.css";
 interface Props {
   pins: PinPoint[];
   highlightedId: string | null;
+  selectedId?: string | null;
   onSelect: (id: string) => void;
   centre?: { lat: number; lng: number } | null;
 }
 
-export function SchematicMap({ pins, highlightedId, onSelect, centre }: Props) {
+export function SchematicMap({ pins, highlightedId, selectedId = null, onSelect, centre }: Props) {
   const schematic = useMemo(() => placePins(pins, centre), [pins, centre?.lat, centre?.lng]);
   const press = (event: KeyboardEvent, id: string): void => {
     if (event.key === "Enter" || event.key === " ") {
@@ -52,12 +53,14 @@ export function SchematicMap({ pins, highlightedId, onSelect, centre }: Props) {
             role="button"
             tabIndex={0}
             aria-label={`${pin.number}. ${pin.name}`}
-            className={`schematic-pin${highlightedId === pin.id ? " is-active" : ""}`}
+            aria-pressed={selectedId === pin.id}
+            className={`schematic-pin${highlightedId === pin.id ? " is-active" : ""}${selectedId === pin.id ? " is-selected" : ""}`}
             transform={`translate(${pin.x} ${pin.y})`}
             onClick={() => onSelect(pin.id)}
             onKeyDown={(event) => press(event, pin.id)}
           >
-            <circle r="5.2" className="schematic-pin-hit" />
+            <circle r="8" className="schematic-pin-hit" />
+            {selectedId === pin.id && <rect x="-5.5" y="-5.5" width="11" height="11" rx="1" className="schematic-selected-ring" />}
             <circle r={highlightedId === pin.id ? 4.4 : 3.6} className="schematic-pin-disc" />
             <text y="1.3" textAnchor="middle" className="schematic-pin-number">
               {pin.number}

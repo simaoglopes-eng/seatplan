@@ -354,6 +354,7 @@ it("never presents old availability as a new party, and ignores an older respons
   expect(screen.queryByRole("link", {name:"19:45"})).toBeNull();
   expect(screen.getByText("Updating availability…")).toBeTruthy();
   expect(screen.getByRole("button", {name:"19:45"}).hasAttribute("disabled")).toBe(true);
+  expect(screen.getByRole("link", {name:"Casa 1"}).getAttribute("href")).toContain("party=4");
   fireEvent.change(screen.getByLabelText("People"), {target:{value:"6"}});
   await waitFor(() => expect(pending.has("6")).toBe(true));
   pending.get("6")!(new Response(JSON.stringify({items:[card(1,{next_times:["20:15"]})],total:1})));
