@@ -54,16 +54,6 @@ export function TableCard({ table, roomName, zone, recommended, reasons, heldId,
       </div>
       <p className="rb-muted rb-table-meta">{meta}</p>
       {ambience?.view?.photo_url && <img className="rb-view-photo" src={ambience.view.photo_url} alt={ambience.view.text || "The view from this table"} loading="lazy" />}
-      {text.length > 0 && (
-        <details className="rb-why">
-          <summary>Why this table</summary>
-          <ul className="rb-reasons">
-            {text.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-        </details>
-      )}
       {held ? (
         <Badge tone="success">Held for you</Badge>
       ) : reason ? (
@@ -75,6 +65,16 @@ export function TableCard({ table, roomName, zone, recommended, reasons, heldId,
           </Button>
           <p className="rb-muted rb-table-note">You will have five minutes to finish after holding the table.</p>
         </>
+      )}
+      {text.length > 0 && (
+        <details className="rb-why">
+          <summary>Why this table</summary>
+          <ul className="rb-reasons">
+            {text.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </details>
       )}
     </section>
   );

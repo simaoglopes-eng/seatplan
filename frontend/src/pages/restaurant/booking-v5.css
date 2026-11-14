@@ -595,7 +595,7 @@
 /* A phone shows plan, card and action together: a shorter plan, a smaller photo. */
 @media (max-width: 47.99rem) {
   .rb5-plan-card .seatmap-viewport {
-    height: min(27vh, 13rem);
+    height: min(24vh, 11rem);
   }
   /* The hints under the plan repeat the key and the Map / List switch. */
   .rb5-plan-card .seatmap-caption,
@@ -789,3 +789,13 @@
   border-top: 1px solid var(--c-border);
   border-radius: 0;
 }
+
+@media (max-width: 47.99rem) {
+  .rb5-choose { gap: var(--space-3); }
+  .rb5-plan-card { padding: var(--space-3); gap: var(--space-2); }
+  .rb5-choose-head .rb-step-title { font-size: 1.75rem; }
+}
+
+/* The action comes first; the reasons and the view photo follow it. */
+.rb-table-card .rb-why { order: 8; }
+.rb-table-card .rb-view-photo { order: 9; }

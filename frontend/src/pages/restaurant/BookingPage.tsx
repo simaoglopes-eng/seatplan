@@ -148,7 +148,7 @@ function StageBar({ name, stage, showName }: { name: string; stage: number; show
   const ref = useRef<HTMLDivElement>(null);
   // A new stage (or arriving on a time chosen elsewhere) starts at the top of the booking, not wherever the page was.
   useEffect(() => {
-    if (stage > 0 && stage < STEPS.length) ref.current?.scrollIntoView?.({ block: "start" });
+    if (stage > 0) ref.current?.scrollIntoView?.({ block: "start" });
   }, [stage]);
   return (
     <div className="rb5-stagebar" id="booking-stages" ref={ref}>
