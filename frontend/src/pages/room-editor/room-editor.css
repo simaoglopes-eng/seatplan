@@ -88,3 +88,21 @@
 .room-light-slider input[type="range"] { width: 100%; min-height: var(--touch-target); accent-color: var(--c-primary); }
 .room-sun-direction circle { fill: var(--c-accent-bright); stroke: var(--c-accent); stroke-width: 2; }
 .room-sun-direction line { stroke: var(--c-accent-bright); stroke-width: 3; stroke-linecap: round; }
+
+/* ---------- Editor v3: more room for the plan, the counters always in view, all seven tools on a phone.
+   Only layout and looks: the tools, their rules and their keyboard use are untouched. ---------- */
+.room-grid-line { opacity: .55; }
+.room-tools button { border-left: 4px solid transparent; }
+.room-tools button[aria-pressed="true"] { border-left-color: var(--c-primary); }
+.room-status { position: sticky; bottom: 0; z-index: var(--z-map-controls); display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-1) var(--space-4); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-md); margin-top: var(--space-3); }
+.room-problems { margin-top: 0; flex: 1 1 18rem; }
+.room-problems[open] ul { max-height: 40vh; overflow-y: auto; margin: 0; }
+@media (min-width: 1024px) {
+  .room-canvas { height: clamp(30rem, calc(100dvh - 17rem), 52rem); }
+  .room-properties { max-height: clamp(30rem, calc(100dvh - 17rem), 52rem); }
+}
+@media (max-width: 1023px) {
+  .room-tools button { flex: 1 0 auto; min-width: 3.25rem; padding: var(--space-2); font-size: var(--fs-sm); text-align: center; border-left: 0; border-top: 4px solid transparent; }
+  .room-tools button[aria-pressed="true"] { border-top-color: var(--c-primary); }
+  .room-status { bottom: 3.4rem; }
+}

@@ -923,3 +923,25 @@ were retained and the report restored before the next verification.
     The sticky bar's "Continue with table X" stays, as the secondary way on. A hold that ends while the form is open shows the usual "your hold ended"
     message and keeps the details. The suggestion card is hidden while a table is held. Inside a restaurant's public page the booking uses the whole width,
     so the plan is bigger (two thirds, with the panel a third).
+
+32. **A white and petrol look for the Restaurants product only** (branch claude/ux-v3, foundation). `design/restaurant-theme.css` re-defines tokens (white page, petrol
+    blue for the one action in a decision area, amber for sun and "recommended", one sans family for headings and text, 12 px cards, 10 px buttons) under
+    `html[data-surface="restaurants"]`. `PageShell` sets that attribute from the route (`/`, `/restaurants/*`, `/r/*`, `/b/*`, `/owner*`, `/staff/*`) and
+    removes it on every other page, so the events pages, their sign-in and the demo home keep the linen and bottle-green look. `scripts/contrast.mjs` now checks
+    both looks in light and dark (172 checks). Instrument Sans is not added: it needs a font file the CSP and the repository do not serve; the stack stays `system-ui`.
+
+33. **Booking v3: one card per table, the chair inside the form, the result first** (claude/ux-v3). The table step shows one card for the table in front of the diner
+    (Recommended chip, room, reasons, light and view) with one action, "Hold table R1 & continue", and a quiet "Choose for me". The card always describes a table of the
+    room on screen; a suggestion in another room is a link. The key reads Available / Selected / Unavailable, and Available / Held for you once a table is held. The
+    light preview sits under the plan and says "Light preview at 21:30. Booking at 20:00." After the hold, the details form (summary line, countdown, "Request a chair
+    (optional)", Confirm booking) opens beside the plan; the chair is a request that can be changed or removed, and asking for it no longer opens a separate step (the
+    step indicator stays on "Your details"). On a phone the form comes before the plan once a table is held, and the card stays at the bottom with its one action.
+    The confirmation starts with "Booking confirmed", then the summary ("Chair requested"), then "Manage booking" as the main action and "Copy private link" as the quiet one.
+    The public page puts the name and a "Book a table" button first, the booking right after, then About, Hours and Find us. When the time asked for in a link is gone, the
+    closest bookable times are marked. The manage page starts with the summary and three actions (Change time or party size, Request a chair, Cancel booking) that open one
+    section at a time; the cancel dialog says what is cancelled and starts on "Keep booking". Dialogs fade only their dimming, never their text.
+
+34. **Owner v3** (claude/ux-v3). My restaurants: "Open service floor" for a published restaurant, "Continue setup" for a draft, everything else under "Set-up and publishing".
+    Review and publish says Ready to publish / Needs attention / Published, lists what needs fixing first and folds what is done; taking a restaurant off search asks first.
+    Sign-in speaks to owners on its own entry (it keeps the generic words for organisers and staff); sign-up shows errors beside each field. The editor's seven tools
+    and their rules are untouched: only layout (a taller plan, the problem counters always in view, all seven tools reachable on a phone).

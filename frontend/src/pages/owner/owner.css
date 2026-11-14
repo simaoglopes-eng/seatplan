@@ -52,3 +52,7 @@
   .owner-card-main .btn { flex: 1 1 100%; justify-content: center; }
 }
 @media (min-width: 40.01rem) { .owner-step-note { display: none; } }
+
+/* "Add photos" is a button, not a small native control in a big box. */
+.owner-photo-drop input[type="file"]::file-selector-button { min-height: var(--touch-target); margin-right: var(--space-3); padding: 0 var(--space-5); border: 0; border-radius: var(--radius-md); background: var(--c-primary); color: var(--c-on-primary); font: inherit; font-weight: var(--fw-bold); cursor: pointer; }
+.owner-photo-drop { text-align: left; background: var(--c-surface); }
