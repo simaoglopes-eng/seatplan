@@ -755,3 +755,10 @@ Backend confirmado: Ruff check e formato verdes (178 ficheiros), pytest
 665 passed, 3 warnings em 109,35 s, com basetemp novo e cache desativada.
 Guard e diff check verdes. Commit identificado por feat: validate restaurant
 room geometry and focus layout problems. Nenhum ficheiro reservado alterado.
+
+## 2026-11-14 — UX v5 do Codex concluída em worktree isolada
+
+Relatório completo e tabela das 11 capturas: [ux-v5-relatorio-codex.md](../../ux-v5-relatorio-codex.md).
+Branch `codex/ux-v5-discovery-staff`, base `c8c75f2`; commits `b765515`, `0f422fe`, `cb4c4c3`.
+Ruff/formatação verdes (215 ficheiros), pytest 880, Vitest 495/67 ficheiros, typecheck/build verdes, contrast 172/172, Playwright 83/83 incluindo Eventos. Guard passou. Capturas e comparações fora do repositório em `C:\Users\marti\seatplan-screenshots-codex-v5\`.
+Sem push, PR ou merge; nenhuma edição aos outros checkouts ou caminhos de Eventos. Limitações de API e adaptações por captura registadas no relatório.
