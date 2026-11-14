@@ -30,12 +30,17 @@ describe("Sign in", () => {
     expect(screen.getByRole("link", { name: "Create a restaurant owner account" }).getAttribute("href")).toBe("/owner/sign-up");
   });
 
-  it("keeps the generic words, and no extra buttons, for organisers and staff", () => {
+  it("tells staff they are opening the service floor, with no owner-only buttons", () => {
     open("/login?next=/staff/abc");
-    expect(screen.getByRole("heading", { name: "Sign in" })).toBeTruthy();
-    expect(screen.getByText(/For organisers and restaurant staff/)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Sign in to open the service floor" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /password/i })).toBeNull();
     expect(screen.queryByRole("link", { name: /owner account/ })).toBeNull();
+  });
+
+  it("keeps the generic words for organisers", () => {
+    open("/login?next=/organiser/abc");
+    expect(screen.getByRole("heading", { name: "Sign in" })).toBeTruthy();
+    expect(screen.getByText(/For organisers and restaurant staff/)).toBeTruthy();
   });
 
   it("asks for both fields before sending anything", () => {

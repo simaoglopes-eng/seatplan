@@ -1,4 +1,4 @@
-// The optimiser's answer to "where would a party of N go right now?",
+// The optimiser's answer to "where would a party of N go at the selected time?",
 // shown in the what-if card and in the walk-in dialog. Asking never changes
 // anything; only the "Seat" button in the walk-in dialog writes.
 import { useState } from "react";
@@ -15,7 +15,7 @@ export function WhatIfAnswerView({ answer, party }: { answer: WhatIfAnswer; part
     return (
       <div className="rb-notice rb-notice-warning">
         <p>
-          <strong>No table can take {people(party)} right now,</strong> even after moving other parties.
+          <strong>No table can take {people(party)} at the selected time,</strong> even after moving other parties.
         </p>
         {answer.reasons.length > 0 && <ReasonList reasons={answer.reasons} />}
       </div>

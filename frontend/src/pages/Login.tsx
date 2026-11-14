@@ -30,7 +30,11 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   // Coming from the restaurant owner's area, the page speaks to owners; every other entry keeps its own words.
-  const owner = (params.get("next") ?? defaultNext).startsWith("/owner");
+  const next = params.get("next") ?? defaultNext;
+  const owner = next.startsWith("/owner");
+  // Coming to open a restaurant's service floor, the page says so; the staff keep the plain form.
+  const staff = !owner && (next === "/staff" || next.startsWith("/staff/"));
+  const title = owner ? "Sign in to manage your restaurant" : staff ? "Sign in to open the service floor" : "Sign in";
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
@@ -52,11 +56,13 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
   };
 
   return (
-    <PageShell title={owner ? "Sign in to manage your restaurant" : "Sign in"}>
+    <PageShell title={title}>
       <div className="login">
-        <h1>{owner ? "Sign in to manage your restaurant" : "Sign in"}</h1>
+        <h1>{title}</h1>
         {owner ? (
           <p className="login-lede">Use the email and password of your restaurant owner account.</p>
+        ) : staff ? (
+          <p className="login-lede">Use the email and password of your restaurant staff account.</p>
         ) : (
           <p className="login-lede">
             For organisers and restaurant staff. Invited guests only need their personal link. Guests who made an account on a shared link{" "}
