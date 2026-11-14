@@ -69,9 +69,10 @@ interface ArrivalsProps {
   arrivals: StaffBooking[];
   selectedId: string | null;
   onSelect: (bookingId: string) => void;
+  services?: StaffFloor["services"];
 }
 
-export function ArrivalsList({ arrivals, selectedId, onSelect }: ArrivalsProps) {
+export function ArrivalsList({ arrivals, selectedId, onSelect, services = [] }: ArrivalsProps) {
   if (arrivals.length === 0) return <p className="rb-muted">No more arrivals expected for this day.</p>;
   const startDrag = (event: DragEvent, booking: StaffBooking): void => {
     event.dataTransfer.setData(BOOKING_DRAG_TYPE, booking.id);
@@ -79,8 +80,9 @@ export function ArrivalsList({ arrivals, selectedId, onSelect }: ArrivalsProps) 
   };
   return (
     <ol className="st-arrivals" aria-label="Upcoming arrivals">
-      {arrivals.map((booking) => (
+      {arrivals.map((booking, index) => (
         <li key={booking.id} draggable onDragStart={(e) => startDrag(e, booking)} className="st-arrival">
+          {(index === 0 || arrivals[index - 1].time !== booking.time) && <p className="st-arrival-group">{services.find(service => service.start_time <= booking.time && booking.time < service.end_time)?.name ?? "Arrivals"} · {booking.time}</p>}
           <button type="button" className="st-arrival-button" aria-pressed={booking.id === selectedId} onClick={() => onSelect(booking.id)}>
             <span className="st-arrival-time tabular">{booking.time}</span>
             <span>

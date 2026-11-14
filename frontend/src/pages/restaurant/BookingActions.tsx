@@ -28,6 +28,7 @@ export function BookingActions({ venueId, booking, onChanged, onProblem, onMove 
   const [busy, setBusy] = useState<BookingStatus | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const change = async (status: BookingStatus): Promise<void> => {
+    if (busy) return;
     setBusy(status);
     try {
       await setBookingStatus(venueId, booking.id, status);
@@ -42,18 +43,19 @@ export function BookingActions({ venueId, booking, onChanged, onProblem, onMove 
   const open = booking.status === "confirmed" || booking.status === "seated";
   return (
     <div className="st-actions" role="group" aria-label={`Actions for ${booking.name}`}>
+      <p className="st-action-context">{booking.name} · {booking.time} · {booking.table_labels.join(" + ")}. Status updates take effect now.</p>
       {nextActions(booking.status).map((action) => (
-        <Button key={action.status} variant={action.status === "no_show" ? "secondary" : "primary"} busy={busy === action.status} onClick={() => void change(action.status)}>
+        <Button key={action.status} variant={action.status === "no_show" || action.status === "completed" ? "secondary" : "primary"} disabled={busy !== null && busy !== action.status} busy={busy === action.status} onClick={() => void change(action.status)}>
           {action.label}
         </Button>
       ))}
       {open && (
-        <Button variant="secondary" onClick={() => onMove(booking)}>
+        <Button variant="secondary" disabled={busy !== null} onClick={() => onMove(booking)}>
           Move or combine
         </Button>
       )}
       {booking.status === "confirmed" && (
-        <Button variant="ghost" onClick={() => setConfirmCancel(true)}>
+        <Button variant="ghost" disabled={busy !== null} className="st-cancel-booking" onClick={() => setConfirmCancel(true)}>
           Cancel booking
         </Button>
       )}

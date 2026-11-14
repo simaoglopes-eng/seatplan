@@ -1,7 +1,7 @@
 // The schedule tab: services (opening hours and slot length), turn times
 // (how long a party of each size stays) and closed days. Staff edit a draft;
 // nothing changes for diners until Save.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getSchedule, saveSchedule } from "../../api/restaurant";
 import type { Schedule, ServicePeriod } from "../../api/restaurant";
 import { Button, ErrorState, Skeleton, useToast } from "../../design/components";
@@ -28,6 +28,13 @@ function ScheduleEditor({ venueId, saved, onSaved }: { venueId: string; saved: S
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const problems = scheduleProblems(draft);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent): void => {event.preventDefault();event.returnValue = "";};
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const save = async (): Promise<void> => {
     setBusy(true);
     setProblem(null);
@@ -44,9 +51,17 @@ function ScheduleEditor({ venueId, saved, onSaved }: { venueId: string; saved: S
   };
   return (
     <div className="st-schedule">
+      <header className="st-schedule-heading"><h2>Weekly schedule</h2><p className="rb-muted">Recurring opening hours for every week. The Day selector above only changes the floor and daily reports.</p><nav aria-label="Schedule sections"><a href="#st-services">Services</a><a href="#st-turn-times">Turn times</a><a href="#st-closed-days">Closed days</a></nav></header>
+      <div className="rb-actions st-schedule-save">
+        <span role="status">{dirty ? "Unsaved changes" : "All changes saved"}</span>
+        <Button variant="secondary" disabled={busy || !dirty} onClick={() => setDraft(saved)}>Undo my changes</Button>
+        <Button busy={busy} disabled={!dirty || problems.length > 0} onClick={() => void save()}>Save schedule</Button>
+      </div>
+      <fieldset className="st-schedule-fields" disabled={busy}><legend className="visually-hidden">Weekly schedule draft</legend>
       <ServicesEditor services={draft.services} onChange={(services) => setDraft({ ...draft, services })} />
       <TurnTimesEditor draft={draft} onChange={setDraft} />
       <BlackoutEditor draft={draft} onChange={setDraft} />
+      </fieldset>
       {problems.length > 0 && (
         <div className="rb-notice rb-notice-warning" role="status">
           <p>Fix these before saving:</p>
@@ -62,22 +77,15 @@ function ScheduleEditor({ venueId, saved, onSaved }: { venueId: string; saved: S
           {problem}
         </p>
       )}
-      <div className="rb-actions">
-        <Button variant="secondary" onClick={() => setDraft(saved)}>
-          Undo my changes
-        </Button>
-        <Button busy={busy} disabled={problems.length > 0} onClick={() => void save()}>
-          Save schedule
-        </Button>
-      </div>
     </div>
   );
 }
 
 function ServicesEditor({ services, onChange }: { services: ServicePeriod[]; onChange: (s: ServicePeriod[]) => void }) {
   return (
-    <section className="rb-card">
+    <section id="st-services" className="rb-card">
       <h2 className="rb-service-title">Services</h2>
+      <p className="rb-muted st-small">Capacity is guests arriving per slot. For example, 20 covers per 15 minutes; it is not the number of tables.</p>
       <div className="st-table-wrap">
         <table className="st-table">
           <thead>
@@ -116,8 +124,9 @@ interface ServiceRowProps {
 
 function ServiceRow({ index, service, onChange, onRemove }: ServiceRowProps) {
   const label = (what: string): string => `${what}, ${service.name || `service ${index + 1}`}`;
+  const problems = scheduleProblems({services:[service],turn_times:[],blackout_dates:[]}).map(problem => problem.replace("Service 1",`Service ${index + 1}`));
   return (
-    <tr>
+    <><tr aria-describedby={problems.length ? `st-service-error-${index}` : undefined}>
       <td>
         <input className="field-input" aria-label={label("Name")} value={service.name} onChange={(e) => onChange({ name: e.target.value })} />
       </td>
@@ -153,7 +162,7 @@ function ServiceRow({ index, service, onChange, onRemove }: ServiceRowProps) {
           Remove<span className="visually-hidden"> {service.name || `service ${index + 1}`}</span>
         </Button>
       </td>
-    </tr>
+    </tr>{problems.length > 0 && <tr className="st-service-errors"><td colSpan={7} id={`st-service-error-${index}`}><ul>{problems.map(problem => <li key={problem}>{problem}</li>)}</ul></td></tr>}</>
   );
 }
 
@@ -161,7 +170,7 @@ function TurnTimesEditor({ draft, onChange }: { draft: Schedule; onChange: (s: S
   const turns = draft.turn_times;
   const set = (next: Schedule["turn_times"]): void => onChange({ ...draft, turn_times: next });
   return (
-    <section className="rb-card">
+    <section id="st-turn-times" className="rb-card">
       <h2 className="rb-service-title">Turn times</h2>
       <p className="rb-muted st-small">How long a party stays at the table. Each row covers parties up to that size.</p>
       <ul className="st-rows">
@@ -190,7 +199,7 @@ function BlackoutEditor({ draft, onChange }: { draft: Schedule; onChange: (s: Sc
   const days = draft.blackout_dates;
   const set = (next: Schedule["blackout_dates"]): void => onChange({ ...draft, blackout_dates: next });
   return (
-    <section className="rb-card">
+    <section id="st-closed-days" className="rb-card">
       <h2 className="rb-service-title">Closed days</h2>
       <p className="rb-muted st-small">Diners see the reason when they pick that date.</p>
       <ul className="st-rows">

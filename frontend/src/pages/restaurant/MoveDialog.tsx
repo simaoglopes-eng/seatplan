@@ -51,7 +51,7 @@ export function MoveDialog({ venueId, booking, tables, onClose, onMoved }: MoveD
   };
   const actions = (
     <>
-      <Button variant="secondary" onClick={close}>
+      <Button variant="secondary" disabled={busy} onClick={close}>
         Cancel
       </Button>
       <Button busy={busy} disabled={check !== null} onClick={() => void save()}>
@@ -61,6 +61,7 @@ export function MoveDialog({ venueId, booking, tables, onClose, onMoved }: MoveD
   );
   return (
     <Dialog open title={`Move ${booking.name}, ${people(booking.party_size)}`} onClose={close} actions={actions}>
+      <p className="st-effective-time">{booking.name} · booked at {booking.time} until {booking.end_time}. Moving tables keeps this time.</p>
       <p>Now at {tablesText(booking.table_labels)}. Tick one table to move, or several from the same group to combine them.</p>
       <MoveChoices booking={booking} offered={offered} chosen={chosen} check={check} onToggle={toggle} />
       {problem && (
