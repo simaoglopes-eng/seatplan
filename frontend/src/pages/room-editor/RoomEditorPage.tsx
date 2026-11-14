@@ -4,7 +4,8 @@ import { ApiError, getVenue } from "../../api/client";
 import { getRooms } from "../../api/rooms";
 import type { RoomsAnswer } from "../../api/rooms";
 import type { VenueDetail } from "../../api/types";
-import { Button, Checkbox, ErrorState, Field, PageShell, Select, Skeleton } from "../../design/components";
+import { Button, Checkbox, ErrorState, Field, Select, Skeleton } from "../../design/components";
+import { OwnerShell } from "../owner/OwnerShell";
 import { useUnsavedGuard } from "../editor/useUnsavedGuard";
 import { useLoad } from "../restaurant/useLoad";
 import { outlineToPolygon, polygonArea, sideLength, sidePoint } from "./geometry";
@@ -37,11 +38,11 @@ import "./room-editor.css";
 export default function RoomEditorPage() {
   const { venueId = "" } = useParams();
   const { state, reload } = useLoad(async () => ({ info: await getVenue(venueId), rooms: await getRooms(venueId) }), venueId);
-  return <PageShell title="Rooms" width="wide">
+  return <OwnerShell title="Rooms" venueId={venueId} venueName={state.status === "ready" ? state.data.info.name : undefined} current="rooms" width="wide">
     {state.status === "loading" && <Skeleton label="Loading your rooms" lines={4} />}
     {state.status === "error" && (state.error instanceof ApiError && state.error.status === 401 ? <p><Link to={`/owner/sign-in?next=${encodeURIComponent(`/owner/${venueId}/rooms`)}`}>Sign in to edit your rooms</Link></p> : <ErrorState title="We could not open these rooms" message="Check the restaurant link or try again." onRetry={() => reload()} />)}
     {state.status === "ready" && (state.data.info.kind === "restaurant" ? <RoomSession venueId={venueId} info={state.data.info} server={state.data.rooms} /> : <p>Restaurant not found.</p>)}
-  </PageShell>;
+  </OwnerShell>;
 }
 
 function RoomSession({ venueId, info, server }: { venueId: string; info: VenueDetail; server: RoomsAnswer }) {
@@ -139,8 +140,8 @@ function RoomSession({ venueId, info, server }: { venueId: string; info: VenueDe
       catch (caught) { setError(caught instanceof Error ? caught.message : "Keep at least three corners."); }
     }
   }}>
-    <header className="room-header"><Link to="/owner">← Back to my restaurants</Link><h1>{info.name} · Rooms</h1>
-      <div className="room-actions"><Button variant="secondary" disabled={!history.canUndo} onClick={history.undo}>Undo</Button><Button variant="secondary" disabled={!history.canRedo} onClick={history.redo}>Redo</Button><Button disabled={!dirty || draft.state === "saving"} busy={draft.state === "saving"} onClick={() => void draft.save()}>Save</Button><span role="status">{draft.state === "saving" ? "Saving" : dirty ? "Unsaved" : "Saved"}</span></div>
+    <header className="room-header"><div className="room-title"><h1>Room editor</h1><p className="rb-muted">{room.name} · {info.name}</p></div>
+      <div className="room-actions"><span role="status" className={`room-save-state${dirty ? " is-dirty" : ""}`}>{draft.state === "saving" ? "Saving" : dirty ? "Unsaved" : "Saved"}</span><Button variant="secondary" disabled={!history.canUndo} onClick={history.undo}>Undo</Button><Button variant="secondary" disabled={!history.canRedo} onClick={history.redo}>Redo</Button><Button disabled={!dirty || draft.state === "saving"} busy={draft.state === "saving"} onClick={() => void draft.save()}>Save</Button></div>
     </header>
     <SaveNotices draft={draft} />
     <div className="room-tabs"><Select label="Room" value={room.key} onChange={e => { setSelectedRoom(e.target.value); setDrawingRoom(null); setSelection(null); }} options={history.present.rooms.map(r => ({ value: r.key, label: r.name }))} /><Button variant="secondary" disabled={history.present.rooms.length >= 5} onClick={() => setAdding(true)}>Add room</Button></div>

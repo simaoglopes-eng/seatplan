@@ -4,7 +4,8 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getSchedule, saveSchedule } from "../../api/restaurant";
-import { Button, ErrorState, PageShell, Skeleton } from "../../design/components";
+import { Button, ErrorState, Skeleton } from "../../design/components";
+import { OwnerShell } from "./OwnerShell";
 import { StaffSchedule } from "../restaurant/StaffSchedule";
 import { errorMessage } from "../restaurant/format";
 import { useLoad } from "../restaurant/useLoad";
@@ -16,9 +17,8 @@ export default function HoursPage() {
   const { state, reload } = useLoad(() => getSchedule(venueId), venueId);
   const [saved, setSaved] = useState(0);
   return (
-    <PageShell title="Opening hours">
-      <Link to="/owner">← My restaurants</Link>
-      <h1>Opening hours</h1>
+    <OwnerShell title="Opening hours" venueId={venueId} current="hours">
+      <h1 className="ow-title">Opening hours</h1>
       {state.status === "loading" && <Skeleton label="Loading your opening hours" lines={4} />}
       {state.status === "error" && <ErrorState message="Could not open your opening hours. Check your sign-in or retry." onRetry={() => reload()} />}
       {state.status === "ready" && state.data.services.length === 0 && saved === 0 && (
@@ -36,7 +36,7 @@ export default function HoursPage() {
         <Link to={`/owner/${encodeURIComponent(venueId)}/rooms`}>Next: rooms →</Link>
         <Link to={`/owner/${encodeURIComponent(venueId)}/review`}>Review and publish</Link>
       </nav>
-    </PageShell>
+    </OwnerShell>
   );
 }
 

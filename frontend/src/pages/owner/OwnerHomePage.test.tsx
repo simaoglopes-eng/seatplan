@@ -28,16 +28,16 @@ describe("My restaurants", () => {
   it("continues the setup first for a draft, and shows how far it is", async () => {
     open([DRAFT]);
     const card = (await screen.findByRole("heading", { name: "Novo Sítio" })).closest("article") as HTMLElement;
-    expect(within(card).getByRole("link", { name: /Continue setup/ }).getAttribute("href")).toBe("/owner/dra1/setup");
-    expect(within(card).getByText("Setup 2 of 6 done")).toBeTruthy();
+    expect(within(card).getByRole("link", { name: /Continue setup/ }).getAttribute("href")).toBe("/owner/dra1/hours");
+    expect(within(card).getByText("Next: Add opening hours")).toBeTruthy();
+    expect(within(card).getByRole("progressbar", { name: "Novo Sítio setup progress" })).toBeTruthy();
     expect(within(card).queryByRole("link", { name: /Open service floor/ })).toBeNull();
   });
 
-  it("keeps profile, rooms, hours and publishing one step further, under a labelled summary", async () => {
+  it("keeps editing, the public page and publishing one step further, under a labelled list", async () => {
     open([PUBLISHED]);
     const card = (await screen.findByRole("heading", { name: "Casa Lumen" })).closest("article") as HTMLElement;
     const more = within(card).getByRole("navigation", { name: "Manage Casa Lumen" });
-    expect(within(more).getAllByRole("link").map((link) => link.textContent)).toEqual(["Edit profile", "Edit rooms", "Opening hours", "Publishing"]);
-    expect(card.querySelector("details summary")?.textContent).toContain("Set-up and publishing");
+    expect(within(more).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/owner/pub1/profile", "/restaurants/casa-lumen", "/owner/pub1/review"]);
   });
 });

@@ -24,7 +24,7 @@ test("an owner finishes the hours, reviews, publishes and unpublishes", async ({
   await expect(page.getByRole("heading", { name: "Review and publish" })).toBeVisible();
   const hours = page.getByRole("listitem").filter({ hasText: "Opening hours with at least one service" });
   await expect(hours.getByText("To do")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Publish" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Publish restaurant" })).toBeDisabled();
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
 
   // The link takes the owner to the hours step, which offers the model.
@@ -40,10 +40,10 @@ test("an owner finishes the hours, reviews, publishes and unpublishes", async ({
   expect((await request.put(url, { data: { base_version: initial.base_version, rooms: initial.rooms }, headers })).status()).toBe(200);
 
   await page.goto(`/owner/${venue}/review`);
-  await expect(page.getByRole("button", { name: "Publish" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Publish restaurant" })).toBeEnabled();
   await expect(page.getByRole("listitem").filter({ hasText: "At least one photo (recommended)" }).getByText("Recommended", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Publish" }).click();
-  await expect(page.getByText(/Publish Flow Test is published/)).toBeVisible();
+  await page.getByRole("button", { name: "Publish restaurant" }).click();
+  await expect(page.getByText(/Publish Flow Test is live and open for bookings/)).toBeVisible();
   await expect(page.getByRole("link", { name: "View public page" })).toBeVisible();
 
   // Diners can open the booking page of a published restaurant.
@@ -51,6 +51,6 @@ test("an owner finishes the hours, reviews, publishes and unpublishes", async ({
 
   await page.getByRole("button", { name: "Unpublish" }).click();
   await page.getByRole("dialog", { name: "Remove from search?" }).getByRole("button", { name: "Unpublish" }).click();
-  await expect(page.getByText(/Publish Flow Test is a draft/)).toBeVisible();
+  await expect(page.getByText(/^Draft ·|^Ready to publish$/)).toBeVisible();
   expect((await request.get(`/api/r/${venue}`)).status()).toBe(404);
 });

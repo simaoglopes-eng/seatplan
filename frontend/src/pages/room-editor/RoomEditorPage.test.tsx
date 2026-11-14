@@ -17,7 +17,7 @@ it("creates a second room and restores the previous layout with undo", async () 
   render(<MemoryRouter initialEntries={["/owner/restaurant/rooms"]}><Routes>
     <Route path="/owner/:venueId/rooms" element={<RoomEditorPage />} />
   </Routes></MemoryRouter>);
-  await screen.findByRole("heading", { name: "Test Restaurant · Rooms" });
+  await screen.findByRole("heading", { name: "Room editor" });
   fireEvent.click(screen.getByRole("button", { name: "Add room" }));
   fireEvent.change(screen.getByLabelText("Room name"), { target: { value: "Terrace" } });
   fireEvent.click(screen.getByRole("button", { name: "Create room" }));

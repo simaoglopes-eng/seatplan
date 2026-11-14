@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { getOwnerProfile, saveOwnerProfile } from "../../api/owner";
 import type { OwnerProfile } from "../../api/owner";
-import { Button, ErrorState, PageShell, Skeleton } from "../../design/components";
+import { Button, ErrorState, Skeleton } from "../../design/components";
+import { OwnerShell } from "./OwnerShell";
 import { useLoad } from "../restaurant/useLoad";
 import { IdentityForm, LocationForm } from "./ProfileForms";
 import "./owner.css";
@@ -10,11 +11,11 @@ import "./owner.css";
 export default function ProfilePage() {
   const { venueId = "" } = useParams();
   const { state, reload } = useLoad(() => getOwnerProfile(venueId), venueId);
-  return <PageShell title="Restaurant profile"><Link to="/owner">← My restaurants</Link><h1>Restaurant profile</h1>
+  return <OwnerShell title="Restaurant profile" venueId={venueId} current="profile"><h1 className="ow-title">Restaurant profile</h1>
     {state.status === "loading" && <Skeleton label="Loading your profile" lines={4} />}
     {state.status === "error" && <ErrorState message="Could not open this profile. Check your sign-in or retry." onRetry={() => reload()} />}
     {state.status === "ready" && <Profile key={state.data.public_id} initial={state.data} />}
-  </PageShell>;
+  </OwnerShell>;
 }
 function Profile({ initial }: { initial: OwnerProfile }) {
   const [profile, setProfile] = useState(initial), [location, setLocation] = useState(false), [message, setMessage] = useState("");

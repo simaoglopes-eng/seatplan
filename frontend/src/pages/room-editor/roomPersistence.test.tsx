@@ -88,7 +88,7 @@ describe("Room editor persistence", () => {
     fakeServer(() => layout(5), () => json({}));
     window.localStorage.setItem("seatplan.room-draft.rest", JSON.stringify(damaged));
     open();
-    await screen.findByRole("heading", { name: "Test Restaurant · Rooms" });
+    await screen.findByRole("heading", { name: "Room editor" });
     expect(shownName()).toBe("Dining room");
     expect(screen.queryByText(/unsaved changes from this device/i)).toBeNull();
   });
@@ -103,7 +103,7 @@ describe("Room editor persistence", () => {
   it("opens the saved layout and keeps Save off until something changes", async () => {
     fakeServer(() => layout(5), () => json({}));
     open();
-    await screen.findByRole("heading", { name: "Test Restaurant · Rooms" });
+    await screen.findByRole("heading", { name: "Room editor" });
     await waitFor(() => expect(shownName()).toBe("Dining room"));
     expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByRole("status").textContent).toBe("Saved");

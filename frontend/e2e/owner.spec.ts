@@ -12,10 +12,10 @@ for (const width of [1440, 390]) test(`owner publishes and preserves existing bo
   expect((await request.get(`/api/r/${venue.id}`)).status()).toBe(404);
   await page.addInitScript(token => sessionStorage.setItem("seatplan.session", token), venue.headers.Authorization.slice(7));
   await page.goto(`/owner/${venue.id}/review`);
-  await expect(page.getByRole("button", { name: "Publish", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Publish restaurant", exact: true })).toBeEnabled();
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
-  await page.getByRole("button", { name: "Publish", exact: true }).click();
-  await expect(page.getByText(`Owner acceptance ${width} is published.`, { exact: false })).toBeVisible();
+  await page.getByRole("button", { name: "Publish restaurant", exact: true }).click();
+  await expect(page.getByText(`Owner acceptance ${width} is live and open for bookings.`, { exact: false })).toBeVisible();
   // This is the specified canonical link; following it awaits task 29.
   await expect(page.getByRole("link", { name: "View public page" })).toHaveAttribute("href", `/restaurants/${venue.slug}`);
   await page.screenshot({ path: join(tmpdir(), `seatplan-38-owner-published-${width}.png`), fullPage: true });
@@ -33,13 +33,13 @@ for (const width of [1440, 390]) test(`owner publishes and preserves existing bo
   const { manage_path } = await booked.json() as { manage_path: string };
   await page.getByRole("button", { name: "Unpublish", exact: true }).click();
   await page.getByRole("dialog", { name: "Remove from search?" }).getByRole("button", { name: "Unpublish", exact: true }).click();
-  await expect(page.getByText(`Owner acceptance ${width} is a draft.`, { exact: false })).toBeVisible();
+  await expect(page.getByText(/^Draft ·|^Ready to publish$/)).toBeVisible();
   expect((await request.get(`/api/r/${venue.id}`)).status()).toBe(404);
   await page.goto(`/r/${venue.id}`);
   await expect(page.getByRole("heading", { name: "We cannot find this restaurant" })).toBeVisible();
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
   await page.goto(manage_path);
-  await expect(page.getByRole("heading", { name: "Your booking", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Manage your booking", exact: true })).toBeVisible();
   await expect(page.getByText(/Seat 2/).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Cancel booking", exact: true })).toBeEnabled();
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);

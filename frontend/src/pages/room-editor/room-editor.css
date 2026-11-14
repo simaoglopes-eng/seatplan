@@ -106,3 +106,32 @@
   .room-tools button[aria-pressed="true"] { border-top-color: var(--c-primary); }
   .room-status { bottom: 3.4rem; }
 }
+
+/* ---------- Editor v5: tools above the plan, the inspector beside it, the first problem in view.
+   Only the arrangement and the looks: the seven tools, their rules and their keys are untouched. ---------- */
+.room-header { align-items: flex-start; justify-content: space-between; }
+.room-title h1 { flex: none; margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(2.1rem, 5vw, 3rem); line-height: 1.05; letter-spacing: -0.01em; }
+.room-title p { margin: 0; }
+.room-save-state { padding: .2rem .7rem; border-radius: 999px; background: var(--c-primary-soft); color: var(--c-primary); font-size: var(--fs-sm); font-weight: var(--fw-semibold, 600); }
+.room-save-state.is-dirty { background: var(--c-danger-soft); color: var(--c-danger); }
+.room-workspace { grid-template-columns: minmax(0, 1fr) 18rem; grid-template-areas: "tools props" "canvas props"; background: var(--c-surface); align-items: start; }
+.room-tools { grid-area: tools; flex-direction: row; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-3) var(--space-4) 0; background: transparent; border: 0; }
+.room-tools button { min-height: 44px; padding: 0 var(--space-4); border: 1px solid var(--c-border-strong); border-radius: var(--radius-md); background: var(--c-surface); text-align: center; flex: 0 0 auto; min-width: 0; font-size: var(--fs-md); }
+.room-tools button[aria-pressed="true"] { background: var(--c-primary-soft); color: var(--c-primary); border-color: var(--c-primary); }
+.room-canvas-wrap { grid-area: canvas; margin: var(--space-3) var(--space-4) var(--space-4); border-radius: var(--radius-lg); overflow: hidden; }
+.room-properties { grid-area: props; grid-row: 1 / span 2; }
+.room-problem-wrap { display: flex; flex-direction: column; gap: var(--space-2); flex: 1 1 18rem; }
+.room-problem-strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0; padding: var(--space-3) var(--space-4); border: 1px solid var(--c-border); border-radius: var(--radius-md); background: var(--c-surface); }
+.room-problem-strip .btn { margin-left: auto; font-weight: var(--fw-semibold, 600); }
+@media (max-width: 1023px) {
+  .room-workspace { grid-template-columns: minmax(0, 1fr); grid-template-areas: "tools" "canvas" "props"; }
+  .room-properties { grid-area: props; }
+  /* The bar stays one row at the bottom of the screen with all seven tools, as before. */
+  .room-tools { flex-wrap: nowrap; gap: 0; padding: 0; background: var(--c-surface); }
+  .room-tools button { flex: 1 0 auto; min-width: 3.25rem; padding: 0 var(--space-2); font-size: var(--fs-sm); border: 0; border-top: 4px solid transparent; border-radius: 0; background: transparent; }
+  .room-tools button[aria-pressed="true"] { border-top-color: var(--c-primary); }
+  .room-canvas-wrap { margin: var(--space-3); }
+}
+/* The first problem now sits under the plan, so the status line no longer floats over it. */
+.room-status { position: static; border: 0; background: transparent; padding-inline: 0; }
+@media (max-width: 1023px) { .room-status { bottom: auto; } }

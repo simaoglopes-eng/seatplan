@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { deletePhoto, describePhoto, listPhotos, orderPhotos, uploadPhoto } from "../../api/photos";
 import type { OwnerPhoto } from "../../api/photos";
-import { Button, ErrorState, Field, PageShell, Skeleton } from "../../design/components";
+import { Button, ErrorState, Field, Skeleton } from "../../design/components";
+import { OwnerShell } from "./OwnerShell";
 import { useLoad } from "../restaurant/useLoad";
 import { PhotoPreview } from "./PhotoPreview";
 import { resizePhoto } from "./photoResize";
@@ -10,9 +11,9 @@ import "./owner.css";
 
 export default function PhotoEditorPage() {
   const { venueId = "" } = useParams(), [query] = useSearchParams();
-  return <PageShell title="Restaurant photos"><Link to={`/owner/${venueId}/setup`}>← Restaurant setup</Link><h1>{query.get("opening") ? "Window view photo" : "Restaurant photos"}</h1><p>Step 3 of 6 · Photos</p><PhotoEditor venueId={venueId} openingKey={query.get("opening") ?? undefined} />
+  return <OwnerShell title="Restaurant photos" venueId={venueId} current="photos"><h1 className="ow-title">{query.get("opening") ? "Window view photo" : "Restaurant photos"}</h1><p>Step 3 of 6 · Photos</p><PhotoEditor venueId={venueId} openingKey={query.get("opening") ?? undefined} />
     <Link className="btn btn-primary" to={`/owner/${venueId}/hours`}>Save and continue</Link>
-  </PageShell>;
+  </OwnerShell>;
 }
 
 export function PhotoEditor({ venueId, openingKey }: { venueId: string; openingKey?: string }) {

@@ -9,7 +9,7 @@ for (const width of [1440, 390]) {
     const venue = lastPart(links.restaurant_booking);
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
     await openOwnerRoom(page, request, venue);
-    await expect(page.getByRole("heading", { name: "Casa Lumen · Rooms" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Room editor" })).toBeVisible();
     await page.getByRole("button", { name: "Add room", exact: true }).click();
     await page.getByLabel("Room name", { exact: true }).fill("L-shaped terrace");
     await page.getByLabel("Initial shape").selectOption("l-shape");

@@ -6,23 +6,22 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getPublishCheck, publishProblems, publishRestaurant, unpublishRestaurant } from "../../api/owner";
 import type { PublishCheck, PublishProblem } from "../../api/owner";
-import { Badge, Button, Dialog, ErrorState, PageShell, Skeleton } from "../../design/components";
+import { Badge, Button, Dialog, ErrorState, Skeleton } from "../../design/components";
 import { errorMessage } from "../restaurant/format";
 import { useLoad } from "../restaurant/useLoad";
 import { checklist } from "./publishChecklist";
+import { OwnerShell } from "./OwnerShell";
 import "./owner.css";
 
 export default function PublishReview() {
   const { venueId = "" } = useParams();
   const { state, reload } = useLoad(() => getPublishCheck(venueId), venueId);
   return (
-    <PageShell title="Review and publish">
-      <Link to="/owner">← My restaurants</Link>
-      <h1>Review and publish</h1>
-      {state.status === "loading" && <Skeleton label="Checking your restaurant" lines={5} />}
-      {state.status === "error" && <ErrorState message="Could not check your restaurant. Check your sign-in or retry." onRetry={() => reload()} />}
+    <OwnerShell title="Review and publish" venueId={venueId} venueName={state.status === "ready" ? state.data.name : undefined} current="review" publicHref={state.status === "ready" && state.data.slug ? publicUrl(state.data.slug) ?? undefined : undefined}>
+      {state.status === "loading" && <><h1 className="ow-title">Review and publish</h1><Skeleton label="Checking your restaurant" lines={5} /></>}
+      {state.status === "error" && <><h1 className="ow-title">Review and publish</h1><ErrorState message="Could not check your restaurant. Check your sign-in or retry." onRetry={() => reload()} /></>}
       {state.status === "ready" && <Review venueId={venueId} initial={state.data} refresh={() => reload(true)} />}
-    </PageShell>
+    </OwnerShell>
   );
 }
 
@@ -39,7 +38,8 @@ function Review({ venueId, initial, refresh }: { venueId: string; initial: Publi
   const pending = rows.filter((row) => !row.done);
   const done = rows.filter((row) => row.done);
   // One word for where the restaurant stands: what the owner should do next follows from it.
-  const stage = published ? "Published" : check.ready ? "Ready to publish" : "Needs attention";
+  const stage = published ? "Published" : check.ready ? "Ready to publish" : `Draft · ${blocking.length} ${blocking.length === 1 ? "blocker" : "blockers"}`;
+  const preview = url ?? publicUrl(check.slug);
 
   const publish = async (): Promise<void> => {
     setBusy(true);
@@ -75,60 +75,73 @@ function Review({ venueId, initial, refresh }: { venueId: string; initial: Publi
   };
 
   return (
-    <section>
-      <p role="status" className="owner-stage">
-        <Badge tone={published ? "success" : check.ready ? "info" : "warning"}>{stage}</Badge>{" "}
-        {check.name} {published ? "is published." : "is a draft."}
-        {!published && !check.ready && ` ${blocking.length} ${blocking.length === 1 ? "thing needs" : "things need"} fixing before you can publish.`}
-      </p>
-      {pending.length > 0 && (
-        <>
-          <h2 className="owner-check-title">{blocking.length > 0 ? "To fix" : "Recommended"}</h2>
-          <ol className="owner-checklist" aria-label="Before you publish">
-            {pending.map((row) => <CheckRow key={row.label} row={row} />)}
-          </ol>
-        </>
-      )}
-      {/* What is already right stays one tap away, but does not fill the screen. */}
-      {done.length > 0 && (
-        <details className="owner-done" open={pending.length === 0}>
-          <summary>{done.length === rows.length ? "All checks done" : `${done.length} checks done`}</summary>
-          <ol className="owner-checklist" aria-label={done.length === rows.length ? "Before you publish" : "Checks already done"}>
-            {done.map((row) => <CheckRow key={row.label} row={row} />)}
-          </ol>
-        </details>
-      )}
-      {refused.length > 0 && (
-        <div role="alert" className="room-error">
-          <p>The server found problems, so nothing was published:</p>
-          <ul>
-            {refused.map((p) => (
-              <li key={`${p.code}-${p.message}`}>{p.message}</li>
-            ))}
-          </ul>
+    <section className="ow-review">
+      <div className="ow-page-head">
+        <div>
+          <h1 className="ow-title">Review and publish</h1>
+          <p className="rb-muted">See which checks are required for {check.name} to go live.</p>
         </div>
-      )}
-      {problem && (
-        <p role="alert" className="room-error">
-          {problem}
-        </p>
-      )}
-      <div className="room-actions">
-        {!published && (
-          <Button busy={busy} disabled={!check.ready} onClick={() => void publish()}>
-            Publish
-          </Button>
-        )}
-        {/* Published: the public page is the next step; taking it off search is the quiet option. */}
-        {published && url && <Link className="btn btn-primary" to={url}>View public page</Link>}
-        {published && (
-          <Button variant="secondary" busy={busy} onClick={() => setConfirming(true)}>
-            Unpublish
-          </Button>
-        )}
+        <p role="status" className="owner-stage"><Badge tone={published ? "success" : check.ready ? "info" : "warning"}>{stage}</Badge></p>
       </div>
-      {!check.ready && !published && <p className="rb-muted">Publish switches on when every item marked To do is done.</p>}
-      {published && <p className="rb-muted">Unpublishing hides {check.name} from search and stops new bookings. Bookings already made stay.</p>}
+      <div className="ow-two">
+        <div className="rb-card ow-checks">
+          {pending.length > 0 && (
+            <>
+              <h2 className="ow-card-title">{blocking.length > 0 ? `${blocking.length} ${blocking.length === 1 ? "thing" : "things"} to fix` : "Recommended"}</h2>
+              <ol className="owner-checklist" aria-label="Before you publish">
+                {pending.map((row) => <CheckRow key={row.label} row={row} />)}
+              </ol>
+            </>
+          )}
+          {/* What is already right stays visible, but below what still needs doing. */}
+          {done.length > 0 && (
+            <section className="owner-done" aria-label="Completed checks">
+              <h2 className="ow-card-title ow-card-title-small">Completed checks <Badge tone="success">{done.length} complete</Badge></h2>
+              <ol className="owner-checklist" aria-label={done.length === rows.length ? "Before you publish" : "Checks already done"}>
+                {done.map((row) => <CheckRow key={row.label} row={row} />)}
+              </ol>
+            </section>
+          )}
+        </div>
+        <aside className="rb-card ow-listing" aria-label="Public listing">
+          <h2 className="ow-card-title">Public listing</h2>
+          <p className="rb-muted">
+            {published
+              ? `${check.name} is live and open for bookings.`
+              : check.ready
+                ? "Everything required is done. Preview the restaurant, then publish it."
+                : `Preview the restaurant and fix the ${blocking.length === 1 ? "blocker" : `${blocking.length} blockers`} to enable publishing.`}
+          </p>
+          {preview && <Link className="btn btn-secondary" to={preview}>{published ? "View public page" : "Preview listing"} <span aria-hidden="true">↗</span></Link>}
+          {!published && (
+            <Button busy={busy} disabled={!check.ready} onClick={() => void publish()}>
+              Publish restaurant
+            </Button>
+          )}
+          {published && (
+            <Button variant="ghost" busy={busy} onClick={() => setConfirming(true)}>
+              Unpublish
+            </Button>
+          )}
+          {refused.length > 0 && (
+            <div role="alert" className="room-error">
+              <p>The server found problems, so nothing was published:</p>
+              <ul>
+                {refused.map((p) => (
+                  <li key={`${p.code}-${p.message}`}>{p.message}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {problem && (
+            <p role="alert" className="room-error">
+              {problem}
+            </p>
+          )}
+          {!check.ready && !published && <p className="rb-muted">Publish switches on when every item marked To do is done.</p>}
+          {published && <p className="rb-muted">Unpublishing hides {check.name} from search and stops new bookings. Bookings already made stay.</p>}
+        </aside>
+      </div>
       <Dialog
         open={confirming}
         title="Remove from search?"
@@ -148,7 +161,7 @@ function CheckRow({ row }: { row: ReturnType<typeof checklist>[number] }) {
   return (
     <li className={row.done ? "owner-check-done" : "owner-check-todo"}>
       <span aria-hidden="true" className="owner-check-mark">
-        {row.done ? "✓" : row.required ? "✗" : "!"}
+        {row.done ? "✓" : "!"}
       </span>
       <div>
         <strong>{row.label}</strong> <span className="owner-check-word">{row.done ? "Done" : row.required ? "To do" : "Recommended"}</span>
@@ -157,8 +170,8 @@ function CheckRow({ row }: { row: ReturnType<typeof checklist>[number] }) {
             {message}
           </p>
         ))}
-        {!row.done && row.fix && <Link to={row.fix}>{row.fixLabel}</Link>}
       </div>
+      {!row.done && row.fix && <Link className="btn btn-secondary ow-fix" to={row.fix}>{row.fixLabel} <span aria-hidden="true">→</span></Link>}
     </li>
   );
 }

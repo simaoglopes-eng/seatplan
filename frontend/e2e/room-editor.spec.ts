@@ -19,7 +19,7 @@ async function newRestaurant(request: APIRequestContext, token: string, name: st
 async function open(page: Page, token: string, venue: string): Promise<void> {
   await page.addInitScript((t) => window.sessionStorage.setItem("seatplan.session", t), token);
   await page.goto(`/owner/${venue}/rooms`);
-  await expect(page.getByRole("heading", { name: /· Rooms$/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Room editor" })).toBeVisible();
 }
 
 test.describe("touch room persistence", () => {
@@ -62,7 +62,7 @@ test("an owner builds a room on a phone, saves, reloads and sees the same", asyn
 
   // Reload: the same room comes back from the server, with nothing left to save.
   await page.reload();
-  await expect(page.getByRole("heading", { name: /· Rooms$/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Room editor" })).toBeVisible();
   await expect(page.getByText("Tables: 8")).toBeVisible();
   await expect(page.getByText("Walls: 4 sides")).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: /Unsaved|Saved/ })).toHaveText("Saved");
