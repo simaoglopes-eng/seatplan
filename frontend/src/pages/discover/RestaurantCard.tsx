@@ -4,8 +4,8 @@
 // times that open the restaurant page with the date, time and party already chosen.
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import type { RestaurantCard as Card, SearchWhen } from "../../api/discovery";
-import { ambienceLine, cuisineLabel, formatDistance, priceText, restaurantHref } from "./discoverModel";
+import type { FeatureKey, RestaurantCard as Card, SearchWhen } from "../../api/discovery";
+import { DISCOVERY_FEATURE_LABELS, cuisineLabel, formatDistance, priceText, restaurantHref } from "./discoverModel";
 
 interface Props {
   card: Card;
@@ -14,12 +14,15 @@ interface Props {
   onHighlight: (id: string | null) => void;
   /** The pin number on the diagram that replaces the map when tiles fail; the card wears the same number. */
   number?: number;
+  pending?: boolean;
+  priorityFeatures?: FeatureKey[];
 }
 
-export function RestaurantCard({ card, when, highlighted, onHighlight, number }: Props) {
+export function RestaurantCard({ card, when, highlighted, onHighlight, number, pending = false, priorityFeatures = [] }: Props) {
   const [failedPhoto, setFailedPhoto] = useState(false);
   const distance = formatDistance(card.distance_m);
-  const room = ambienceLine(card.features);
+  const featureOrder: FeatureKey[] = [...new Set([...priorityFeatures, "sun", "view", "terrace"] as FeatureKey[])];
+  const room = featureOrder.filter(key => card.features[key]).map(key => DISCOVERY_FEATURE_LABELS[key]).join(" · ");
   const price = priceText(card.price_level);
   return (
     <article
@@ -63,9 +66,8 @@ export function RestaurantCard({ card, when, highlighted, onHighlight, number }:
               <>
                 <span className="discover-times-label">Available near {when.time} · {when.party} {when.party === 1 ? "person" : "people"}</span>
                 {card.next_times.map((time) => (
-                  <Link key={time} className="btn btn-secondary discover-time" to={restaurantHref(card, when, time)}>
-                    {time}
-                  </Link>
+                  pending ? <button key={time} type="button" className="btn btn-secondary discover-time" disabled>{time}</button> :
+                  <Link key={time} className="btn btn-secondary discover-time" to={restaurantHref(card, when, time)}>{time}</Link>
                 ))}
               </>
             ) : (

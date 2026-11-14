@@ -4,23 +4,24 @@
 // secondary filters are in a drawer. Twenty results at a time, "Show more" for the rest.
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { searchRestaurants } from "../../api/discovery";
-import type { FeatureKey, RestaurantCard as Card, SearchQuery } from "../../api/discovery";
-import { Button, EmptyState, ErrorState, PageShell, Skeleton } from "../../design/components";
+import type { FeatureKey, RestaurantCard as Card, SearchQuery, SearchWhen } from "../../api/discovery";
+import { Button, Dialog, EmptyState, ErrorState, PageShell, Skeleton } from "../../design/components";
 import { errorMessage } from "../restaurant/format";
 import { ContextControls } from "./ContextControls";
 import { DiscoverBar } from "./DiscoverBar";
 import { FilterDrawer, QUICK_FEATURES } from "./FilterDrawer";
 import { PublicHeaderActions } from "./PublicHeaderActions";
 import { RestaurantCard } from "./RestaurantCard";
-import { completeWhen, loadPlace, savePlace } from "./discoverModel";
+import { completeWhen, cuisineLabel, DISCOVERY_FEATURE_LABELS, loadPlace, savePlace } from "./discoverModel";
 import type { Place } from "./discoverModel";
+import { loadDiscoveryState, saveDiscoveryState } from "./discoveryState";
 import "./discover.css";
 
 const ResultsMap = lazy(() => import("../../maps/ResultsMap"));
 const PAGE = 20;
 const DEFAULT_TIME = "20:00";
 
-type Results = { status: "loading" } | { status: "error"; message: string } | { status: "ready"; items: Card[]; total: number };
+type Results = { status: "loading" } | { status: "error"; message: string } | { status: "ready"; items: Card[]; total: number; key: string; when: SearchWhen | null };
 
 function useWide(): boolean {
   const query = "(min-width: 64rem)";
@@ -38,29 +39,32 @@ function useWide(): boolean {
 /** "Lisboa · 20 Nov, 20:00 · 2 people": the context on a phone, where the controls are in the drawer. */
 function contextSummary(place: Place | null, date: string, time: string, party: string): string {
   const where = place?.label ?? "Anywhere";
-  if (!date) return `${where} · Any date`;
+  if (!date) return `${where} · Any date · ${party === "1" ? "1 person" : `${party} people`}`;
   const [year, month, day] = date.split("-").map(Number);
   const when = new Date(year, month - 1, day).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
   return `${where} · ${when}, ${time} · ${party === "1" ? "1 person" : `${party} people`}`;
 }
 
 export default function DiscoverPage() {
-  const [text, setText] = useState("");
-  const [q, setQ] = useState("");
-  const [cuisines, setCuisines] = useState<string[]>([]);
-  const [prices, setPrices] = useState<number[]>([]);
-  const [features, setFeatures] = useState<FeatureKey[]>([]);
+  const [saved] = useState(loadDiscoveryState);
+  const [text, setText] = useState(saved.text);
+  const [q, setQ] = useState(saved.text);
+  const [cuisines, setCuisines] = useState<string[]>(saved.cuisines);
+  const [prices, setPrices] = useState<number[]>(saved.prices);
+  const [features, setFeatures] = useState<FeatureKey[]>(saved.features);
   const [place, setPlace] = useState<Place | null>(loadPlace);
   const [locating, setLocating] = useState(false);
   const [locationNote, setLocationNote] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [party, setParty] = useState("2");
-  const [availableOnly, setAvailableOnly] = useState(true);
+  const [date, setDate] = useState(saved.date);
+  const [time, setTime] = useState(saved.time);
+  const [party, setParty] = useState(saved.party);
+  const [availableOnly, setAvailableOnly] = useState(saved.availableOnly);
   const [drawer, setDrawer] = useState(false);
+  const [contextOpen, setContextOpen] = useState(false);
   const [allCuisines, setAllCuisines] = useState(false);
-  const [view, setView] = useState<"list" | "map">("list");
+  const [view, setView] = useState<"list" | "map">(saved.view);
   const [highlighted, setHighlighted] = useState<string | null>(null);
+  const [pinned, setPinned] = useState<string | null>(null);
   // True while the numbered diagram stands in for a map whose tiles failed.
   const [diagram, setDiagram] = useState(false);
   const [results, setResults] = useState<Results>({ status: "loading" });
@@ -83,28 +87,42 @@ export default function DiscoverPage() {
     [q, cuisines, prices, features, place, date, time, party, availableOnly],
   );
   const queryKey = JSON.stringify(query);
+  const originalQuery = useRef(queryKey);
+  const restoredScroll = useRef(false);
 
   const search = useCallback((): void => {
     const id = ++request.current;
     setResults((now) => (now.status === "ready" ? now : { status: "loading" }));
     setMoreError("");
-    searchRestaurants(query).then(
-      (answer) => id === request.current && setResults({ status: "ready", items: answer.items, total: answer.total }),
+    const load = async () => {
+      const answer = await searchRestaurants(query);
+      const pages = queryKey === originalQuery.current ? saved.pages : 1;
+      while (id === request.current && answer.items.length < answer.total && answer.items.length < pages * PAGE) {
+        const next = await searchRestaurants({ ...query, offset: answer.items.length });
+        if (!next.items.length) break;
+        answer.items.push(...next.items);
+        answer.total = next.total;
+      }
+      return answer;
+    };
+    void load().then(
+      (answer) => id === request.current && setResults({ status: "ready", items: answer.items, total: answer.total, key: queryKey, when }),
       (error: unknown) => id === request.current && setResults({ status: "error", message: errorMessage(error, "We could not load the restaurants. Please try again.") }),
     );
     // The key stands for the whole query.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryKey]);
   useEffect(search, [search]);
+  const updating = results.status === "ready" && (results.key !== queryKey || text !== q);
 
   const showMore = async (): Promise<void> => {
-    if (results.status !== "ready") return;
+    if (results.status !== "ready" || updating || loadingMore) return;
     const id = ++request.current;
     setLoadingMore(true);
     setMoreError("");
     try {
       const answer = await searchRestaurants({ ...query, offset: results.items.length });
-      if (id === request.current) setResults({ status: "ready", items: [...results.items, ...answer.items], total: answer.total });
+      if (id === request.current) setResults({ ...results, items: [...results.items, ...answer.items], total: answer.total });
     } catch (error) {
       if (id === request.current) setMoreError(errorMessage(error, "We could not load more. Please try again."));
     } finally {
@@ -168,12 +186,27 @@ export default function DiscoverPage() {
   // The diagram numbers its pins in list order; cards wear the same numbers.
   const pinNumbers = useMemo(() => new Map(pins.map((pin, index) => [pin.id, index + 1])), [pins]);
   const selectPin = (id: string): void => {
-    setHighlighted(id);
+    setPinned(id);
     const card = document.getElementById(`card-${id}`);
-    if (view === "map") setView("list");
-    window.setTimeout(() => card?.scrollIntoView?.({ block: "nearest", behavior: "smooth" }), 0);
+    if (wide) {
+      card?.scrollIntoView?.({ block: "nearest", behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      card?.querySelector<HTMLAnchorElement>("h3 a")?.focus({ preventScroll: true });
+    }
   };
+  useEffect(() => {
+    const persist = (): void => saveDiscoveryState({text,cuisines,prices,features,date,time,party,availableOnly,view,scroll:window.scrollY,pages:Math.max(1,Math.ceil(items.length/PAGE))});
+    persist();
+    window.addEventListener("scroll",persist,{passive:true});
+    return () => window.removeEventListener("scroll",persist);
+  }, [text,cuisines,prices,features,date,time,party,availableOnly,view,items.length]);
+  useEffect(() => {
+    if (results.status === "ready" && !restoredScroll.current) {
+      restoredScroll.current = true;
+      if (saved.scroll > 0) window.requestAnimationFrame(() => window.scrollTo(0,saved.scroll));
+    }
+  }, [results,saved.scroll]);
   const showMap = wide || view === "map";
+  const selectedCard = items.find(card => card.public_id === pinned);
 
   return (
     <PageShell title="Find a table you will love" width="wide" headerActions={<PublicHeaderActions />}>
@@ -204,16 +237,16 @@ export default function DiscoverPage() {
         onDrawer={() => setDrawer(true)}
       />
       {!wide && (
-        <button type="button" className="discover-summary" onClick={() => setDrawer(true)}>
-          {contextSummary(place, date, time, party)}
+        <button type="button" className="discover-summary" aria-haspopup="dialog" aria-expanded={contextOpen} onClick={() => setContextOpen(true)}>
+          <strong>When and where</strong><span>{contextSummary(place, date, time, party)}</span>
         </button>
       )}
       {locationNote && <p role="status">{locationNote}</p>}
-      {place?.label === "Near me" && (
+      {place && (
         <p role="status" className="discover-near">
-          Sorted by distance from where you are.{" "}
+          {place.label === "Near me" ? "Sorted by distance from where you are." : `Sorted by distance from central ${place.label === "Lisboa" ? "Lisbon" : place.label}.`}{" "}
           <Button variant="ghost" onClick={() => choosePlace(null)}>
-            Stop using my location
+            {place.label === "Near me" ? "Stop using my location" : "Clear city"}
           </Button>
         </p>
       )}
@@ -233,28 +266,29 @@ export default function DiscoverPage() {
         availableOnly={availableOnly}
         onAvailableOnly={setAvailableOnly}
         onClear={clearFilters}
-        total={results.status === "ready" ? results.total : null}
+        total={results.status === "ready" && !updating ? results.total : null}
         showQuick={!wide}
-        narrowExtras={
-          wide ? null : (
-            <>
-              <ContextControls variant="stacked" place={place} onPlace={choosePlace} date={date} time={time} party={party} onDate={changeDate} onTime={setTime} onParty={setParty} onClearWhen={clearWhen} />
-              <Button variant="secondary" busy={locating} onClick={nearMe}>
-                Near me
-              </Button>
-            </>
-          )
-        }
       />
+      <Dialog open={contextOpen} title="When and where" onClose={() => setContextOpen(false)} actions={<Button onClick={() => setContextOpen(false)}>Show restaurants</Button>}>
+        <ContextControls variant="stacked" place={place} onPlace={choosePlace} date={date} time={time} party={party} onDate={changeDate} onTime={setTime} onParty={setParty} onClearWhen={clearWhen} />
+        <Button variant="secondary" busy={locating} onClick={nearMe}>Near me</Button>
+        {locationNote && <p role="status">{locationNote}</p>}
+      </Dialog>
 
-      <div className="discover-view-switch">
-        <Button variant="secondary" aria-pressed={view === "map"} onClick={() => setView(view === "map" ? "list" : "map")}>
-          {view === "map" ? "List" : "Map"}
-        </Button>
+      <div className="discover-active" aria-label="Active filters">
+        {cuisines.map(key => <button key={key} type="button" className="discover-chip" aria-label={`Remove ${cuisineLabel(key)}`} onClick={() => setCuisines(cuisines.filter(c => c !== key))}>{cuisineLabel(key)} ×</button>)}
+        {prices.map(level => <button key={level} type="button" className="discover-chip" aria-label={`Remove price level ${level}`} onClick={() => setPrices(prices.filter(p => p !== level))}>{"€".repeat(level)} ×</button>)}
+        {features.filter(key => !wide || key === "accessible").map(key => <button key={key} type="button" className="discover-chip" aria-label={`Remove ${DISCOVERY_FEATURE_LABELS[key]}`} onClick={() => setFeatures(features.filter(f => f !== key))}>{DISCOVERY_FEATURE_LABELS[key]} ×</button>)}
+      </div>
+
+      <div className="discover-view-switch" role="group" aria-label="Results view">
+        <Button variant={view === "list" ? "primary" : "secondary"} aria-pressed={view === "list"} onClick={() => setView("list")}>List</Button>
+        <Button variant={view === "map" ? "primary" : "secondary"} aria-pressed={view === "map"} onClick={() => setView("map")}>Map</Button>
       </div>
 
       <div className={`discover-results discover-view-${view}`}>
-        <section className="discover-list" aria-label="Restaurants" aria-busy={results.status === "loading"}>
+        <section className="discover-list" aria-label="Restaurants" aria-busy={results.status === "loading" || updating}>
+          {updating && <p role="status">{when ? "Updating availability…" : "Updating restaurants…"}</p>}
           {results.status === "loading" && <Skeleton label="Finding restaurants" lines={6} />}
           {results.status === "error" && <ErrorState message={results.message} onRetry={search} />}
           {results.status === "ready" && (
@@ -268,11 +302,13 @@ export default function DiscoverPage() {
                 )}
               </p>
               {results.items.length === 0 ? (
-                <EmptyState title="No restaurants match. Try removing a filter." action={<Button onClick={clearFilters}>Clear filters</Button>} />
+                <EmptyState title={text ? "No restaurants match your search" : when ? "Nothing available near this time" : "No restaurants match"} action={text ? <Button onClick={() => { setText(""); setQ(""); }}>Clear search</Button> : anyFilter ? <Button onClick={clearFilters}>Clear filters</Button> : when ? <Button onClick={() => { if (!wide) setContextOpen(true); else document.querySelector<HTMLInputElement>('[aria-label="Time"]')?.focus(); }}>Try a nearby time</Button> : undefined}>
+                  <p>{text ? "Try another restaurant name or cuisine. Your date and party will stay as they are." : when ? "Try another time or turn off the availability filter." : "Choose another setting or city to broaden your search."}</p>
+                </EmptyState>
               ) : (
                 <div className="discover-cards">
                   {results.items.map((card) => (
-                    <RestaurantCard key={card.public_id} card={card} when={when} highlighted={highlighted === card.public_id} onHighlight={setHighlighted} number={diagram ? pinNumbers.get(card.public_id) : undefined} />
+                    <RestaurantCard key={card.public_id} card={card} when={results.when} pending={updating} priorityFeatures={features} highlighted={(highlighted ?? pinned) === card.public_id} onHighlight={setHighlighted} number={diagram ? pinNumbers.get(card.public_id) : undefined} />
                   ))}
                 </div>
               )}
@@ -282,18 +318,19 @@ export default function DiscoverPage() {
                 </p>
               )}
               {results.items.length < results.total && (
-                <Button variant="secondary" busy={loadingMore} onClick={() => void showMore()}>
+                <Button variant="secondary" busy={loadingMore} disabled={updating} onClick={() => void showMore()}>
                   Show more
                 </Button>
               )}
             </>
           )}
         </section>
-        {showMap && (
+        {showMap && items.length > 0 && (
           <div className="discover-map-column">
             <Suspense fallback={<Skeleton label="Loading the map" lines={4} />}>
-              <ResultsMap pins={pins} highlightedId={highlighted} onSelect={selectPin} center={place} onFallback={setDiagram} />
+              <ResultsMap pins={pins} highlightedId={highlighted ?? pinned} onSelect={selectPin} center={place} onFallback={setDiagram} />
             </Suspense>
+            {!wide && selectedCard && <div className="discover-pin-summary" aria-live="polite"><strong>{selectedCard.name}</strong><p>{selectedCard.cuisines.map(cuisineLabel).join(", ")}</p><a className="btn btn-primary" href={`/restaurants/${encodeURIComponent(selectedCard.slug)}`}>View restaurant</a><Button variant="ghost" onClick={() => setPinned(null)}>Close summary</Button></div>}
           </div>
         )}
       </div>

@@ -44,7 +44,7 @@ test("a published restaurant is found by name, and unpublishing takes it off the
   expect((await request.post(`/api/owner/restaurants/${venue}/unpublish`, { headers })).status()).toBe(200);
   await page.goto("/");
   await page.getByLabel("Restaurant or cuisine").fill(name);
-  await expect(page.getByText("No restaurants match. Try removing a filter.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "No restaurants match your search" })).toBeVisible();
   expect((await request.get(`/api/restaurants/${slug}`)).status()).toBe(404);
 });
 

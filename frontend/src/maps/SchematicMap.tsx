@@ -76,7 +76,7 @@ export function SchematicMap({ pins, highlightedId, onSelect, centre }: Props) {
         )}
       </svg>
       <p role="status" className="schematic-note">
-        The map tiles are not available, so this is a simple diagram. Numbers match the list.
+        <strong>Location diagram · map unavailable.</strong> Map tiles are not available. Numbers match the list.
       </p>
     </div>
   );

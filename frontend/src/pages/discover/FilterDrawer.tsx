@@ -35,9 +35,9 @@ interface Props {
 
 export function FilterDrawer(props: Props) {
   const { cuisines, prices, features } = props;
-  const done = props.total === null ? "Done" : `Show ${props.total} ${props.total === 1 ? "restaurant" : "restaurants"}`;
+  const done = props.total === null ? "Updating results…" : `Show ${props.total} ${props.total === 1 ? "restaurant" : "restaurants"}`;
   return (
-    <Dialog
+    <div className="discover-filters-modal"><Dialog
       open={props.open}
       onClose={props.onClose}
       title="Filters"
@@ -79,17 +79,19 @@ export function FilterDrawer(props: Props) {
             </Chip>
           ))}
         </Chips>
-        <Chips label="Access">
+        <Chips label="Accessibility">
           <Chip pressed={features.includes("accessible")} onClick={() => props.onFeatures(toggle(features, "accessible" as FeatureKey))}>
             {FEATURE_LABELS.accessible}
           </Chip>
-          {props.hasWhen && (
+        </Chips>
+        {props.hasWhen && <Chips label="Availability">
+          <p className="discover-filter-note">Includes seating times within 60 minutes of your chosen time.</p>
             <Chip pressed={props.availableOnly} onClick={() => props.onAvailableOnly(!props.availableOnly)}>
               Available at that time
             </Chip>
-          )}
-        </Chips>
+        </Chips>}
+        {features.includes("sun") && <p className="discover-filter-note">Light varies by table and time. Check it when you book.</p>}
       </div>
-    </Dialog>
+    </Dialog></div>
   );
 }
