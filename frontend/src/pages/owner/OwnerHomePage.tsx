@@ -22,16 +22,33 @@ export default function OwnerHomePage() {
 
 function RestaurantCard({ card }: { card: OwnerCard }) {
   const base = `/owner/${encodeURIComponent(card.public_id)}`;
+  const published = card.status === "published";
+  const publicPage = card.slug ? `/restaurants/${encodeURIComponent(card.slug)}` : `/r/${encodeURIComponent(card.public_id)}`;
+  const complete = card.setup.done >= card.setup.total;
   return <article className="owner-card">
     {card.cover_url ? <PhotoPreview className="owner-cover" url={card.cover_url} alt="" /> : <div className="owner-cover owner-cover-empty" aria-hidden="true" />}
-    <div className="owner-card-body"><Badge tone={card.status === "published" ? "success" : "neutral"}>{card.status === "published" ? "Published" : "Draft"}</Badge>
-      <h2>{card.name}</h2><p>Setup {card.setup.done} of {card.setup.total} done</p>
-      <progress value={card.setup.done} max={card.setup.total} aria-label={`${card.name} setup progress`} />
-      <nav className="owner-card-links" aria-label={`Manage ${card.name}`}>
-        {card.status === "draft" && <Link to={`${base}/setup`}>Continue setup</Link>}
-        <Link to={`${base}/profile`}>Edit profile</Link><Link to={`${base}/rooms`}>Edit rooms</Link><Link to={`${base}/hours`}>Opening hours</Link><Link to={`${base}/review`}>{card.status === "published" ? "Publishing" : "Review and publish"}</Link><Link to={`${base}/dashboard`}>Dashboard</Link>
-        {card.status === "published" && <Link to={card.slug ? `/restaurants/${encodeURIComponent(card.slug)}` : `/r/${encodeURIComponent(card.public_id)}`}>View public page</Link>}
-      </nav>
+    <div className="owner-card-body"><Badge tone={published ? "success" : "neutral"}>{published ? "Published" : "Draft"}</Badge>
+      <h2>{card.name}</h2>
+      {/* A finished setup needs no progress bar: it only says what is left. */}
+      {!complete && <><p>Setup {card.setup.done} of {card.setup.total} done</p>
+        <progress value={card.setup.done} max={card.setup.total} aria-label={`${card.name} setup progress`} /></>}
+      {/* One main action for the state the restaurant is in; everything else is a labelled second step. */}
+      <div className="owner-card-main">
+        {published
+          ? <Link className="btn btn-primary" to={`${base}/dashboard`}>Open service floor<span className="visually-hidden"> for {card.name}</span></Link>
+          : <Link className="btn btn-primary" to={`${base}/setup`}>Continue setup<span className="visually-hidden"> for {card.name}</span></Link>}
+        {published && <Link className="btn btn-secondary" to={publicPage}>View public page<span className="visually-hidden"> of {card.name}</span></Link>}
+      </div>
+      <details className="owner-card-more">
+        <summary>Set-up and publishing<span className="visually-hidden"> for {card.name}</span></summary>
+        <nav className="owner-card-links" aria-label={`Manage ${card.name}`}>
+          <Link to={`${base}/profile`}>Edit profile</Link>
+          <Link to={`${base}/rooms`}>Edit rooms</Link>
+          <Link to={`${base}/hours`}>Opening hours</Link>
+          <Link to={`${base}/review`}>{published ? "Publishing" : "Review and publish"}</Link>
+          {!published && <Link to={`${base}/dashboard`}>Dashboard</Link>}
+        </nav>
+      </details>
     </div>
   </article>;
 }

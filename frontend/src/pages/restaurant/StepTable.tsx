@@ -240,7 +240,7 @@ function TableStepBody({ venueId, map: loaded, hold, secondsLeft, busy, conflict
       {/* With the details form beside the map the countdown lives in the form, next to the confirm button. */}
       {hold && secondsLeft !== null && !panelShown && <HoldCountdown tableLabel={hold.tableLabel} secondsLeft={secondsLeft} />}
       {tabs.length > 0 && <RoomTabs tabs={tabs} current={roomId as number | null} onChange={setChosenRoom} />}
-      <div className="rb-map-layout">
+      <div className={`rb-map-layout${panelShown ? " has-panel" : ""}`}>
         <div className="rb-map-main">
           <SeatMap
             label={`Floor plan for ${time}`}

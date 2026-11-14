@@ -32,6 +32,7 @@ for (const width of [1440, 390]) test(`owner publishes and preserves existing bo
   expect(booked.status()).toBe(201);
   const { manage_path } = await booked.json() as { manage_path: string };
   await page.getByRole("button", { name: "Unpublish", exact: true }).click();
+  await page.getByRole("dialog", { name: "Remove from search?" }).getByRole("button", { name: "Unpublish", exact: true }).click();
   await expect(page.getByText(`Owner acceptance ${width} is a draft.`, { exact: false })).toBeVisible();
   expect((await request.get(`/api/r/${venue.id}`)).status()).toBe(404);
   await page.goto(`/r/${venue.id}`);

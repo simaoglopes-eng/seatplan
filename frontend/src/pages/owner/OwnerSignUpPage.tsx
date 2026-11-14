@@ -16,12 +16,26 @@ export default function OwnerSignUpPage() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // What is wrong, by field: shown beside the field and summed up above the form.
+  const [problems, setProblems] = useState<Partial<Record<"name" | "email" | "password" | "consent", string>>>({});
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (busy) return;
     setError("");
-    if (!pending && !consent) { setError("Please agree to create your owner account."); return; }
+    if (!pending) {
+      const found: typeof problems = {};
+      if (!name.trim()) found.name = "Enter your name.";
+      if (!/^\S+@\S+\.\S+$/.test(email.trim())) found.email = "Enter a valid email address.";
+      if (password.length < 10) found.password = "Use at least 10 characters.";
+      if (!consent) found.consent = "Please agree to create your owner account.";
+      setProblems(found);
+      const first = (["name", "email", "password", "consent"] as const).find((field) => found[field]);
+      if (first) {
+        document.getElementById(`owner-${first}`)?.focus();
+        return;
+      }
+    }
     setBusy(true);
     try {
       if (pending) {
@@ -39,12 +53,14 @@ export default function OwnerSignUpPage() {
   return <PageShell title="Create an owner account"><div className="owner-auth">
     <h1>{pending ? "Check your email" : "Create an owner account"}</h1>
     {pending ? <p>Enter the six-digit code sent to {email}. It expires in 15 minutes.</p> : <p>Set up your restaurant and let guests choose their table.</p>}
-    <form className="owner-form" onSubmit={submit}>
+    <form className="owner-form" onSubmit={submit} noValidate>
+      {Object.keys(problems).length > 1 && <div role="alert" className="owner-error owner-summary"><p>Please fix {Object.keys(problems).length} things:</p><ul>{(["name", "email", "password", "consent"] as const).filter((field) => problems[field]).map((field) => <li key={field}><a href={`#owner-${field}`}>{problems[field]}</a></li>)}</ul></div>}
       {!pending && <>
-        <Field label="Name" autoComplete="name" required maxLength={120} value={name} onChange={e => setName(e.target.value)} />
-        <Field label="Email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} />
-        <Field label="Password" type="password" autoComplete="new-password" hint="Use at least 10 characters." required minLength={10} maxLength={200} value={password} onChange={e => setPassword(e.target.value)} />
-        <Checkbox label="I agree to create a restaurant owner account." required checked={consent} onChange={e => setConsent(e.target.checked)} />
+        <Field id="owner-name" label="Name" autoComplete="name" required maxLength={120} value={name} error={problems.name} onChange={e => setName(e.target.value)} />
+        <Field id="owner-email" label="Email" type="email" autoComplete="email" required maxLength={254} value={email} error={problems.email} hint="We email you a six-digit code to confirm it is yours." onChange={e => setEmail(e.target.value)} />
+        <Field id="owner-password" label="Password" type="password" autoComplete="new-password" hint="Use at least 10 characters." required minLength={10} maxLength={200} value={password} error={problems.password} onChange={e => setPassword(e.target.value)} />
+        <Checkbox id="owner-consent" label="I agree to create a restaurant owner account." required checked={consent} onChange={e => setConsent(e.target.checked)} />
+        {problems.consent && <p role="alert" className="owner-error">{problems.consent}</p>}
       </>}
       {pending && <>
         {pending.code_shown && <p className="owner-demo" role="status">Demo code <strong>{pending.code_shown}</strong></p>}

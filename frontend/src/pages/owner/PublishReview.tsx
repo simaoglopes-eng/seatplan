@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getPublishCheck, publishProblems, publishRestaurant, unpublishRestaurant } from "../../api/owner";
 import type { PublishCheck, PublishProblem } from "../../api/owner";
-import { Badge, Button, ErrorState, PageShell, Skeleton } from "../../design/components";
+import { Badge, Button, Dialog, ErrorState, PageShell, Skeleton } from "../../design/components";
 import { errorMessage } from "../restaurant/format";
 import { useLoad } from "../restaurant/useLoad";
 import { checklist } from "./publishChecklist";
@@ -32,8 +32,14 @@ function Review({ venueId, initial, refresh }: { venueId: string; initial: Publi
   const [busy, setBusy] = useState(false);
   const [refused, setRefused] = useState<PublishProblem[]>([]);
   const [problem, setProblem] = useState("");
+  const [confirming, setConfirming] = useState(false);
   const published = check.status === "published";
   const rows = checklist(check.problems, check.tips);
+  const blocking = rows.filter((row) => !row.done && row.required);
+  const pending = rows.filter((row) => !row.done);
+  const done = rows.filter((row) => row.done);
+  // One word for where the restaurant stands: what the owner should do next follows from it.
+  const stage = published ? "Published" : check.ready ? "Ready to publish" : "Needs attention";
 
   const publish = async (): Promise<void> => {
     setBusy(true);
@@ -60,6 +66,7 @@ function Review({ venueId, initial, refresh }: { venueId: string; initial: Publi
       await unpublishRestaurant(venueId);
       setCheck({ ...check, status: "draft" });
       setUrl(null);
+      setConfirming(false);
     } catch (error) {
       setProblem(errorMessage(error, "We could not unpublish. Please try again."));
     } finally {
@@ -69,27 +76,28 @@ function Review({ venueId, initial, refresh }: { venueId: string; initial: Publi
 
   return (
     <section>
-      <p role="status">
-        <Badge tone={published ? "success" : "neutral"}>{published ? "Published" : "Draft"}</Badge> {check.name} {published ? "is published." : "is a draft."}
+      <p role="status" className="owner-stage">
+        <Badge tone={published ? "success" : check.ready ? "info" : "warning"}>{stage}</Badge>{" "}
+        {check.name} {published ? "is published." : "is a draft."}
+        {!published && !check.ready && ` ${blocking.length} ${blocking.length === 1 ? "thing needs" : "things need"} fixing before you can publish.`}
       </p>
-      <ol className="owner-checklist" aria-label="Before you publish">
-        {rows.map((row) => (
-          <li key={row.label} className={row.done ? "owner-check-done" : "owner-check-todo"}>
-            <span aria-hidden="true" className="owner-check-mark">
-              {row.done ? "✓" : row.required ? "✗" : "!"}
-            </span>
-            <div>
-              <strong>{row.label}</strong> <span className="owner-check-word">{row.done ? "Done" : row.required ? "To do" : "Recommended"}</span>
-              {row.messages.map((message) => (
-                <p key={message} className="rb-muted">
-                  {message}
-                </p>
-              ))}
-              {!row.done && row.fix && <Link to={row.fix}>{row.fixLabel}</Link>}
-            </div>
-          </li>
-        ))}
-      </ol>
+      {pending.length > 0 && (
+        <>
+          <h2 className="owner-check-title">{blocking.length > 0 ? "To fix" : "Recommended"}</h2>
+          <ol className="owner-checklist" aria-label="Before you publish">
+            {pending.map((row) => <CheckRow key={row.label} row={row} />)}
+          </ol>
+        </>
+      )}
+      {/* What is already right stays one tap away, but does not fill the screen. */}
+      {done.length > 0 && (
+        <details className="owner-done" open={pending.length === 0}>
+          <summary>{done.length === rows.length ? "All checks done" : `${done.length} checks done`}</summary>
+          <ol className="owner-checklist" aria-label={done.length === rows.length ? "Before you publish" : "Checks already done"}>
+            {done.map((row) => <CheckRow key={row.label} row={row} />)}
+          </ol>
+        </details>
+      )}
       {refused.length > 0 && (
         <div role="alert" className="room-error">
           <p>The server found problems, so nothing was published:</p>
@@ -111,16 +119,47 @@ function Review({ venueId, initial, refresh }: { venueId: string; initial: Publi
             Publish
           </Button>
         )}
+        {/* Published: the public page is the next step; taking it off search is the quiet option. */}
+        {published && url && <Link className="btn btn-primary" to={url}>View public page</Link>}
         {published && (
-          <Button variant="secondary" busy={busy} onClick={() => void unpublish()}>
+          <Button variant="secondary" busy={busy} onClick={() => setConfirming(true)}>
             Unpublish
           </Button>
         )}
-        {published && url && <Link to={url}>View public page</Link>}
       </div>
       {!check.ready && !published && <p className="rb-muted">Publish switches on when every item marked To do is done.</p>}
       {published && <p className="rb-muted">Unpublishing hides {check.name} from search and stops new bookings. Bookings already made stay.</p>}
+      <Dialog
+        open={confirming}
+        title="Remove from search?"
+        onClose={() => setConfirming(false)}
+        actions={<>
+          <Button variant="secondary" onClick={() => setConfirming(false)}>Keep it published</Button>
+          <Button variant="danger" busy={busy} onClick={() => void unpublish()}>Unpublish</Button>
+        </>}
+      >
+        <p>{check.name} will disappear from search and stop taking new bookings. Bookings already made stay, and you can publish again at any time.</p>
+      </Dialog>
     </section>
+  );
+}
+
+function CheckRow({ row }: { row: ReturnType<typeof checklist>[number] }) {
+  return (
+    <li className={row.done ? "owner-check-done" : "owner-check-todo"}>
+      <span aria-hidden="true" className="owner-check-mark">
+        {row.done ? "✓" : row.required ? "✗" : "!"}
+      </span>
+      <div>
+        <strong>{row.label}</strong> <span className="owner-check-word">{row.done ? "Done" : row.required ? "To do" : "Recommended"}</span>
+        {row.messages.map((message) => (
+          <p key={message} className="rb-muted">
+            {message}
+          </p>
+        ))}
+        {!row.done && row.fix && <Link to={row.fix}>{row.fixLabel}</Link>}
+      </div>
+    </li>
   );
 }
 

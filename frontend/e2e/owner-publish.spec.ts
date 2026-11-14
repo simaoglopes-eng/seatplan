@@ -50,6 +50,7 @@ test("an owner finishes the hours, reviews, publishes and unpublishes", async ({
   expect((await request.get(`/api/r/${venue}`)).status()).toBe(200);
 
   await page.getByRole("button", { name: "Unpublish" }).click();
+  await page.getByRole("dialog", { name: "Remove from search?" }).getByRole("button", { name: "Unpublish" }).click();
   await expect(page.getByText(/Publish Flow Test is a draft/)).toBeVisible();
   expect((await request.get(`/api/r/${venue}`)).status()).toBe(404);
 });

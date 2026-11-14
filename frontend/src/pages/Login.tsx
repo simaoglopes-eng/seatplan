@@ -28,6 +28,9 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  // Coming from the restaurant owner's area, the page speaks to owners; every other entry keeps its own words.
+  const owner = (params.get("next") ?? defaultNext).startsWith("/owner");
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
@@ -49,18 +52,22 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
   };
 
   return (
-    <PageShell title="Sign in">
+    <PageShell title={owner ? "Sign in to manage your restaurant" : "Sign in"}>
       <div className="login">
-        <h1>Sign in</h1>
-        <p className="login-lede">
-          For organisers and restaurant staff. Invited guests only need their personal link. Guests who made an account on a shared link{" "}
-          <Link to="/my/sign-in">sign in on the guest page</Link>.
-        </p>
+        <h1>{owner ? "Sign in to manage your restaurant" : "Sign in"}</h1>
+        {owner ? (
+          <p className="login-lede">Use the email and password of your restaurant owner account.</p>
+        ) : (
+          <p className="login-lede">
+            For organisers and restaurant staff. Invited guests only need their personal link. Guests who made an account on a shared link{" "}
+            <Link to="/my/sign-in">sign in on the guest page</Link>.
+          </p>
+        )}
         <form onSubmit={onSubmit} noValidate>
           <Field label="Email" type="email" name="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           <Field
             label="Password"
-            type="password"
+            type={owner && showPassword ? "text" : "password"}
             name="password"
             autoComplete="current-password"
             required
@@ -68,10 +75,20 @@ export default function Login({ defaultNext = "/" }: { defaultNext?: string } = 
             onChange={(e) => setPassword(e.target.value)}
             error={error}
           />
+          {owner && (
+            <Button variant="ghost" aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>
+              {showPassword ? "Hide password" : "Show password"}
+            </Button>
+          )}
           <Button type="submit" busy={busy} className="login-submit">
             Sign in
           </Button>
         </form>
+        {owner && (
+          <p>
+            <Link to="/owner/sign-up">Create a restaurant owner account</Link>
+          </p>
+        )}
       </div>
     </PageShell>
   );

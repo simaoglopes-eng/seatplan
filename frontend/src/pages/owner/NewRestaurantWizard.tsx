@@ -20,6 +20,7 @@ function Wizard({ initial }: { initial: OwnerProfile }) {
   const [profile, setProfile] = useState(initial), [step, setStep] = useState(initial.cuisines.length && initial.price_level ? 2 : 1), [saved, setSaved] = useState(false);
   const pendingId = useRef(initial.public_id), navigate = useNavigate();
   return <section><h1>Add a restaurant</h1><ol className="owner-steps" aria-label="Restaurant setup steps">{["Identity", "Location", "Photos", "Opening hours", "Rooms", "Review"].map((name, index) => <li key={name} aria-current={index + 1 === step ? "step" : undefined}>{index + 1}. {name}</li>)}</ol>
+    <p className="owner-step-note">Step {Math.min(step, 2)} of 6 · {step === 1 ? "Identity" : "Location"}</p>
     {saved ? <><h2>Location saved</h2><p>You can leave and resume setup from your restaurants.</p><Link to={`/owner/${profile.public_id}/photos`}>Continue to photos</Link></> : step === 1 ? <><h2>Identity</h2><IdentityForm key={profile.public_id} profile={profile} label="Save and continue" onSave={async changes => {
       if (!pendingId.current) pendingId.current = (await createRestaurant(changes.name!)).public_id;
       const next = await saveOwnerProfile(pendingId.current, changes); setProfile(next); setStep(2);

@@ -32,3 +32,23 @@
 .owner-check-done .owner-check-mark { background: var(--c-primary-soft); color: var(--c-primary); border-color: var(--c-primary); }
 .owner-check-todo .owner-check-mark { background: var(--c-danger-soft); color: var(--c-danger); border-color: var(--c-danger); }
 .owner-check-word { color: var(--c-text-muted); font-size: var(--fs-sm); }
+
+/* ---------- Owner v3 ---------- */
+.owner-card-main { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); }
+.owner-card-more { margin-top: var(--space-3); }
+.owner-card-more summary { cursor: pointer; min-height: var(--touch-target); display: inline-flex; align-items: center; color: var(--c-primary); }
+.owner-card-more .owner-card-links { margin-top: var(--space-2); }
+.owner-stage { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--fs-lg); }
+.owner-check-title { font-size: var(--fs-lg); margin: var(--space-4) 0 0; }
+.owner-done { margin-block: var(--space-4); }
+.owner-done summary { cursor: pointer; min-height: var(--touch-target); display: flex; align-items: center; font-weight: var(--fw-bold); }
+.owner-cuisines-count { margin: 0; grid-column: 1 / -1; color: var(--c-text-muted); font-size: var(--fs-sm); }
+.owner-step-note { color: var(--c-text-muted); margin: 0 0 var(--space-3); }
+.owner-summary ul { margin: 0; padding-left: var(--space-5); }
+/* Forms read best at a reading width, not across the whole screen. */
+.owner-form { max-width: 40rem; }
+@media (max-width: 40rem) {
+  .owner-steps { display: none; }
+  .owner-card-main .btn { flex: 1 1 100%; justify-content: center; }
+}
+@media (min-width: 40.01rem) { .owner-step-note { display: none; } }
