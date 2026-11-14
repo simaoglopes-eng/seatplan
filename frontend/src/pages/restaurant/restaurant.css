@@ -965,17 +965,11 @@
 .rb-manage-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .rb-manage-actions .rb-danger-link { margin-left: auto; color: var(--c-danger); }
 
-/* On a phone: once a table is held the summary and the form come before the plan (the plan stays one swipe away);
-   before that, the card of the table in front of the diner stays at the bottom of the screen with its one action. */
+/* On a phone the card of the table in front of the diner (and, once a table is held, the summary and the form) come before the
+   plan: the action is on the first screen, and the plan is one swipe below it. */
 @media (max-width: 47.99rem) {
-  .rb-map-layout.has-panel .rb-map-side { order: -1; }
-  .rb-map-layout:not(.has-panel) .rb-table-card {
-    position: sticky;
-    bottom: 0;
-    z-index: var(--z-map-controls);
-    max-height: 45vh;
-    overflow: auto;
-    box-shadow: var(--shadow-md);
-    padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
-  }
+  .rb-map-layout .rb-map-side { display: contents; }
+  .rb-map-layout .rb-map-main { order: 1; }
+  .rb-map-layout .rb-map-side > .legend, .rb-map-layout .rb-map-side > .rb-scene-note { order: 2; }
 }
+.rb-done > .badge { align-self: flex-start; }
