@@ -1,8 +1,7 @@
-﻿// Tab-local search context only. No booking links, customer details or API answers are stored.
+// Tab-local search context only. No booking links, customer details or API answers are stored.
 import type { FeatureKey } from "../../api/discovery";
 import { CUISINES } from "../../api/owner";
-
-export interface DiscoveryState { text: string; cuisines: string[]; prices: number[]; features: FeatureKey[]; date: string; time: string; party: string; availableOnly: boolean; view: "list" | "map"; scroll: number; pages: number }
+export interface DiscoveryState { text: string; cuisines: string[]; prices: number[]; features: FeatureKey[]; date: string; time: string; party: string; availableOnly: boolean; view: "list" | "map"; scroll: number; pages: number; pinned?: string | null }
 const KEY = "seatplan.discover.context.v3";
 const EMPTY: DiscoveryState = {text:"", cuisines:[], prices:[], features:[], date:"", time:"", party:"2", availableOnly:true, view:"list", scroll:0, pages:1};
 export function loadDiscoveryState(): DiscoveryState {
@@ -19,6 +18,7 @@ export function loadDiscoveryState(): DiscoveryState {
       party: typeof value.party === "string" && /^(10|[1-9])$/.test(value.party) ? value.party : "2",
       availableOnly: value.availableOnly !== false, view: value.view === "map" ? "map" : "list",
       scroll: typeof value.scroll === "number" && Number.isFinite(value.scroll) ? Math.max(0,value.scroll) : 0,
+      pinned: typeof value.pinned === "string" ? value.pinned : null,
       pages: typeof value.pages === "number" && Number.isInteger(value.pages) ? Math.min(25,Math.max(1,value.pages)) : 1,
     };
   } catch { return EMPTY; }
@@ -26,4 +26,3 @@ export function loadDiscoveryState(): DiscoveryState {
 export function saveDiscoveryState(value: DiscoveryState): void {
   try { sessionStorage.setItem(KEY,JSON.stringify(value)); } catch { /* Browsing without storage still works. */ }
 }
-

@@ -12,9 +12,9 @@ async function fromDiscoveryToTable(page: import("@playwright/test").Page, daysA
   const context = page.getByRole("button", { name: /When and where/ });
   if (await context.isVisible()) {
     await context.click();
-    const dialog = page.getByRole("dialog", { name: "When and where" });
+    const dialog = page.getByRole("dialog", { name: "Filters" });
     await dialog.getByLabel("Date", { exact: true }).fill(isoDaysFromToday(daysAhead));
-    await dialog.getByRole("button", { name: "Show restaurants", exact: true }).click();
+    await dialog.getByRole("button", { name: /^Apply/ }).click();
     const card = page.getByRole("article").filter({ hasText: "Tasca do Bairro" });
     const time = card.getByRole("link", { name: /^\d\d:\d\d$/ }).first();
     await expect(time).toBeVisible();

@@ -1,17 +1,17 @@
-﻿import { expect, isoDaysFromToday, test } from "./fixtures";
-
+import { expect, isoDaysFromToday, test } from "./fixtures";
 test("mobile search context is separate from filters and survives a visit to a restaurant", async ({page}) => {
   await page.setViewportSize({width:390,height:844});
   await page.goto("/");
   await page.getByRole("button",{name:/When and where/}).click();
-  const context=page.getByRole("dialog",{name:"When and where"});
+  const context=page.getByRole("dialog",{name:"Filters"});
   await context.getByLabel("Choose a city").selectOption("Lisboa");
   await context.getByLabel("Date",{exact:true}).fill(isoDaysFromToday(9));
   await context.getByLabel("People",{exact:true}).selectOption("4");
-  await context.getByRole("button",{name:"Show restaurants"}).click();
+  await context.getByRole("button",{name:/^Apply/}).click();
   await page.getByRole("button",{name:/^Filters/}).click();
   const filters=page.getByRole("dialog",{name:"Filters"});
-  await expect(filters.getByLabel("Date",{exact:true})).toHaveCount(0);
+  await expect(filters.getByLabel("Date",{exact:true})).toHaveCount(1);
+  await filters.locator("summary").filter({hasText:"Cuisine"}).click();
   await filters.getByRole("button",{name:"More cuisines"}).click();
   await filters.getByRole("button",{name:"Korean",exact:true}).click();
   await filters.getByRole("button",{name:"Fewer cuisines"}).click();
@@ -23,9 +23,8 @@ test("mobile search context is separate from filters and survives a visit to a r
   await expect(page).toHaveURL(/\/restaurants\//);
   await page.goBack();
   await expect(page.getByRole("button",{name:/When and where/})).toContainText("4 people");
-  await expect(page.getByRole("button",{name:/When and where/})).toContainText("Lisboa");
+  await expect(page.getByRole("button",{name:/When and where/})).toContainText("Lisbon");
 });
-
 test("filters fit a narrow phone, and each nearby time has its own link", async ({page}) => {
   await page.goto("/");
   await page.getByLabel("Date",{exact:true}).fill(isoDaysFromToday(9));
@@ -39,23 +38,23 @@ test("filters fit a narrow phone, and each nearby time has its own link", async 
   await page.setViewportSize({width:320,height:844});
   await page.getByRole("button",{name:/^Filters/}).click();
   const drawer=page.getByRole("dialog",{name:"Filters"});
+  await drawer.locator("summary").filter({hasText:"Cuisine"}).click();
   await drawer.getByRole("button",{name:"More cuisines"}).click();
-  const done=drawer.getByRole("button",{name:/^Show \d+ restaurants?/});
+  const done=drawer.getByRole("button",{name:/^Apply/});
   await done.scrollIntoViewIfNeeded();
   await expect(done).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await done.click();
 });
-
 test("mobile map keeps booking context and returns focus after closing a selected pin",async({page})=>{
  await page.setViewportSize({width:390,height:844});
  await page.route("**/tile.openstreetmap.org/**",route=>route.abort());
  await page.goto("/");await page.getByRole("article").first().waitFor();
  await page.getByRole("button",{name:/When and where/}).click();
- const context=page.getByRole("dialog",{name:"When and where"});
+ const context=page.getByRole("dialog",{name:"Filters"});
  await context.getByLabel("Choose a city").selectOption("Lisboa");
  await context.getByLabel("Date",{exact:true}).fill(isoDaysFromToday(9));
- await context.getByRole("button",{name:"Show restaurants",exact:true}).click();
+ await context.getByRole("button",{name:/^Apply/,exact:true}).click();
  await page.getByRole("button",{name:"Map",exact:true}).click();
  const diagram=page.getByRole("region",{name:"Diagram of where the restaurants are"});
  await expect(diagram).toBeVisible({timeout:20_000});
@@ -63,10 +62,10 @@ test("mobile map keeps booking context and returns focus after closing a selecte
  const close=page.getByRole("button",{name:"Close summary",exact:true});
  await expect(close).toBeFocused();
  const bounds=await close.boundingBox();expect(bounds!.y+bounds!.height).toBeLessThanOrEqual(844);
- const target=new URL((await page.getByRole("link",{name:"View restaurant",exact:true}).getAttribute("href"))!,"http://localhost");
+ const target=new URL((await page.locator(".discover-pin-summary").getByRole("link",{name:/^\d{2}:\d{2}$/}).first().getAttribute("href"))!,"http://localhost");
  expect(target.searchParams.get("date")).toBe(isoDaysFromToday(9));expect(target.searchParams.get("party")).toBe("2");
  await close.click();await expect(pin).toBeFocused();
- await expect(page.getByRole("link",{name:"View restaurant",exact:true})).toHaveCount(0);
+ await expect(page.locator(".discover-pin-summary").getByRole("link",{name:/^\d{2}:\d{2}$/}).first()).toHaveCount(0);
  await page.getByRole("button",{name:"List",exact:true}).click();
- await expect(page.getByRole("button",{name:/When and where/})).toContainText("Lisboa");
+ await expect(page.getByRole("button",{name:/When and where/})).toContainText("Lisbon");
 });
