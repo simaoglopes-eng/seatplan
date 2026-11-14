@@ -36,3 +36,46 @@
   .rp-thumbs { grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr)); }
   .rp-cta { width: 100%; justify-content: center; }
 }
+/* UX v5: identity first, gallery beside the initial booking stage. */
+.rp {gap:1.5rem}
+.rp-back {align-self:flex-start;min-height:2.75rem;display:inline-flex;align-items:center;font-size:.875rem}
+.rp-head h1 {font-family:var(--font-display);font-size:3rem;font-weight:400;line-height:1.1}
+.rp-head .discover-features {margin:1rem 0 0}
+.rp-hero-layout {display:grid;grid-template-columns:minmax(0,1.8fr) minmax(22rem,1fr);gap:1.5rem;align-items:start}
+.rp-hero-layout .rp-gallery {grid-template-columns:minmax(0,1fr);gap:.5rem}
+.rp-hero-layout .rp-cover {max-height:none;aspect-ratio:16/10}
+.rp-hero-layout .rp-thumbs {grid-template-columns:repeat(3,minmax(0,1fr))}
+.rp-hero-layout .rp-book {padding:1.5rem;margin:0;border:1px solid var(--c-border);background:var(--c-surface);border-radius:var(--radius-lg)}
+.rp-hero-layout .rp-book>h2 {font-family:var(--font-display);font-size:1.5rem;font-weight:400;margin:0 0 1rem}
+.rp-hero-layout .rb-page {padding:0}
+.rp-hero-layout .rb-page h1 {display:none}
+.rp-hero-layout .rb-steps {font-size:.8125rem;margin-bottom:1.5rem}
+.rp-hero-layout:has(.when-times) .rp-book {grid-column:1;grid-row:1}
+.rp-hero-layout:has(.when-times) .rp-gallery {grid-column:2;grid-row:1}
+.rp-hero-layout:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"],.rb-done) {grid-template-columns:1fr}
+.rp-hero-layout:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"],.rb-done) .rp-gallery {display:none}
+@media(max-width:60rem){.rp-hero-layout{grid-template-columns:1fr}.rp-hero-layout:has(.when-times) .rp-gallery{grid-column:1;grid-row:2}.rp-hero-layout:has(.when-times) .rp-book{grid-row:1}.rp-head h1{font-size:2.25rem}}
+@media(max-width:40rem){.rp-head{flex-wrap:nowrap;gap:.5rem}.rp-head-main{flex:1;min-width:0}.rp-head h1{font-size:2rem}.rp-cta{width:auto;min-width:5rem;font-size:.8125rem;padding:.5rem}.rp-hero-layout .rp-book{padding:1rem}.rp-hero-layout .rp-cover{aspect-ratio:16/8;max-height:11rem}.rp .discover-features{font-size:.75rem}}
+.rp {max-width:75rem;width:100%;margin:0 auto;position:relative;gap:1rem}
+.rp .rp-back {min-height:1.5rem}
+.rp-head .discover-features {display:none}
+.rp-visit {min-width:0}
+.rp-visit-info {display:none;padding:1.5rem}
+.rp-visit-info h2 {font-family:var(--font-display);font-size:2rem;font-weight:400;margin:.5rem 0}
+.rp-visit-info p {margin:0;color:var(--c-text-muted);font-size:.875rem}
+.rp:has(.when-times) .rp-head h1 {font-family:inherit;font-size:1rem;font-weight:600}
+.rp:has(.when-times) .rp-head .rp-line {font-size:.8125rem;margin:0}
+.rp:has(.when-times) .rp-head .rp-line:first-of-type,.rp:has(.when-times) .rp-back,.rp:has(.when-times) .rp-cta {display:none}
+.rp-hero-layout:has(.when-times) .rp-visit {grid-column:2;grid-row:1;border:1px solid var(--c-border);border-radius:var(--radius-lg);overflow:hidden;background:var(--c-surface)}
+.rp-hero-layout:has(.when-times) .rp-visit-info {display:block}
+.rp-hero-layout:has(.when-times) .rp-cover {height:12.5rem;aspect-ratio:auto;border-radius:0}
+.rp-hero-layout:has(.when-times) .rp-thumbs {display:none}
+.rp-hero-layout:has(.when-times) .rp-book>h2 {display:none}
+.rp-hero-layout:has(nav[aria-label="Booking steps"] li:nth-child(n+2)[aria-current="step"],.rb-done) .rp-visit {display:none}
+.rp-hero-layout:has(.when-party) .when-party>.rb-step-title {display:none}
+.rp-hero-layout:has(.when-party) .when-party>.rb-actions>.btn {width:100%}
+.rp-hero-layout .rb-page>p[role=status] {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+@media(min-width:60rem){.rp:has(.when-times) nav[aria-label='Booking steps']{position:absolute;right:0;top:0}.rp:has(.when-party) nav[aria-label='Booking steps']{display:none}}
+@media(max-width:60rem){.rp-hero-layout:has(.when-times) .rp-visit{grid-column:1;grid-row:2}.rp-hero-layout:has(.when-times) .rp-book{grid-row:1}}
+.rp.is-preview .rp-hero-layout .rp-visit {display:block}
+.rp.is-preview .rp-hero-layout .rp-gallery {display:grid}

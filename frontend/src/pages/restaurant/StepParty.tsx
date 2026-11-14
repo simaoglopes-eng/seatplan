@@ -7,8 +7,8 @@ import { Button, Checkbox, Field, Select } from "../../design/components";
 import type { SelectOption } from "../../design/components";
 import { formatDate, people, todayIso, weekdayName } from "./format";
 import { PREF_OPTIONS, togglePref } from "./prefs";
+import "./when.css";
 import { StepHeading } from "./StepHeading";
-
 interface StepPartyProps {
   info: RestaurantInfo;
   needs: PartyNeeds;
@@ -16,14 +16,12 @@ interface StepPartyProps {
   onNext: () => void;
   focusOnMount: boolean;
 }
-
 /** Python's weekday(): Monday is 0. JavaScript's getDay(): Sunday is 0. */
 export function pythonWeekday(iso: string): number {
   const [year, month, day] = iso.split("-").map(Number);
   const jsDay = new Date(year ?? 0, (month ?? 1) - 1, day ?? 1).getDay();
   return (jsDay + 6) % 7;
 }
-
 /** Why the restaurant is closed on this date, or null when it is open. */
 export function closedReason(info: RestaurantInfo, date: string): string | null {
   const blackout = info.blackout_dates.find((b) => b.date === date);
@@ -32,18 +30,15 @@ export function closedReason(info: RestaurantInfo, date: string): string | null 
   if (!open && info.services.length > 0) return `${info.name} is closed on ${weekdayName(date)}s.`;
   return null;
 }
-
 function partyOptions(max: number): SelectOption[] {
   return Array.from({ length: max }, (_, i) => ({ value: String(i + 1), label: people(i + 1) }));
 }
-
 const HIGH_CHAIR_OPTIONS: SelectOption[] = [
   { value: "0", label: "No high chair" },
   { value: "1", label: "1 high chair" },
   { value: "2", label: "2 high chairs" },
   { value: "3", label: "3 high chairs" },
 ];
-
 export function StepParty({ info, needs, onChange, onNext, focusOnMount }: StepPartyProps) {
   const closed = needs.date === "" ? null : closedReason(info, needs.date);
   const dateMissing = needs.date === "";
@@ -52,8 +47,21 @@ export function StepParty({ info, needs, onChange, onNext, focusOnMount }: StepP
     if (!closed && !dateMissing) onNext();
   };
   return (
-    <form className="rb-step" onSubmit={submit} noValidate>
-      <StepHeading focusOnMount={focusOnMount}>When, and how many?</StepHeading>
+    <form className="rb-step when-party" onSubmit={submit} noValidate>
+      <StepHeading focusOnMount={focusOnMount}>When would you like to visit?</StepHeading>
+      <WhenFields info={info} needs={needs} onChange={onChange} />
+      <div className="rb-actions">
+        <Button type="submit" disabled={closed !== null || dateMissing}>
+          See free times
+        </Button>
+      </div>
+    </form>
+  );
+}
+export function WhenFields({info, needs, onChange}: Pick<StepPartyProps,"info"|"needs"|"onChange">) {
+ const closed=needs.date ? closedReason(info,needs.date):null;
+ const dateMissing=needs.date === "";
+ return <div className="when-fields">
       <Field
         label="Date"
         type="date"
@@ -75,6 +83,7 @@ export function StepParty({ info, needs, onChange, onNext, focusOnMount }: StepP
         value={String(needs.party)}
         onChange={(e) => onChange({ ...needs, party: Number(e.target.value) })}
       />
+      <details className="when-requirements" open={needs.needs_accessible || needs.high_chairs>0 || (needs.prefs?.length ?? 0)>0 ? true : undefined}><summary>Access needs and table preferences</summary>
       <fieldset className="rb-needs">
         <legend className="field-label">Anything we should know?</legend>
         <Checkbox
@@ -102,11 +111,6 @@ export function StepParty({ info, needs, onChange, onNext, focusOnMount }: StepP
           />
         ))}
       </fieldset>
-      <div className="rb-actions">
-        <Button type="submit" disabled={closed !== null || dateMissing}>
-          See free times
-        </Button>
-      </div>
-    </form>
-  );
+      </details>
+ </div>;
 }

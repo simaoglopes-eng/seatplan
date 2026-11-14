@@ -41,6 +41,7 @@ async function holdTable7(): Promise<void> {
   renderBooking();
   fireEvent.click(await screen.findByRole("button", { name: "See free times" }));
   fireEvent.click(await screen.findByRole("button", { name: /19:30/ }));
+  fireEvent.click(screen.getByRole("button", {name:"Choose a table at 19:30"}));
   await screen.findByRole("heading", { name: "Choose your table" });
   expect(screen.queryByRole("form", { name: "Your details" })).toBeNull(); // nothing to confirm before a table is held
   fireEvent.click(screen.getByRole("button", { name: "Hold 7 & continue" }));

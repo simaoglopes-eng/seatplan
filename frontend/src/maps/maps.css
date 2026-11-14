@@ -9,7 +9,6 @@
 .discover-map .leaflet-control-attribution { color: var(--c-text); background: var(--c-surface); }
 .discover-map .leaflet-control-attribution a { color: var(--c-primary); }
 .discover-map .leaflet-control-zoom a { min-width: 44px; min-height: 44px; line-height: 44px; }
-
 /* The diagram that replaces the map when tiles cannot load: paper, a faint grid, numbered pins. */
 .schematic { display: flex; flex-direction: column; height: 100%; min-height: 20rem; border: 1px solid var(--c-border-strong); border-radius: var(--radius-lg); background: var(--c-surface-sunk); overflow: hidden; }
 .schematic-svg { flex: 1 1 auto; width: 100%; min-height: 0; }
@@ -25,10 +24,11 @@
 .schematic-pin-number { fill: var(--c-on-primary); font-size: 3.4px; font-weight: 700; font-family: var(--font-body); pointer-events: none; }
 .schematic-pin:focus-visible .schematic-pin-hit { stroke: var(--c-focus); stroke-width: 0.8; fill: none; }
 .schematic-note { margin: 0; padding: var(--space-2) var(--space-3); font-size: var(--fs-sm); color: var(--c-text-muted); border-top: 1px solid var(--c-border); background: var(--c-surface); }
-
 .schematic-pin.is-active .schematic-pin-number { fill: var(--c-bg); }
 .discover-map .leaflet-marker-icon:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 5px; }
 /* The visible marker stays compact; its interactive box is a 44 px touch target. */
 .discover-pin span { width: 26px; height: 26px; margin: 9px; }
 .discover-pin-selected span { border-radius: var(--radius-sm); background: var(--c-primary); box-shadow: 0 0 0 3px var(--c-primary); }
 .schematic-selected-ring { fill: none; stroke: var(--c-primary); stroke-width: .8; }
+.discover-pin span { display:flex;align-items:center;justify-content:center;font:700 .875rem var(--font-body);color:var(--c-on-primary); }
+.discover-pin-selected span { border-radius:50%;background:var(--c-danger);box-shadow:0 0 0 2px var(--c-surface); }

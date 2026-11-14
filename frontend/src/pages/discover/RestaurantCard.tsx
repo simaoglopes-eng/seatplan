@@ -1,86 +1,22 @@
-// One search result, with four things and no more: the photo, who it is (name, cuisines, price,
-// distance), one line about the room (sunny tables, a view, a terrace: facts the restaurant
-// already has, nothing worked out per search), and, when the diner said when, up to three free
-// times that open the restaurant page with the date, time and party already chosen.
-import { Link } from "react-router-dom";
-import { useState } from "react";
-import type { FeatureKey, RestaurantCard as Card, SearchWhen } from "../../api/discovery";
-import { DISCOVERY_FEATURE_LABELS, cuisineLabel, formatDistance, priceText, restaurantHref } from "./discoverModel";
-
-interface Props {
-  card: Card;
-  when: SearchWhen | null;
-  /** The current request; old availability may remain visible, disabled, during refresh. */
-  navigationWhen?: SearchWhen | null;
-  highlighted: boolean;
-  onHighlight: (id: string | null) => void;
-  /** The pin number on the diagram that replaces the map when tiles fail; the card wears the same number. */
-  number?: number;
-  pending?: boolean;
-  priorityFeatures?: FeatureKey[];
-  selected?: boolean;
-}
-
-export function RestaurantCard({ card, when, navigationWhen = when, highlighted, onHighlight, number, pending = false, priorityFeatures = [], selected = false }: Props) {
-  const [failedPhoto, setFailedPhoto] = useState(false);
-  const distance = formatDistance(card.distance_m);
-  const featureOrder: FeatureKey[] = [...new Set([...priorityFeatures, "sun", "view", "terrace"] as FeatureKey[])];
-  const room = featureOrder.filter(key => card.features[key]).map(key => DISCOVERY_FEATURE_LABELS[key]).join(" · ");
-  const price = priceText(card.price_level);
-  return (
-    <article
-      className={`discover-card${highlighted ? " is-highlighted" : ""}${selected ? " is-selected" : ""}`}
-      aria-current={selected ? "true" : undefined}
-      id={`card-${card.public_id}`}
-      aria-labelledby={`name-${card.public_id}`}
-      onMouseEnter={() => onHighlight(card.public_id)}
-      onMouseLeave={() => onHighlight(null)}
-      onFocus={() => onHighlight(card.public_id)}
-      onBlur={() => onHighlight(null)}
-    >
-      <Link to={restaurantHref(card, navigationWhen)} className="discover-card-photo" tabIndex={-1} aria-hidden="true">
-        {number !== undefined && (
-          <span className="discover-card-number" aria-hidden="true">
-            {number}
-          </span>
-        )}
-        {card.cover_url && !failedPhoto ? <img src={card.cover_url} onError={() => setFailedPhoto(true)} alt={card.cover_alt ?? ""} loading="lazy" width={640} height={400} /> : <span className="discover-card-nophoto">Photo unavailable</span>}
-      </Link>
-      <div className="discover-card-body">
-        {selected && <p className="discover-selected-label">Selected on map</p>}
-        <h3 id={`name-${card.public_id}`}>
-          {number !== undefined && <span className="visually-hidden">{number}. </span>}
-          <Link to={restaurantHref(card, navigationWhen)}>{card.name}</Link>
-        </h3>
-        {card.cover_url && card.cover_alt && <p className="visually-hidden">Photo: {card.cover_alt}</p>}
-        <p className="discover-card-line">
-          {card.cuisines.map(cuisineLabel).join(", ")}
-          {price && (
-            <>
-              {" · "}
-              <span aria-hidden="true">{price}</span>
-              <span className="visually-hidden">Price level {card.price_level} of 4</span>
-            </>
-          )}
-          {distance && ` · ${distance}`}
-        </p>
-        {room && <p className="discover-ambience">{room}</p>}
-        {when && (
-          <div className="discover-times">
-            {card.next_times.length > 0 ? (
-              <>
-                <span className="discover-times-label">Available near {when.time} · {when.party} {when.party === 1 ? "person" : "people"}</span>
-                {card.next_times.map((time) => (
-                  pending ? <button key={time} type="button" className="btn btn-secondary discover-time" disabled>{time}</button> :
-                  <Link key={time} className="btn btn-secondary discover-time" to={restaurantHref(card, when, time)}>{time}</Link>
-                ))}
-              </>
-            ) : (
-              <span className="discover-times-label">No free table near {when.time}.</span>
-            )}
-          </div>
-        )}
-      </div>
-    </article>
-  );
+import {Link} from "react-router-dom";
+import {useState} from "react";
+import type {FeatureKey,RestaurantCard as Card,SearchWhen} from "../../api/discovery";
+import {DISCOVERY_FEATURE_LABELS,cuisineLabel,formatDistance,priceText,restaurantHref} from "./discoverModel";
+interface Props {card:Card;when:SearchWhen|null;navigationWhen?:SearchWhen|null;highlighted:boolean;onHighlight:(id:string|null)=>void;number?:number;pending?:boolean;priorityFeatures?:FeatureKey[];selected?:boolean;compact?:boolean}
+export function RestaurantCard({card,when,highlighted,onHighlight,number,pending=false,priorityFeatures=[],selected=false,compact=false}:Props){
+ const [failed,setFailed]=useState(false);
+ const features:FeatureKey[]=[...new Set([...priorityFeatures,"view","terrace","sun","accessible"] as FeatureKey[])];
+ const attribute=features.find(key=>card.features[key]);
+ const price=priceText(card.price_level);const distance=formatDistance(card.distance_m);
+ return <article className={`discover-card${highlighted?" is-highlighted":""}${selected?" is-selected":""}${compact?" is-compact":""}`} aria-current={selected?"true":undefined} id={compact?undefined:`card-${card.public_id}`} aria-labelledby={`${compact?"pin-name":"name"}-${card.public_id}`} onMouseEnter={()=>onHighlight(card.public_id)} onMouseLeave={()=>onHighlight(null)} onFocus={()=>onHighlight(card.public_id)} onBlur={()=>onHighlight(null)}>
+  <Link to={restaurantHref(card,null)} className="discover-card-photo" tabIndex={-1} aria-hidden="true">{card.cover_url&&!failed?<img src={card.cover_url} alt={card.cover_alt??""} loading="lazy" onError={()=>setFailed(true)} width={640} height={400}/>:<span className="discover-card-nophoto">Photo unavailable</span>}</Link>
+  <div className="discover-card-body">
+   <h3 id={`${compact?"pin-name":"name"}-${card.public_id}`}>{number!==undefined&&<span className="discover-card-number" aria-hidden="true">{number}</span>}<Link to={restaurantHref(card,null)}>{card.name}</Link></h3>
+   <p className="discover-card-line">{card.cuisines.map(cuisineLabel).join(", ")}{price&&<> · <span aria-hidden="true">{price}</span><span className="visually-hidden">Price level {card.price_level} of 4</span></>}{distance&&` · ${distance}`}</p>
+   {attribute&&<p className="discover-ambience">{DISCOVERY_FEATURE_LABELS[attribute]}</p>}
+   {when?<div className="discover-times" aria-label={`Available near ${when.time} for ${when.party}`}>
+    {card.next_times.length?[...card.next_times].sort().map(time=>pending?<button key={time} className="discover-time" disabled>{time}</button>:<Link key={time} className={`discover-time${time===when.time?" is-requested":""}`} to={restaurantHref(card,when,time)}>{time}</Link>):<span className="discover-times-label">No free table near {when.time}.</span>}
+   </div>:<Link className="discover-card-more" to={restaurantHref(card,null)}>See available times →</Link>}
+  </div>
+ </article>;
 }

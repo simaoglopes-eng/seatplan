@@ -5,16 +5,13 @@
 import { Field, Select } from "../../design/components";
 import { CITIES } from "./discoverModel";
 import type { Place } from "./discoverModel";
-
 export const PARTIES = Array.from({ length: 10 }, (_, i) => ({ value: String(i + 1), label: i === 0 ? "1 person" : `${i + 1} people` }));
 const NEAR = "__near";
-
 export function today(): string {
   const now = new Date();
   const month = String(now.getMonth() + 1).padStart(2, "0");
   return `${now.getFullYear()}-${month}-${String(now.getDate()).padStart(2, "0")}`;
 }
-
 interface Props {
   place: Place | null;
   onPlace: (place: Place | null) => void;
@@ -27,13 +24,11 @@ interface Props {
   onClearWhen: () => void;
   variant: "capsule" | "stacked";
 }
-
 /** The options of the city list; "Near me" is there only while the location is in use. */
 function cityOptions(place: Place | null): { value: string; label: string }[] {
   const near = place?.label === "Near me" ? [{ value: NEAR, label: "Near me" }] : [];
   return [{ value: "", label: "Anywhere" }, ...near, ...CITIES.map((c) => ({ value: c.label, label: c.label }))];
 }
-
 export function ContextControls({ place, onPlace, date, time, party, onDate, onTime, onParty, onClearWhen, variant }: Props) {
   const cityValue = place ? (place.label === "Near me" ? NEAR : place.label) : "";
   const changeCity = (value: string): void => {
@@ -47,11 +42,6 @@ export function ContextControls({ place, onPlace, date, time, party, onDate, onT
         <Field label="Date" type="date" min={today()} value={date} onChange={(event) => onDate(event.target.value)} />
         <Field label="Time" type="time" step={900} value={time} onChange={(event) => onTime(event.target.value)} />
         <Select label="People" value={party} options={PARTIES} onChange={(event) => onParty(event.target.value)} />
-        {date && (
-          <button type="button" className="discover-more" onClick={onClearWhen}>
-            Clear the date
-          </button>
-        )}
       </div>
     );
   }
@@ -65,8 +55,8 @@ export function ContextControls({ place, onPlace, date, time, party, onDate, onT
         ))}
       </select></label>
       <label><span>Date</span><input type="date" aria-label="Date" min={today()} value={date} onChange={(event) => onDate(event.target.value)} /></label>
-      <label><span>Near</span><input type="time" aria-label="Time" step={900} value={time} onChange={(event) => onTime(event.target.value)} /></label>
-      <label><span>Party</span><select aria-label="People" value={party} onChange={(event) => onParty(event.target.value)}>
+      <label><span>Around</span><input type="time" aria-label="Time" step={900} value={time} onChange={(event) => onTime(event.target.value)} /></label>
+      <label><span>Guests</span><select aria-label="People" value={party} onChange={(event) => onParty(event.target.value)}>
         {PARTIES.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}

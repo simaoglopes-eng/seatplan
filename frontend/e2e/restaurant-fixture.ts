@@ -44,6 +44,7 @@ export async function dinerMap(page: Page, id: string, day: string, time = "13:0
   await page.goto(`/r/${id}?date=${day}&party=2`);
   await page.getByRole("button", { name: "See free times" }).click();
   await page.getByRole("button", { name: `${time} Available`, exact: true }).click();
+  await page.getByRole("button", {name:`Choose a table at ${time}`}).click();
   await expect(page.getByRole("heading", { name: "Choose your table" })).toBeVisible();
 }
 

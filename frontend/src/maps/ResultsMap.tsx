@@ -8,14 +8,13 @@ import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { SchematicMap } from "./SchematicMap";
 import "./maps.css";
-
 export interface ResultPin {
+  number?: number;
   id: string;
   name: string;
   lat: number;
   lng: number;
 }
-
 interface Props {
   pins: ResultPin[];
   highlightedId: string | null;
@@ -26,12 +25,9 @@ interface Props {
   /** Tells the page when the tiles failed and a numbered diagram took the map's place, so cards can show the same numbers. */
   onFallback?: (active: boolean) => void;
 }
-
 // If no tile has loaded after this long (or the browser is offline), the map is replaced by a diagram.
 const TILE_PATIENCE_MS = 6000;
-
 const LISBON = { lat: 38.7223, lng: -9.1393 };
-
 export default function ResultsMap({ pins, highlightedId, selectedId = null, onSelect, center, onFallback }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
@@ -43,7 +39,6 @@ export default function ResultsMap({ pins, highlightedId, selectedId = null, onS
   const tell = useRef(onFallback);
   tell.current = onFallback;
   useEffect(() => tell.current?.(fallback), [fallback]);
-
   useEffect(() => {
     if (!host.current) return;
     const view = L.map(host.current, { scrollWheelZoom: false }).setView(LISBON, 11);
@@ -74,18 +69,17 @@ export default function ResultsMap({ pins, highlightedId, selectedId = null, onS
       pinsOnMap.clear();
     };
   }, []);
-
   // Draw the pins again when the results change, and show them all.
   useEffect(() => {
     const view = map.current;
     if (!view) return;
     markers.current.forEach((marker) => marker.remove());
     markers.current.clear();
-    for (const pin of pins) {
+    for (const [index,pin] of pins.entries()) {
       const marker = L.marker([pin.lat, pin.lng], {
         title: pin.name,
         alt: `${pin.name} on the map`,
-        icon: L.divIcon({ className: "discover-pin", html: '<span aria-hidden="true"></span>', iconSize: [44, 44], iconAnchor: [22, 22] }),
+        icon: L.divIcon({ className: "discover-pin", html: `<span aria-hidden="true">${pin.number ?? index+1}</span>`, iconSize: [44, 44], iconAnchor: [22, 22] }),
       }).addTo(view);
       marker.on("click", () => select.current(pin.id));
       markers.current.set(pin.id, marker);
@@ -95,7 +89,6 @@ export default function ResultsMap({ pins, highlightedId, selectedId = null, onS
     if (points.length > 1) view.fitBounds(L.latLngBounds(points), { padding: [30, 30], maxZoom: 15, animate: false });
     else if (points.length === 1) view.setView(points[0], 14, { animate: false });
   }, [pins, center?.lat, center?.lng]);
-
   // The pin of the hovered card gets a bigger, darker look.
   useEffect(() => {
     markers.current.forEach((marker, id) => {
@@ -105,7 +98,6 @@ export default function ResultsMap({ pins, highlightedId, selectedId = null, onS
       marker.setZIndexOffset(id === highlightedId || id === selectedId ? 1000 : 0);
     });
   }, [highlightedId, selectedId, pins]);
-
   return (
     <>
       {/* The Leaflet map stays mounted (hidden) while the diagram is shown, so it can recover if tiles arrive. */}

@@ -92,3 +92,117 @@
 @media (min-width: 40.01rem) { .st-page .st-table-wrap { min-width: 0; width: 100%; overflow-x: auto; } }
 /* Contain the absolutely positioned screen-reader labels inside the scrollable table. */
 .st-page .st-table-wrap { position: relative; }
+/* UX v5: a compact service workspace, scoped to the staff route. */
+.shell:has(.st-page)>.shell-header,.shell:has(.st-page)>.shell-footer {display:none}
+.shell-main:has(.st-page) {width:100%;max-width:none;padding:0}
+.st-page {display:grid;grid-template-columns:12.625rem minmax(0,1fr);gap:0;min-height:100dvh;--st-panel-height:30rem}
+.st-sidebar {padding:1.5rem 1rem;border-right:1px solid var(--c-border);background:var(--c-surface);display:flex;flex-direction:column;gap:1.5rem;min-width:0}
+.st-sidebar .wordmark-text {font-size:1.5rem}
+.st-workspace-label {font-size:.75rem;color:var(--c-text-muted);margin:0;text-transform:uppercase;letter-spacing:.08em}
+.st-page .st-sidebar .st-tabs {display:flex;flex-direction:column;gap:.5rem;border:0;padding:0;overflow:visible}
+.st-page .st-sidebar .st-tab {width:100%;text-align:left;justify-content:flex-start;border:0;border-radius:var(--radius-md);padding:.75rem 1rem}
+.st-page .st-sidebar .st-tab[aria-selected=true] {background:var(--c-primary-soft);color:var(--c-primary);font-weight:600}
+.st-home-link {margin-top:auto;min-height:2.75rem;display:flex;align-items:center;font-size:.875rem}
+.st-content {position:relative;min-width:0;padding:1.5rem}
+.st-page .st-top {margin-bottom:1rem;align-items:start;min-height:4.5rem;padding-right:10rem}
+.st-page .st-top>div>.rb-muted {display:none}
+.st-page .st-title {font-family:var(--font-display);font-size:2rem;font-weight:400;line-height:1.2;margin:0}
+.st-restaurant-name {font-size:.875rem;margin:0 0 .25rem}
+.st-page .st-date {margin-left:auto;min-width:10rem}
+.st-page .st-date .field-label {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.st-page .st-floor {gap:1rem}
+.st-page .st-floor-head {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;border:0;background:transparent;padding:0;gap:.5rem}
+.st-page .st-time-reference {display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+.st-page .st-time-reference>strong {font-size:.875rem}
+.st-page .st-time-reference>span {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.st-page .st-time-reference>.btn {font-size:.8125rem;min-height:2rem;padding:.375rem .5rem}
+.st-time-slider {flex-basis:100%;margin:0}
+.st-page .st-quick-actions>.btn:first-child {position:absolute;top:1.5rem;right:1.5rem}
+.st-page .st-quick-actions>.btn:nth-child(2) {min-height:2rem;padding:.375rem .5rem;font-size:.8125rem}
+.st-page .st-counts {order:3;flex-basis:100%;gap:1rem;padding:.5rem 0;border-top:1px solid var(--c-border)}
+.st-page .st-count {background:transparent;border:0;padding:0;font-size:.8125rem;gap:.25rem}
+.st-page .st-count-number {font-family:inherit;font-size:.875rem;font-weight:600;font-variant-numeric:tabular-nums}
+.st-page .st-grid {grid-template-columns:minmax(0,1.4fr) minmax(21rem,1fr);gap:1.5rem;align-items:start}
+.st-page .st-main {position:relative;top:auto;border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:1rem;background:var(--c-surface);min-width:0}
+.st-plan-title {font-size:1rem;font-weight:600;margin:0 0 1rem;min-height:2rem;display:flex;align-items:center}
+.st-view-controls {position:absolute;right:1rem;top:1rem;gap:.25rem}
+.st-view-controls>.btn {min-height:2rem;font-size:.75rem;padding:.375rem .5rem}
+.st-page .seatmap-viewport {--map-height:27rem;min-height:20rem}
+.st-page .st-side {display:flex;flex-direction:column;gap:1rem}
+.st-page .st-side>.rb-card {padding:1rem;border:1px solid var(--c-border);box-shadow:none}
+.st-page .st-arrivals-panel>.rb-service-title {font-size:1.25rem;margin:0 0 .5rem}
+.st-page .st-arrivals-panel>.rb-muted {font-size:.75rem;margin:0 0 .75rem}
+.st-page .st-arrivals {max-height:33rem;overflow-y:auto;gap:0}
+.st-page .st-arrival {padding:.5rem 0;border:0;border-bottom:1px solid var(--c-border);border-radius:0}
+.st-page .st-arrival-group {padding:0;background:transparent;margin:0;font-size:.75rem;color:var(--c-text-muted)}
+.st-page .st-arrival-button {padding:.5rem;min-height:3rem;border-radius:var(--radius-md);gap:1rem;font-size:.875rem}
+.st-page .st-arrival-button[aria-pressed=true] {outline:2px solid var(--c-primary);outline-offset:-2px;background:var(--c-primary-soft)}
+.st-page .st-arrival-time {font-family:inherit;font-size:.875rem;font-variant-numeric:tabular-nums}
+.st-page .st-arrival-table {font-size:.8125rem}
+.st-selection-label {font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--c-text-muted);margin:0 0 .5rem}
+.st-selected-panel>.rb-muted {font-size:.75rem;margin-bottom:.75rem}
+.st-page .st-booking-name {font-family:var(--font-display);font-size:1.5rem;margin:0 0 .5rem;font-weight:400}
+.st-page .st-booking-name strong {font-weight:400}
+.st-page .st-action-context {font-size:.75rem;flex-basis:100%;margin:.25rem 0}
+.st-page .st-actions {display:flex;flex-wrap:wrap;gap:.5rem}
+.st-more-actions {flex-basis:100%;display:flex;flex-wrap:wrap;gap:.5rem;padding:.5rem;border:1px solid var(--c-border);border-radius:var(--radius-md)}
+.st-page .st-more-actions .st-cancel-booking {margin:0;border:0;width:auto}
+.st-page .dialog:has(.st-walkin-fields) {position:relative;width:28rem;max-width:calc(100vw - 2rem);padding:1.5rem}
+.st-page .dialog:has(.st-walkin-fields) .dialog-title {font-family:var(--font-display);font-size:2rem;font-weight:400;padding-right:2rem;margin:0 0 1rem}
+.st-walkin-close {position:absolute;right:1rem;top:1rem;min-width:2.75rem;min-height:2.75rem;border:0;background:transparent;color:var(--c-text);font:inherit;font-size:1.25rem}
+.st-page .dialog:has(.st-walkin-fields) .dialog-body {gap:1rem}
+.st-page .dialog:has(.st-walkin-fields) .dialog-actions {justify-content:space-between;margin-top:1rem;padding-top:1rem}
+.st-effective-time {margin:0;padding:.75rem;background:var(--c-primary-soft);border:0;font-size:.875rem}
+.st-walkin-hint {font-size:.8125rem}
+.st-walkin-fields .rb-form {display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.st-walkin-fields .checkbox {grid-column:1/-1}
+.st-walkin-fields .field {margin:0;min-width:0}
+.st-walkin-fields .field-label {font-size:.875rem}
+@media(max-width:64rem){
+ .st-page {grid-template-columns:1fr;min-height:auto}
+ .st-sidebar {padding:1rem;border-right:0;border-bottom:1px solid var(--c-border);gap:.5rem}
+ .st-workspace-label,.st-home-link {display:none}
+ .st-page .st-sidebar .st-tabs {flex-direction:row;overflow-x:auto}
+ .st-page .st-sidebar .st-tab {width:auto;min-width:5rem}
+ .st-content {padding:1rem}
+ .st-page .st-grid {grid-template-columns:1fr}
+ .st-page .st-top {padding-right:0;min-height:0;gap:1rem;flex-wrap:wrap}
+ .st-page .st-quick-actions>.btn:first-child {position:static}
+ .st-page .st-side {display:flex;flex-direction:column}
+ .st-page .st-view-controls>.btn,.st-page .st-time-reference>.btn,.st-page .st-quick-actions>.btn {min-height:2.75rem}
+ .st-page .st-arrivals {max-height:none}
+ .st-page .seatmap-viewport {--map-height:24rem}
+}
+@media(prefers-reduced-motion:reduce){.st-page *{transition:none!important}}
+.st-page .st-plan-title,.st-page .st-arrivals-panel>.rb-service-title {font-family:var(--font-display);font-weight:400;font-size:1.5rem}
+.st-page .st-main .legend {display:flex;flex-wrap:wrap;gap:.75rem;margin:.75rem 0 0}
+.st-page .st-main .legend-item {display:flex;gap:.25rem;font-size:.75rem;min-width:0;align-items:center}
+.st-page .st-main .legend-swatch {width:1rem;height:1rem;flex:0 0 1rem}
+.st-page .st-main .legend-hint {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.st-page .st-main .legend-name {font-weight:400;font-size:.75rem}
+.st-page .st-arrival-button {line-height:1.4;padding:.25rem;min-height:2.75rem}
+.st-page .st-arrival-button>.badge {margin-left:auto;align-self:center;font-size:.6875rem}
+.st-page .rb-badges:empty {display:none}
+.st-page .st-action-context {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.st-page .st-selected-panel {background:var(--c-primary-soft)}
+.st-page .st-selected-panel .st-actions>.btn:first-of-type {flex:1}
+.st-page .st-selected-panel>.rb-muted {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.st-effective-time>span {display:block;margin-top:.25rem;font-size:.8125rem}
+.st-walkin-fields .rb-form {grid-template-columns:1fr}
+.st-page .st-selected-panel>.rb-muted {position:static;width:auto;height:auto;overflow:visible;clip-path:none;font-size:.75rem}
+.st-sidebar {gap:.5rem}
+.st-workspace-label {margin:1rem 0 .5rem}
+.st-page .st-sidebar .st-tab {min-height:2.5rem;padding:.5rem 1rem}
+.st-page .st-selected-panel {gap:.5rem}
+.st-page .st-selection-label {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.st-page .st-selected-panel .st-booking {gap:.25rem}
+.st-page .st-selected-panel .st-selection {gap:.5rem}
+.st-page .st-selected-panel>.rb-muted {order:2;margin:0}
+.st-page .st-selected-panel .st-actions {padding-top:0}
+.st-page .st-selected-panel .st-booking-name {margin:0}
+.st-page .st-arrivals-panel {gap:.5rem}
+.st-page .st-arrivals-panel>.rb-service-title {margin:0}
+.st-page .st-arrivals-panel>.rb-muted {margin:0 0 .5rem}
+.st-page .dialog:has(.st-walkin-fields) .st-walkin-hint {margin:.5rem 0;font-size:.75rem}
+.st-page .dialog:has(.st-walkin-fields) .dialog-actions {border-top:1px solid var(--c-border)}
+@media(max-width:64rem){.st-page .st-sidebar .st-tab{min-height:2.75rem}}

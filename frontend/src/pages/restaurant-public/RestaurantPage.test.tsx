@@ -154,7 +154,7 @@ describe("Restaurant page", () => {
     });
     renderAt("/restaurants/casa-linho?date=2099-05-01&time=20:00&party=2");
     expect(await screen.findByText("20:00 is not free any more. Please pick another time.")).toBeTruthy();
-    expect(await screen.findByRole("button", { name: /19:30/ })).toBeTruthy();
+    expect(await screen.findByRole("link", { name: /19:30/ })).toBeTruthy();
   });
 
   it("ignores a time that is not a clock time", async () => {

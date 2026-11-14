@@ -10,6 +10,7 @@ import { Link, useLocation, useParams } from "react-router-dom";
 import { getRestaurant } from "../../api/restaurant";
 import type { RestaurantInfo } from "../../api/restaurant";
 import { getOwnerProfile } from "../../api/owner";
+import { Wordmark } from "../../design/components/PageShell";
 import { PageShell } from "../../design/components";
 import { formatDate, todayIso } from "./format";
 import { StaffDashboard } from "./StaffDashboard";
@@ -46,9 +47,10 @@ export default function StaffPage() {
   return (
     <PageShell title="Service floor" width="wide">
       <div className="st-page">
+        <aside className="st-sidebar"><Wordmark/><p className="st-workspace-label">Staff workspace</p><TabList current={tab} onChange={changeTab} /><Link className="st-home-link" to={ownerEntry ? "/owner" : "/"}>{ownerEntry ? "My restaurants" : "Find restaurants"}</Link></aside>
+        <div className="st-content">
         <div className="st-top">
           <div>
-            <Link to={ownerEntry ? "/owner" : "/"}>{ownerEntry ? "My restaurants" : "Find restaurants"}</Link>
             <p className="st-restaurant-name">{restaurant?.name ?? `Restaurant ${venueId}`}</p>
             <h1 className="st-title">Service floor</h1>
             <p className="rb-muted">{formatDate(date)}</p>
@@ -58,13 +60,13 @@ export default function StaffPage() {
             <input className="field-input" type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
           </label>
         </div>
-        <TabList current={tab} onChange={changeTab} />
         {tab !== "schedule" && <div role="tabpanel" id={`st-panel-${tab}`} aria-labelledby={`st-tab-${tab}`} className="st-panel">
           {tab === "floor" && <StaffFloor key={`${venueId}|${date}`} venueId={venueId} date={date} timezone={restaurant?.timezone} onToday={() => setDate(new Intl.DateTimeFormat("sv-SE", {timeZone:restaurant?.timezone,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date()))} />}
           {tab === "dashboard" && <StaffDashboard venueId={venueId} date={date} onOpenSchedule={() => {changeTab("schedule");window.requestAnimationFrame(() => document.getElementById("st-tab-schedule")?.focus());}} />}
           {tab === "optimise" && <StaffOptimise venueId={venueId} date={date} />}
         </div>}
         {scheduleVisited && <div role="tabpanel" id="st-panel-schedule" aria-labelledby="st-tab-schedule" className="st-panel" hidden={tab !== "schedule"}><StaffSchedule key={venueId} venueId={venueId} /></div>}
+        </div>
       </div>
     </PageShell>
   );
@@ -72,17 +74,19 @@ export default function StaffPage() {
 
 function TabList({ current, onChange }: { current: Tab; onChange: (tab: Tab) => void }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [vertical,setVertical]=useState(()=>window.innerWidth>1024);
+  useEffect(()=>{const resize=()=>setVertical(window.innerWidth>1024);window.addEventListener("resize",resize);return()=>window.removeEventListener("resize",resize);},[]);
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
-    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft" && event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
     event.preventDefault();
     const index = TABS.findIndex((t) => t.id === current);
-    const step = event.key === "ArrowRight" ? 1 : -1;
+    const step = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1;
     const next = (index + step + TABS.length) % TABS.length;
     onChange(TABS[next].id);
     refs.current[next]?.focus();
   };
   return (
-    <div role="tablist" aria-label="Staff views" className="st-tabs" onKeyDown={onKeyDown}>
+    <div role="tablist" aria-orientation={vertical ? "vertical" : "horizontal"} aria-label="Staff views" className="st-tabs" onKeyDown={onKeyDown}>
       {TABS.map((t, i) => (
         <button
           key={t.id}

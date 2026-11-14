@@ -5,13 +5,14 @@ const TAGS=["wcag2a","wcag2aa","wcag21a","wcag21aa"];
 test("staff inspect an outside-service time and preview a walk-in without creating it",async({page,request})=>{
  const links=await demoLinks(request);
  await signIn(page,STAFF,links.restaurant_staff);
+ await page.getByRole("button",{name:"Change floor time"}).click();
  const slider=page.getByRole("slider",{name:"View floor time"});
  await slider.fill("165");
  await expect(page.getByRole("status").filter({hasText:"Viewing 02:45"})).toHaveCount(1);
  let writes=0;
  page.on("request",r=>{if(r.method()==="POST" && /\/walkins$/.test(new URL(r.url()).pathname)) writes++;});
  await page.getByRole("button",{name:"New walk-in"}).click();
- const dialog=page.getByRole("dialog",{name:"Walk-in at 02:45"});
+ const dialog=page.getByRole("dialog",{name:"New walk-in"});
  await expect(dialog.getByText(/Effective booking time/)).toContainText("02:45");
  await expect(dialog.getByRole("status")).toContainText("outside service hours");
  await dialog.getByRole("button",{name:"Find a table"}).click();

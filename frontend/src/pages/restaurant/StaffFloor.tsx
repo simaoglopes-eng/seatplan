@@ -99,6 +99,7 @@ function FloorView({ venueId, date, floor, time, live, onNow, onTime, onRefresh 
   const [spoken, setSpoken] = useState("");
   // The tables this member of staff just changed: the map shows that change without reading it out again.
   const [actedOn, setActedOn] = useState<number[]>([]);
+  const chooseTable=(id:number):void=>{setTableId(id);const selected=floor.tables.find(t=>t.id===id);if(selected?.booking_id)setBookingId(selected.booking_id);};
   const table = floor.tables.find((t) => t.id === tableId) ?? null;
   const booking = floor.bookings.find((b) => b.id === bookingId) ?? null;
   // Every successful action: say it out loud, close dialogs, fetch the floor again.
@@ -117,7 +118,7 @@ function FloorView({ venueId, date, floor, time, live, onNow, onTime, onRefresh 
     <div className="st-floor">
       <FloorHeader floor={floor} date={date} time={time} live={live} onNow={onNow} onTime={onTime} onWalkin={() => {onTime(time); setWalkin(true);}} onCheck={() => {onTime(time); setChecking(true);}} />
       <div className="st-grid">
-        <div className="st-main">
+        <div className="st-main"><h2 className="st-plan-title">Floor plan</h2>
           <div className="st-view-controls" role="group" aria-label="Floor view"><Button variant={view === "map" ? "primary" : "secondary"} aria-pressed={view === "map"} onClick={() => setView("map")}>Map</Button><Button variant={view === "list" ? "primary" : "secondary"} aria-pressed={view === "list"} onClick={() => setView("list")}>Tables list</Button></div>
           <div hidden={view !== "map"} onDragOver={(e) => e.preventDefault()} onDrop={dropOnMap}>
             <SeatMap
@@ -128,29 +129,31 @@ function FloorView({ venueId, date, floor, time, live, onNow, onTime, onRefresh 
               zones={floor.zones}
               selectable={() => true}
               selectedId={tableId}
+              marked={new Set(booking?.table_ids ?? [])}
+              markedLabel="selected booking"
               describe={describeStaffTables(floor.tables)}
               actedOn={actedOn}
-              onSelect={setTableId}
+              onSelect={chooseTable}
             />
           </div>
           <MapKey entries={STAFF_KEY} label="Table status key" />
-          {view === "list" && <TableBoard floor={floor} selectedId={tableId} onSelect={setTableId} onDropBooking={dropOn} />}
+          {view === "list" && <TableBoard floor={floor} selectedId={tableId} onSelect={chooseTable} onDropBooking={dropOn} />}
         </div>
         <aside className="st-side" aria-label="Details and arrivals">
-          <section className="rb-card" aria-label="Selected">
-            <h2 className="rb-service-title">Selected booking or table</h2>
-            <p className="rb-muted st-small">Status changes take effect now. Moving a booking keeps its booked time.</p>
+          {(table || booking) && <section className="rb-card st-selected-panel" aria-label="Selected">
+            <h2 className="st-selection-label">Selected booking or table</h2>
+            <p className="rb-muted st-small">Status changes take effect now. Moves keep the booked time.</p>
             <SelectionPanel venueId={venueId} floor={floor} table={table} booking={booking} onChanged={(message) => done(message, table ? [table.id] : (booking?.table_ids ?? []))} onProblem={problem} onMove={setMoving} onMoveHere={(b, t) => moveTo(b.id, t)} onWalkin={() => setWalkin(true)} />
-          </section>
+          </section>}
           <section className="rb-card st-arrivals-panel">
             <h2 className="rb-service-title">Upcoming arrivals</h2>
-            <p className="rb-muted st-small">Drag a booking onto a table to move it, or select it and use Move.</p>
+            <p className="rb-muted st-small">Select a party to see its table and actions.</p>
             <ArrivalsList arrivals={upcomingArrivals(floor.bookings)} services={floor.services} selectedId={bookingId} onSelect={id => {setBookingId(id); setTableId(floor.bookings.find(b => b.id === id)?.table_ids[0] ?? null);}} />
           </section>
         </aside>
       </div>
       <MoveDialog venueId={venueId} booking={moving} tables={floor.tables} onClose={() => setMoving(null)} onMoved={(b) => done(`${b.name} is now at ${tablesText(b.table_labels)}.`, [...(moving?.table_ids ?? []), ...b.table_ids])} />
-      <WalkinDialog venueId={venueId} date={date} time={time} inService={floor.services.some(service => service.start_time <= time && time < service.end_time)} open={walkin} onClose={() => setWalkin(false)} onSeated={(b) => done(`Walk-in of ${b.party_size} seated at ${tablesText(b.table_labels)}.`, b.table_ids)} />
+      <WalkinDialog serviceName={floor.services.find(service=>service.start_time<=time && time<service.end_time)?.name} venueId={venueId} date={date} time={time} inService={floor.services.some(service => service.start_time <= time && time < service.end_time)} open={walkin} onClose={() => setWalkin(false)} onSeated={(b) => done(`Walk-in of ${b.party_size} seated at ${tablesText(b.table_labels)}.`, b.table_ids)} />
       <Dialog open={checking} title={`Check a walk-in at ${time}`} onClose={() => setChecking(false)} actions={<Button variant="secondary" onClick={() => setChecking(false)}>Close simulation</Button>}>
         <p>Simulation only · {formatDate(date)} at {time}. No booking is created and no table is moved.</p>
         {checking && <WhatIfCard key={`${date}|${time}`} venueId={venueId} date={date} time={time} />}
@@ -163,6 +166,7 @@ function FloorView({ venueId, date, floor, time, live, onNow, onTime, onRefresh 
 }
 
 function FloorHeader({ floor, date, time, live, onNow, onTime, onWalkin, onCheck }: { floor: Floor; date: string; time: string; live: boolean; onNow: () => void; onTime: (t: string) => void; onWalkin: () => void; onCheck: () => void }) {
+  const [editingTime,setEditingTime]=useState(false);
   const counts = countByStatus(floor.tables);
   const service = floor.services.find(s => s.start_time <= time && time < s.end_time)?.name ?? "Outside service";
   return (
@@ -177,7 +181,8 @@ function FloorHeader({ floor, date, time, live, onNow, onTime, onWalkin, onCheck
       <div className="st-time-reference">
         <strong role="status">{live ? `Live now · ${time} · ${service}` : `Viewing ${time} · ${service}`}</strong>
         <span className="rb-muted st-small">{formatDate(date)} · 15-minute floor reference. Viewing does not change bookings.</span>
-        <label className="st-time-slider">View floor time<input type="range" min={0} max={1425} step={15} value={toMinutes(time)} aria-label="View floor time" aria-valuetext={`${time}, ${service}`} onChange={event => onTime(fromMinutes(Number(event.target.value)))} /></label>
+        <Button variant="secondary" aria-expanded={editingTime} onClick={()=>setEditingTime(!editingTime)}>Change floor time</Button>
+        {editingTime && <label className="st-time-slider">View floor time<input type="range" min={0} max={1425} step={15} value={toMinutes(time)} aria-label="View floor time" aria-valuetext={`${time}, ${service}`} onChange={event => onTime(fromMinutes(Number(event.target.value)))} /></label>}
         <Button variant="secondary" onClick={onNow}>Return to now</Button>
       </div>
       <div className="st-quick-actions"><Button onClick={onWalkin}>New walk-in</Button><Button variant="secondary" onClick={onCheck}>Check a walk-in</Button></div>

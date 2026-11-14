@@ -24,6 +24,7 @@ for (const width of [1440, 390]) test(`diner sees rooms, daylight and night and 
   // A later cursor moment repaints light without acquiring a hold.
   await page.getByRole("button", { name: "Edit date, time and guests" }).click();
   await page.getByRole("button", { name: "21:00 Available", exact: true }).click();
+  await page.getByRole("button", { name: /^Choose a table at/ }).click();
   // On a phone the light is one quiet line until "Explore" opens it.
   const explore = page.getByRole("button", { name: "Explore", exact: true });
   const cursor = page.getByRole("slider", { name: "Preview light (does not change your booking)" });
