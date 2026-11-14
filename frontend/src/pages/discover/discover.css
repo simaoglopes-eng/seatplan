@@ -71,3 +71,46 @@
 .discover-features li { font-size: var(--fs-sm); padding: var(--space-1) var(--space-3); background: var(--c-accent-soft); color: var(--c-accent); border-radius: 999px; }
 .discover-card-photo { position: relative; }
 .discover-card-number { position: absolute; top: var(--space-2); left: var(--space-2); z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; border-radius: 50%; background: var(--c-primary); color: var(--c-on-primary); border: 2px solid var(--c-surface); font-weight: var(--fw-bold); font-size: var(--fs-sm); }
+/* UX v3: search/context first, the setting on its own line. */
+.discover-top { margin-block: var(--space-2) var(--space-4); }
+.discover-top h1 { font-size: clamp(1.75rem, 3vw, 2.25rem); line-height: 1.15; letter-spacing: -0.025em; }
+.discover-lede { font-size: var(--fs-md); }
+.discover-bar { display: grid; grid-template-columns: minmax(12rem, 1fr) auto auto auto; gap: var(--space-3); padding: var(--space-3); background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+.discover-search-field { position: relative; min-width: 0; }
+.discover-search-field > label, .discover-capsule label > span { display: block; padding-inline: var(--space-3); font-size: var(--fs-sm); font-weight: var(--fw-medium); color: var(--c-text-muted); }
+.discover-bar-search { width: 100%; box-sizing: border-box; min-width: 0; padding-inline: var(--space-3) 2.75rem; border: 0; border-radius: var(--radius-md); }
+.discover-search-clear { position: absolute; right: 0; bottom: 0; min-width: var(--touch-target); min-height: var(--touch-target); border: 0; background: var(--c-surface); color: var(--c-primary); font: inherit; font-size: var(--fs-lg); cursor: pointer; }
+.discover-capsule { border: 0; border-radius: 0; overflow: visible; }
+.discover-capsule label { min-width: 0; }
+.discover-capsule select, .discover-capsule input { padding-inline: var(--space-3); }
+.discover-quick { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--c-border); padding-top: var(--space-3); }
+.discover-quick-label, .discover-filter-note { color: var(--c-text-muted); font-size: var(--fs-sm); }
+.discover-filter-note { flex-basis: 100%; }
+.discover-map-column { top: 16rem; height: min(calc(100dvh - 17rem), 42rem); }
+.discover-card { grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); min-height: 9rem; border-color: var(--c-border); box-shadow: var(--shadow-sm); }
+.discover-card-photo { align-self: stretch; aspect-ratio: auto; min-height: 9rem; }
+.discover-card-body { padding: var(--space-4); align-self: center; min-width: 0; }
+.discover-card-body h3 { font-size: var(--fs-lg); line-height: 1.3; }
+.discover-card-body h3 a { text-decoration: none; }
+.discover-card-body h3 a:hover { text-decoration: underline; }
+.discover-card-line { font-size: var(--fs-sm); }
+.discover-card.is-highlighted { border-color: var(--c-primary); box-shadow: 0 0 0 2px var(--c-primary); }
+.discover-card:focus-within { outline: 3px solid var(--c-focus); outline-offset: 3px; }
+.discover-times-label { flex-basis: 100%; }
+.discover-time { font-variant-numeric: tabular-nums; }
+.discover-view-switch { position: static; margin-block: var(--space-3); }
+.discover-summary { border-radius: var(--radius-md); font-size: var(--fs-sm); }
+@media (max-width: 63.99rem) {
+  .discover-bar { grid-template-columns: minmax(0, 1fr) auto; margin-bottom: var(--space-3); top: 3.75rem; }
+  .discover-search-field > label { font-size: var(--fs-sm); }
+  .discover-bar-search { padding-left: var(--space-3); font-size: var(--fs-sm); }
+  .discover-map-column { height: 60dvh; min-height: 20rem; }
+  .discover-card { grid-template-columns: minmax(0, 6.5rem) minmax(0, 1fr); min-height: 8rem; }
+  .discover-card-photo { min-height: 8rem; }
+  .discover-card-body { padding: var(--space-3); }
+  .discover-card-body h3 { font-size: var(--fs-md); }
+  .discover-ambience { margin-bottom: var(--space-2); }
+  .discover-top h1 { font-size: 1.75rem; }
+  .discover-lede { font-size: var(--fs-sm); }
+}
+@media (prefers-reduced-motion: reduce) { .discover-card, .discover-pin span { transition: none; } }

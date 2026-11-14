@@ -57,22 +57,22 @@ export function ContextControls({ place, onPlace, date, time, party, onDate, onT
   }
   return (
     <div className="discover-capsule" role="group" aria-label="Where and when">
-      <select aria-label="Choose a city" value={cityValue} onChange={(event) => changeCity(event.target.value)}>
+      <label><span>Where</span><select aria-label="Choose a city" value={cityValue} onChange={(event) => changeCity(event.target.value)}>
         {cityOptions(place).map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
           </option>
         ))}
-      </select>
-      <input type="date" aria-label="Date" min={today()} value={date} onChange={(event) => onDate(event.target.value)} />
-      <input type="time" aria-label="Time" step={900} value={time} onChange={(event) => onTime(event.target.value)} />
-      <select aria-label="People" value={party} onChange={(event) => onParty(event.target.value)}>
+      </select></label>
+      <label><span>Date</span><input type="date" aria-label="Date" min={today()} value={date} onChange={(event) => onDate(event.target.value)} /></label>
+      <label><span>Near</span><input type="time" aria-label="Time" step={900} value={time} onChange={(event) => onTime(event.target.value)} /></label>
+      <label><span>Party</span><select aria-label="People" value={party} onChange={(event) => onParty(event.target.value)}>
         {PARTIES.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
           </option>
         ))}
-      </select>
+      </select></label>
       {date && (
         <button type="button" className="discover-capsule-clear" aria-label="Clear the date" onClick={onClearWhen}>
           ×

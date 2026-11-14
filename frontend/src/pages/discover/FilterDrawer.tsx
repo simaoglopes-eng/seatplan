@@ -6,7 +6,7 @@ import type { FeatureKey } from "../../api/discovery";
 import { CUISINES } from "../../api/owner";
 import { Button, Dialog } from "../../design/components";
 import { Chip, Chips, toggle } from "./Chips";
-import { cuisineLabel, FEATURE_LABELS } from "./discoverModel";
+import { cuisineLabel, DISCOVERY_FEATURE_LABELS as FEATURE_LABELS } from "./discoverModel";
 
 export const QUICK_FEATURES: FeatureKey[] = ["sun", "view", "terrace"];
 const FIRST_CUISINES = 8;

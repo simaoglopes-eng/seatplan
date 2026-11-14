@@ -6,7 +6,7 @@ import { Button } from "../../design/components";
 import { Chip, toggle } from "./Chips";
 import { ContextControls } from "./ContextControls";
 import type { Place } from "./discoverModel";
-import { FEATURE_LABELS } from "./discoverModel";
+import { DISCOVERY_FEATURE_LABELS as FEATURE_LABELS } from "./discoverModel";
 import { QUICK_FEATURES } from "./FilterDrawer";
 
 interface Props {
@@ -34,7 +34,10 @@ interface Props {
 export function DiscoverBar(props: Props) {
   return (
     <form className="discover-bar" role="search" onSubmit={(event) => event.preventDefault()}>
+      <div className="discover-search-field">
+      <label htmlFor="discover-search">Restaurant or cuisine</label>
       <input
+        id="discover-search"
         type="search"
         className="discover-bar-search"
         aria-label="Restaurant or cuisine"
@@ -44,6 +47,8 @@ export function DiscoverBar(props: Props) {
         autoComplete="off"
         onChange={(event) => props.onText(event.target.value)}
       />
+      {props.text && <button type="button" className="discover-search-clear" aria-label="Clear search" onClick={() => props.onText("")}>×</button>}
+      </div>
       {props.wide && (
         <>
           <ContextControls
@@ -61,18 +66,16 @@ export function DiscoverBar(props: Props) {
           <Button variant="secondary" busy={props.locating} onClick={props.onNearMe}>
             Near me
           </Button>
-          <div className="discover-quick" role="group" aria-label="Quick filters">
-            {QUICK_FEATURES.map((key) => (
-              <Chip key={key} pressed={props.features.includes(key)} onClick={() => props.onFeatures(toggle(props.features, key))}>
-                {FEATURE_LABELS[key]}
-              </Chip>
-            ))}
-          </div>
         </>
       )}
       <Button variant="secondary" aria-haspopup="dialog" aria-expanded={props.drawerOpen} onClick={props.onDrawer}>
         Filters{props.filterCount > 0 ? ` (${props.filterCount})` : ""}
       </Button>
+      {props.wide && <div className="discover-quick" role="group" aria-label="Quick filters">
+        <span className="discover-quick-label">The setting</span>
+        {QUICK_FEATURES.map((key) => <Chip key={key} pressed={props.features.includes(key)} onClick={() => props.onFeatures(toggle(props.features, key))}>{FEATURE_LABELS[key]}</Chip>)}
+        {props.features.includes("sun") && <span className="discover-filter-note">Light varies by table and time. Check it when you book.</span>}
+      </div>}
     </form>
   );
 }

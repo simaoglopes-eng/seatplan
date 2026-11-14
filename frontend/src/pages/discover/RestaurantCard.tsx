@@ -3,6 +3,7 @@
 // already has, nothing worked out per search), and, when the diner said when, up to three free
 // times that open the restaurant page with the date, time and party already chosen.
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import type { RestaurantCard as Card, SearchWhen } from "../../api/discovery";
 import { ambienceLine, cuisineLabel, formatDistance, priceText, restaurantHref } from "./discoverModel";
 
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function RestaurantCard({ card, when, highlighted, onHighlight, number }: Props) {
+  const [failedPhoto, setFailedPhoto] = useState(false);
   const distance = formatDistance(card.distance_m);
   const room = ambienceLine(card.features);
   const price = priceText(card.price_level);
@@ -35,7 +37,7 @@ export function RestaurantCard({ card, when, highlighted, onHighlight, number }:
             {number}
           </span>
         )}
-        {card.cover_url ? <img src={card.cover_url} alt={card.cover_alt ?? ""} loading="lazy" width={640} height={400} /> : <span className="discover-card-nophoto">No photo yet</span>}
+        {card.cover_url && !failedPhoto ? <img src={card.cover_url} onError={() => setFailedPhoto(true)} alt={card.cover_alt ?? ""} loading="lazy" width={640} height={400} /> : <span className="discover-card-nophoto">Photo unavailable</span>}
       </Link>
       <div className="discover-card-body">
         <h3 id={`name-${card.public_id}`}>
@@ -59,7 +61,7 @@ export function RestaurantCard({ card, when, highlighted, onHighlight, number }:
           <div className="discover-times">
             {card.next_times.length > 0 ? (
               <>
-                <span className="discover-times-label">Free for {when.party}:</span>
+                <span className="discover-times-label">Available near {when.time} · {when.party} {when.party === 1 ? "person" : "people"}</span>
                 {card.next_times.map((time) => (
                   <Link key={time} className="btn btn-secondary discover-time" to={restaurantHref(card, when, time)}>
                     {time}

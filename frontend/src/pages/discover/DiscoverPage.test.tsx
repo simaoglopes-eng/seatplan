@@ -88,11 +88,11 @@ describe("DiscoverPage: the command bar", () => {
     expect(within(bar).getByLabelText("Choose a city")).toBeTruthy();
     expect(within(bar).getByLabelText("Date")).toBeTruthy();
     expect(within(bar).getByRole("button", { name: "Near me" })).toBeTruthy();
-    for (const name of ["Sunny tables", "With a view", "Terrace"]) expect(within(bar).getByRole("button", { name })).toBeTruthy();
+    for (const name of ["Has sunny tables", "Tables with a view", "Terrace"]) expect(within(bar).getByRole("button", { name })).toBeTruthy();
     const first = (await screen.findByRole("heading", { name: "Casa 1" })).closest("article") as HTMLElement;
     expect(within(first).getByText("Portuguese, Seafood", { exact: false })).toBeTruthy();
     // One line about the room, from the three facts the restaurant has. Wheelchair access is a filter, not card clutter.
-    expect(within(first).getByText("Sunny tables · Terrace")).toBeTruthy();
+    expect(within(first).getByText("Has sunny tables · Terrace")).toBeTruthy();
     expect(within(first).queryByText("Wheelchair accessible")).toBeNull();
     expect(within(first).getByRole("link", { name: "Casa 1" }).getAttribute("href")).toBe("/restaurants/casa-1");
     const photo = first.querySelector("img");
@@ -124,7 +124,7 @@ describe("DiscoverPage: the command bar", () => {
     const asked = server(() => ({ items: [card(1)], total: 1 }));
     renderPage();
     await screen.findByRole("heading", { name: "Casa 1" });
-    fireEvent.click(screen.getByRole("button", { name: "Sunny tables" }));
+    fireEvent.click(screen.getByRole("button", { name: "Has sunny tables" }));
     fireEvent.click(screen.getByRole("button", { name: "Terrace" }));
     await waitFor(() => expect(asked.at(-1)?.getAll("features")).toEqual(["sun", "terrace"]));
     expect(screen.getByRole("button", { name: "Terrace" }).getAttribute("aria-pressed")).toBe("true");
@@ -270,7 +270,7 @@ describe("DiscoverPage: on a phone", () => {
     const drawer = await openDrawer();
     fireEvent.change(within(drawer).getByLabelText("Choose a city"), { target: { value: "Porto" } });
     fireEvent.change(within(drawer).getByLabelText("Date"), { target: { value: "2030-05-01" } });
-    fireEvent.click(within(drawer).getByRole("button", { name: "With a view" }));
+    fireEvent.click(within(drawer).getByRole("button", { name: "Tables with a view" }));
     await waitFor(() => expect(asked.at(-1)?.getAll("features")).toEqual(["view"]));
     expect(asked.at(-1)?.get("lat")).toBe("41.1579");
     expect(asked.at(-1)?.get("time")).toBe("20:00");
@@ -316,7 +316,7 @@ describe("DiscoverPage: results", () => {
     renderPage();
     await screen.findByRole("heading", { name: "Casa 1" });
     expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "With a view" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tables with a view" }));
     const clear = await screen.findByRole("button", { name: "Clear filters" });
     fireEvent.click(clear);
     await waitFor(() => expect(asked.at(-1)?.has("features")).toBe(false));
