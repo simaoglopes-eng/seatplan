@@ -1,0 +1,37 @@
+# Deploy to the Vercel project seatplan (team seat-plan) after CI passes on main.
+# Uses a Vercel token instead of the Vercel GitHub integration, so the GitHub
+# account does not have to be linked to this Vercel account.
+# Repository secrets needed: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID.
+
+name: deploy
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Deploy to production (Vercel builds remotely with vercel.json)
+        run: npx --yes vercel@65.16.0 deploy --prod --yes --token "${{ secrets.VERCEL_TOKEN }}"
